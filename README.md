@@ -6,7 +6,7 @@ Milestone 0 is implemented in this repo, it includes the app foundation, PWA she
 
 ## Stack
 
-- React 18
+- React 19
 - TypeScript
 - Vite
 - Evolu (`@evolu/common`, `@evolu/react`, `@evolu/react-web`)
@@ -170,3 +170,63 @@ Milestone 1 implements workout logging MVP:
 - inline set editing and completion
 - finish session
 - last time hints per exercise
+
+## Branch and Environment Strategy
+
+Long lived branches
+- `dev`, daily integration branch
+- `staging`, release candidate branch
+- `main`, production branch
+
+Feature workflow
+1. Branch from `dev` into `feature/*`
+2. Open PR into `dev`
+3. Promote with PR `dev -> staging`
+4. Promote with PR `staging -> main`
+
+The workflow `/Users/miroslav/Documents/DEVELOPMENT/BodyCache/.github/workflows/release-flow-guard.yml` enforces this promotion direction.
+
+## Vercel Environment Mapping
+
+Use three Vercel projects for simple branch based deployments.
+
+1. `bodycache-dev`
+- Production branch: `dev`
+- Suggested domain: `dev.bodycache.app`
+
+2. `bodycache-staging`
+- Production branch: `staging`
+- Suggested domain: `staging.bodycache.app`
+
+3. `bodycache-prod`
+- Production branch: `main`
+- Suggested domain: `bodycache.app`
+
+Shared build settings for all three projects
+- Framework preset: `Vite`
+- Install command: `npm ci`
+- Build command: `npm run build`
+- Output directory: `dist`
+
+## GitHub Branch Protection Rules
+
+Apply in GitHub repository settings.
+
+For `dev`
+- Require PR before merge
+- Require status check: `test-build-e2e`
+
+For `staging`
+- Require PR before merge
+- Require status checks: `test-build-e2e`, `enforce-promotion-direction`
+- Restrict who can push directly
+
+For `main`
+- Require PR before merge
+- Require status checks: `test-build-e2e`, `enforce-promotion-direction`
+- Require approvals before merging
+- Restrict who can push directly
+
+## Deployment Playbook
+
+Deployment and branch protection setup is documented in `/Users/miroslav/Documents/DEVELOPMENT/BodyCache/docs/deployment-branch-playbook.md`.
