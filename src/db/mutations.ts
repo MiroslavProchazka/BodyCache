@@ -1,4 +1,5 @@
 import {
+  addExerciseToLocalWorkoutSession,
   type LocalWorkoutSession,
   finishLocalWorkoutSession,
   renameLocalWorkoutSession,
@@ -60,5 +61,8 @@ export const startWorkoutSession = async (name: string) => {
 }
 
 export const renameWorkoutSession = (name: string) => renameLocalWorkoutSession(name)
+
+export const addExerciseToWorkoutSession = (exerciseId: string, exerciseName: string) =>
+  addExerciseToLocalWorkoutSession(exerciseId, exerciseName)
 
 export const finishWorkoutSession = () => finishLocalWorkoutSession()

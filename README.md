@@ -2,7 +2,7 @@
 
 BodyCache is a local first gym tracking PWA built with React, TypeScript, Vite, Evolu, Tailwind, and shadcn style UI primitives.
 
-Milestone 0 is implemented in this repo, it includes the app foundation, PWA shell, Evolu schema bootstrap, first migration scaffold, seed exercise loading, page routing, and baseline tests.
+Milestone 0 is complete and Milestone 1 is in progress. The current build includes active workout start, rename autosave, add exercise, and finish session flows with unit and e2e coverage.
 
 ## Stack
 

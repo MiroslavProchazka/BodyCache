@@ -2,7 +2,7 @@ import { Activity, Clock3, Download, TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 
 const milestones = [
-  { label: 'Logging MVP', icon: Activity, status: 'next' },
+  { label: 'Logging MVP', icon: Activity, status: 'in progress' },
   { label: 'Templates', icon: Clock3, status: 'planned' },
   { label: 'Analytics', icon: TrendingUp, status: 'planned' },
   { label: 'Backup', icon: Download, status: 'planned' }
@@ -14,12 +14,12 @@ export const Home = () => {
       <Card>
         <CardHeader>
           <CardTitle>BodyCache</CardTitle>
-          <CardDescription>Local first gym tracker, milestone 0 foundation ready</CardDescription>
+          <CardDescription>Local first gym tracker, milestone 1 workout logging in progress</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            PWA shell, Evolu schema, seed pipeline, and app routes are in place, next milestone focuses on active
-            workout logging
+            Active session start, rename, add exercise, and finish flows now work with local-first persistence and e2e
+            coverage
           </p>
         </CardContent>
       </Card>
