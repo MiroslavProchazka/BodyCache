@@ -13,13 +13,14 @@ Milestone 0 is complete and Milestone 1 is in progress. The current build includ
 - Tailwind CSS
 - shadcn style UI building blocks (Radix Slot + CVA utilities)
 - PWA via `vite-plugin-pwa`
-- Charts via `recharts`, ready for milestone 3 and 4
+- Charts via `recharts`, ready for milestone 3 and 4.
 - Validation via `zod`
 - Tests via `vitest`, `@testing-library/react`, `playwright`
 
 ## Quick Start
 
 Prerequisites
+
 - Node.js 20+
 - npm 10+
 
@@ -120,6 +121,7 @@ Seed exercises are inserted on first run by `/src/db/mutations.ts` using `/src/d
 Migration metadata starts in `/src/db/migrations.ts` with `0001_bodycache_init`.
 
 Rule for upcoming milestones:
+
 - every schema change must add a new migration entry
 - no breaking schema edits without a corresponding migration
 
@@ -128,6 +130,7 @@ Rule for upcoming milestones:
 Import and merge helpers are in `/src/domain/importExport.ts`.
 
 Current merge behavior:
+
 - validate input with `zod`
 - merge by stable `id`
 - on conflict, prefer row with newer `updatedAt`
@@ -145,12 +148,14 @@ Current merge behavior:
 This repo is configured for static deployment on Vercel.
 
 Required Vercel settings:
+
 - Framework preset: `Vite`
 - Install command: `npm ci`
 - Build command: `npm run build`
 - Output directory: `dist`
 
 SPA and PWA routing is handled in `/vercel.json`:
+
 - all routes rewrite to `/index.html`
 - `sw.js` is served with safe no-cache headers
 - manifest content type header is set
@@ -165,6 +170,7 @@ SPA and PWA routing is handled in `/vercel.json`:
 ## Next Milestone
 
 Milestone 1 implements workout logging MVP:
+
 - start session
 - add exercises
 - inline set editing and completion
@@ -174,11 +180,13 @@ Milestone 1 implements workout logging MVP:
 ## Branch and Environment Strategy
 
 Long lived branches
+
 - `dev`, daily integration branch
 - `staging`, release candidate branch
 - `main`, production branch
 
 Feature workflow
+
 1. Branch from `dev` into `feature/*`
 2. Open PR into `dev`
 3. Promote with PR `dev -> staging`
@@ -191,18 +199,22 @@ The workflow `/Users/miroslav/Documents/DEVELOPMENT/BodyCache/.github/workflows/
 Use three Vercel projects for simple branch based deployments.
 
 1. `bodycache-dev`
+
 - Production branch: `dev`
 - Suggested domain: `dev.bodycache.app`
 
 2. `bodycache-staging`
+
 - Production branch: `staging`
 - Suggested domain: `staging.bodycache.app`
 
 3. `bodycache-prod`
+
 - Production branch: `main`
 - Suggested domain: `bodycache.app`
 
 Shared build settings for all three projects
+
 - Framework preset: `Vite`
 - Install command: `npm ci`
 - Build command: `npm run build`
@@ -213,15 +225,18 @@ Shared build settings for all three projects
 Apply in GitHub repository settings.
 
 For `dev`
+
 - Require PR before merge
 - Require status check: `test-build-e2e`
 
 For `staging`
+
 - Require PR before merge
 - Require status checks: `test-build-e2e`, `enforce-promotion-direction`
 - Restrict who can push directly
 
 For `main`
+
 - Require PR before merge
 - Require status checks: `test-build-e2e`, `enforce-promotion-direction`
 - Require approvals before merging
