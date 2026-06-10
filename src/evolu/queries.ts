@@ -2,6 +2,7 @@ import * as Evolu from '@evolu/common'
 import { evolu } from './evolu'
 import type {
   ExerciseId,
+  ExercisePhotoId,
   WorkoutSessionId,
   WorkoutExerciseId,
   WorkoutStatus,
@@ -40,6 +41,27 @@ export const exerciseById = (id: ExerciseId) =>
       .selectAll()
       .where('id', '=', id)
       .where('isDeleted', 'is', null),
+  )
+
+/** A single photo by id (non-deleted). */
+export const photoById = (id: ExercisePhotoId) =>
+  evolu.createQuery((db) =>
+    db
+      .selectFrom('exercisePhoto')
+      .selectAll()
+      .where('id', '=', id)
+      .where('isDeleted', 'is', null),
+  )
+
+/** All photos for an exercise, newest first. */
+export const photosForExercise = (exerciseId: ExerciseId) =>
+  evolu.createQuery((db) =>
+    db
+      .selectFrom('exercisePhoto')
+      .selectAll()
+      .where('isDeleted', 'is', null)
+      .where('exerciseId', '=', exerciseId)
+      .orderBy('createdAt', 'desc'),
   )
 
 /** Most recent session with status 'active'. */
