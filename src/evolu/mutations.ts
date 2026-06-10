@@ -3,6 +3,7 @@ import type {
   BodyPart,
   Equipment,
   ExerciseId,
+  ExercisePhotoId,
   ExerciseType,
   WorkoutExerciseId,
   WorkoutSessionId,
@@ -24,6 +25,14 @@ export interface UpdateExercisePatch {
   readonly bodyPart?: BodyPart | null
   readonly equipment?: Equipment | null
   readonly notes?: string | null
+  readonly primaryPhotoId?: ExercisePhotoId | null
+}
+
+/** Input for attaching a stored photo's metadata to an exercise. */
+export interface AddPhotoInput {
+  readonly localUri: string
+  readonly thumbnailUri?: string | null
+  readonly caption?: string | null
 }
 
 /** Numeric/text fields for a single set. */
@@ -66,6 +75,23 @@ export const useBodyCacheMutations = () => {
   /** Soft-delete via Evolu's `isDeleted` system column. */
   const softDeleteExercise = (id: ExerciseId) =>
     update('exercise', { id, isDeleted: 1 })
+
+  /**
+   * Insert photo metadata for an exercise. The binary itself lives in
+   * IndexedDB (see `shared/utils/photos.ts`); `localUri`/`thumbnailUri` are
+   * the `idb://` references, never the image data.
+   */
+  const addExercisePhoto = (exerciseId: ExerciseId, input: AddPhotoInput) =>
+    insert('exercisePhoto', {
+      exerciseId,
+      localUri: input.localUri,
+      thumbnailUri: input.thumbnailUri ?? null,
+      caption: input.caption ?? null,
+    })
+
+  /** Point an exercise at its primary photo. */
+  const setPrimaryPhoto = (id: ExerciseId, primaryPhotoId: ExercisePhotoId) =>
+    update('exercise', { id, primaryPhotoId })
 
   const startWorkoutSession = () => {
     const now = new Date().toISOString()
@@ -115,6 +141,8 @@ export const useBodyCacheMutations = () => {
     createExercise,
     updateExercise,
     softDeleteExercise,
+    addExercisePhoto,
+    setPrimaryPhoto,
     startWorkoutSession,
     finishWorkoutSession,
     addExerciseToWorkout,
