@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { totalVolumeKg, completedSetCount, formatElapsed } from './workoutStats'
+import { totalVolumeKg, completedSetCount, formatElapsed, workoutName } from './workoutStats'
 
 describe('totalVolumeKg', () => {
   it('sums weight × reps for complete sets only', () => {
@@ -42,5 +42,23 @@ describe('formatElapsed', () => {
   })
   it('never goes negative', () => {
     expect(formatElapsed('2026-01-01T01:00:00.000Z', start)).toBe('0s')
+  })
+})
+
+describe('workoutName', () => {
+  it('names a push day', () => {
+    expect(workoutName(['chest', 'shoulders', 'arms'])).toBe('Push day')
+  })
+  it('names a pull day', () => {
+    expect(workoutName(['back', 'arms'])).toBe('Pull day')
+  })
+  it('names a leg day', () => {
+    expect(workoutName(['legs', 'legs'])).toBe('Leg day')
+  })
+  it('falls back to full body for a mix', () => {
+    expect(workoutName(['chest', 'legs'])).toBe('Full body day')
+  })
+  it('ignores nulls and is "Workout" when empty', () => {
+    expect(workoutName([null, null])).toBe('Workout')
   })
 })

@@ -1,132 +1,95 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { Plus, Search, Dumbbell } from 'lucide-react'
+import { Plus, Dumbbell } from 'lucide-react'
 import { allExercises } from '@/evolu/queries'
-import { EXERCISE_TYPES, BODY_PARTS } from '@/evolu/schema'
+import { BODY_PARTS } from '@/evolu/schema'
+import { SearchField } from '@/shared/components/SearchField'
+import { FilterChips } from '@/shared/components/FilterChips'
 import { Button } from '@/shared/components/Button'
-import { EmptyState } from '@/shared/components/EmptyState'
+import { humanize } from '@/shared/utils/bodyParts'
 import { ExerciseCard } from './ExerciseCard'
 
+const CHIP_OPTIONS = [
+  { value: 'all', label: 'All' },
+  ...BODY_PARTS.map((p) => ({ value: p, label: humanize(p) })),
+]
+
+/** Browse / search all exercises; entry to detail and create. */
 export function ExerciseLibraryPage() {
+  const navigate = useNavigate()
   const exercises = useQuery(allExercises)
   const [search, setSearch] = useState('')
-  const [typeFilter, setTypeFilter] = useState<string | null>(null)
-  const [bodyPartFilter, setBodyPartFilter] = useState<string | null>(null)
+  const [part, setPart] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return exercises.filter((e) => {
-      if (q && !String(e.name).toLowerCase().includes(q)) return false
-      if (typeFilter && e.type !== typeFilter) return false
-      if (bodyPartFilter && e.bodyPart !== bodyPartFilter) return false
-      return true
+      if (part && e.bodyPart !== part) return false
+      if (!q) return true
+      return [e.name, e.bodyPart, e.equipment]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q))
     })
-  }, [exercises, search, typeFilter, bodyPartFilter])
+  }, [exercises, search, part])
 
   const hasAny = exercises.length > 0
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4 px-4 py-5">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-100">Library</h1>
-        <Link to="/library/new">
-          <Button className="px-3 py-2 text-sm">
-            <Plus size={18} /> New
-          </Button>
-        </Link>
+    <div className="px-5 pb-[130px] pt-[6px]">
+      <header className="mb-4 flex items-center justify-between">
+        <h1 className="font-display text-[26px] font-semibold tracking-tight text-white">
+          Exercises
+        </h1>
+        <button
+          type="button"
+          onClick={() => navigate('/library/new')}
+          aria-label="Create exercise"
+          className="flex h-[42px] w-[42px] items-center justify-center rounded-[14px] bg-neon text-ink"
+        >
+          <Plus size={22} strokeWidth={2} />
+        </button>
       </header>
 
       {hasAny && (
         <>
-          <div className="relative">
-            <Search
-              size={18}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-            />
-            <input
-              type="search"
-              inputMode="search"
-              placeholder="Search exercises"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-gray-800 bg-gray-900 py-3 pl-10 pr-3 text-base text-gray-100 placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none"
+          <div className="mb-[14px]">
+            <SearchField value={search} onChange={setSearch} />
+          </div>
+          <div className="mb-[18px]">
+            <FilterChips
+              options={CHIP_OPTIONS}
+              value={part}
+              onChange={setPart}
+              allValue="all"
+              ariaLabel="Filter by body part"
             />
           </div>
-
-          <FilterRow
-            label="Type"
-            options={EXERCISE_TYPES}
-            value={typeFilter}
-            onChange={setTypeFilter}
-          />
-          <FilterRow
-            label="Body part"
-            options={BODY_PARTS}
-            value={bodyPartFilter}
-            onChange={setBodyPartFilter}
-          />
         </>
       )}
 
       {!hasAny ? (
-        <EmptyState
-          Icon={Dumbbell}
-          title="No exercises yet"
-          description="Create your first exercise — snap a photo of the machine, name it, and you're set."
-          action={
-            <Link to="/library/new">
-              <Button>
-                <Plus size={18} /> Create exercise
-              </Button>
-            </Link>
-          }
-        />
+        <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-inset text-neon">
+            <Dumbbell size={28} strokeWidth={1.75} />
+          </div>
+          <h2 className="font-display text-lg font-semibold text-white">No exercises yet</h2>
+          <p className="max-w-xs text-sm text-muted">
+            Create your first exercise — snap a photo of the machine, name it, and you're set.
+          </p>
+          <Button className="mt-2" onClick={() => navigate('/library/new')}>
+            <Plus size={18} strokeWidth={2} /> Create exercise
+          </Button>
+        </div>
       ) : filtered.length === 0 ? (
-        <p className="py-10 text-center text-sm text-gray-500">
-          No exercises match your search.
-        </p>
+        <p className="py-10 text-center text-sm text-faint">No exercises match.</p>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-2 gap-3">
           {filtered.map((exercise) => (
             <ExerciseCard key={exercise.id} exercise={exercise} />
           ))}
         </div>
       )}
-    </div>
-  )
-}
-
-function FilterRow({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string
-  options: readonly string[]
-  value: string | null
-  onChange: (v: string | null) => void
-}) {
-  return (
-    <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" aria-label={label}>
-      {options.map((opt) => {
-        const active = value === opt
-        return (
-          <button
-            key={opt}
-            onClick={() => onChange(active ? null : opt)}
-            className={[
-              'shrink-0 rounded-full px-3 py-1.5 text-sm capitalize transition-colors',
-              active
-                ? 'bg-indigo-500 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700',
-            ].join(' ')}
-          >
-            {opt.replace('_', ' ')}
-          </button>
-        )
-      })}
     </div>
   )
 }

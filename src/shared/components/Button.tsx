@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
+type Variant = 'primary' | 'secondary' | 'outline'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
@@ -9,16 +9,19 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const base =
-  'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98]'
+  'inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-[17px] text-base font-bold transition-transform active:scale-[0.99] disabled:pointer-events-none'
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-indigo-500 text-white hover:bg-indigo-400',
-  secondary: 'bg-gray-800 text-gray-100 hover:bg-gray-700',
-  ghost: 'bg-transparent text-gray-300 hover:bg-gray-800',
-  danger: 'bg-red-600 text-white hover:bg-red-500',
+  // Neon CTA — the primary "do it" action (Save, Done, Start).
+  primary: 'bg-neon text-ink disabled:bg-surface disabled:text-faint disabled:opacity-60',
+  // Inset surface — quieter secondary action.
+  secondary: 'bg-inset text-soft disabled:opacity-40',
+  // Subtle neon-tinted outline — additive actions like "Add exercise".
+  outline:
+    'border-[1.5px] border-neon/35 bg-neon/10 text-neon font-semibold disabled:opacity-40',
 }
 
-/** Mobile-first button with large tap target. */
+/** Mobile-first button with a large tap target. */
 export function Button({
   variant = 'primary',
   fullWidth = false,

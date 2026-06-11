@@ -133,3 +133,92 @@ export const previousSession = (
 
   return { sessionId: latest.sessionId, startedAt: latest.sessionStartedAt, sets }
 }
+
+/** A grouped session: its loggable sets in set order. */
+export interface SessionGroup {
+  readonly sessionId: string
+  readonly startedAt: string
+  readonly sets: HistorySet[]
+}
+
+/**
+ * Group a flat history into sessions, newest first, each with its sets in set
+ * order. Empty sets and an optionally-excluded session (the active workout)
+ * are dropped.
+ */
+export const groupSessions = (
+  history: readonly HistorySet[],
+  excludeSessionId?: string,
+): SessionGroup[] => {
+  const map = new Map<string, { startedAt: string; sets: HistorySet[] }>()
+  for (const s of history) {
+    if (!hasMetrics(s) || s.sessionId === excludeSessionId) continue
+    const g = map.get(s.sessionId) ?? { startedAt: s.sessionStartedAt, sets: [] }
+    g.sets.push(s)
+    map.set(s.sessionId, g)
+  }
+  return [...map.entries()]
+    .map(([sessionId, g]) => ({
+      sessionId,
+      startedAt: g.startedAt,
+      sets: g.sets.slice().sort((a, b) => a.orderIndex - b.orderIndex),
+    }))
+    .sort((a, b) => b.startedAt.localeCompare(a.startedAt))
+}
+
+/** The first ranking metric of a set for its type (weight, reps, sec or m). */
+const primaryMetric = (set: MetricSet, type: ExerciseType): number =>
+  rankTuple(set, type)[0]
+
+/** Which field the trend delta is expressed in, per exercise type. */
+export type TrendField = 'weight' | 'reps' | 'duration' | 'distance'
+
+const TREND_FIELD: Record<ExerciseType, TrendField> = {
+  strength: 'weight',
+  freeform: 'reps',
+  bodyweight: 'reps',
+  timed: 'duration',
+  distance: 'distance',
+}
+
+export type TrendDir = 'up' | 'down' | 'flat' | 'new'
+
+/** A direction + signed delta (in the type's primary metric's native unit). */
+export interface Trend {
+  readonly dir: TrendDir
+  readonly delta: number
+  readonly field: TrendField
+}
+
+/**
+ * Compare the top set of the most recent session against the one before it.
+ * `dir` is `'new'` when there isn't a prior session to compare to. Excludes the
+ * in-progress session via `excludeSessionId` so logging today doesn't skew it.
+ */
+export const sessionTrend = (
+  history: readonly HistorySet[],
+  type: ExerciseType,
+  excludeSessionId?: string,
+): Trend => {
+  const field = TREND_FIELD[type]
+  const groups = groupSessions(history, excludeSessionId)
+  if (groups.length < 2) return { dir: 'new', delta: 0, field }
+  const a = bestSet(groups[0].sets, type)
+  const b = bestSet(groups[1].sets, type)
+  if (!a || !b) return { dir: 'new', delta: 0, field }
+  const delta = Math.round((primaryMetric(a, type) - primaryMetric(b, type)) * 10) / 10
+  const dir: TrendDir = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'
+  return { dir, delta, field }
+}
+
+/** Mean top-set weight (kg) across sessions, or null when none carry weight. */
+export const averageTopWeightKg = (
+  history: readonly HistorySet[],
+  type: ExerciseType,
+): number | null => {
+  const tops = groupSessions(history)
+    .map((g) => bestSet(g.sets, type)?.weightKg)
+    .filter((w): w is number => w != null && w > 0)
+  if (tops.length === 0) return null
+  return tops.reduce((a, b) => a + b, 0) / tops.length
+}

@@ -5,6 +5,8 @@ import type {
   sessionExercises,
   setsForWorkoutExercise,
   completedSetsForExercise,
+  completedSetsForSession,
+  performedExercises,
   finishedWorkoutSessions,
   photosForExercise,
 } from './queries'
@@ -19,3 +21,5 @@ export type ExerciseSetRow = RowOf<ReturnType<typeof setsForWorkoutExercise>>
 export type ExerciseHistorySetRow = RowOf<ReturnType<typeof completedSetsForExercise>>
 export type WorkoutSessionRow = RowOf<typeof finishedWorkoutSessions>
 export type ExercisePhotoRow = RowOf<ReturnType<typeof photosForExercise>>
+export type SessionSetRow = RowOf<ReturnType<typeof completedSetsForSession>>
+export type PerformedExerciseRow = RowOf<typeof performedExercises>

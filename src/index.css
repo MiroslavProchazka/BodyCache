@@ -1,3 +1,100 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* TT Satoshi — display / numerals (shipped in /public/fonts). Inter is loaded
+   from Google Fonts in index.html for UI text. */
+@font-face {
+  font-family: 'TT Satoshi';
+  src: url('/fonts/TT_Satoshi_Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'TT Satoshi';
+  src: url('/fonts/TT_Satoshi_Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'TT Satoshi';
+  src: url('/fonts/TT_Satoshi_DemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'TT Satoshi';
+  src: url('/fonts/TT_Satoshi_Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-ink font-sans text-white antialiased;
+  }
+  /* No default outline on tap; keyboard users still get a clear focus ring. */
+  :focus {
+    outline: none;
+  }
+  :focus-visible {
+    outline: 2px solid theme('colors.neon');
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* Tabular numerals so stepping weights/reps don't make digits jitter. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  /* Fade so scroll content slides under the sticky bottom action. */
+  .action-fade {
+    background: linear-gradient(to top, #062016 62%, rgba(6, 32, 22, 0));
+  }
+}
+
+@keyframes bc-toast {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  12% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  88% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes bc-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
