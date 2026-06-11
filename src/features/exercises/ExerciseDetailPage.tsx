@@ -1,9 +1,10 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { ArrowLeft, Trash2, History } from 'lucide-react'
-import { exerciseById } from '@/evolu/queries'
+import { evolu } from '@/evolu/evolu'
+import { exerciseById, activeWorkoutSession, sessionExercises } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
-import type { ExerciseId, ExercisePhotoId } from '@/evolu/schema'
+import type { ExerciseId, ExercisePhotoId, WorkoutSessionId } from '@/evolu/schema'
 import { Button } from '@/shared/components/Button'
 import { Card } from '@/shared/components/Card'
 import { PhotoThumb } from './PhotoThumb'
@@ -11,7 +12,8 @@ import { PhotoThumb } from './PhotoThumb'
 export function ExerciseDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { softDeleteExercise } = useBodyCacheMutations()
+  const { softDeleteExercise, startWorkoutSession, addExerciseToWorkout } =
+    useBodyCacheMutations()
   const rows = useQuery(exerciseById((id ?? '') as ExerciseId))
   const exercise = id ? rows[0] : undefined
 
@@ -35,6 +37,22 @@ export function ExerciseDetailPage() {
     if (!window.confirm(`Delete "${exercise.name}"? This can't be undone.`)) return
     softDeleteExercise(exercise.id)
     navigate('/library', { replace: true })
+  }
+
+  /** Add this exercise to the active workout (starting one if needed). */
+  const handleLogToday = async () => {
+    const active = await evolu.loadQuery(activeWorkoutSession)
+    let sessionId = active[0]?.id as WorkoutSessionId | undefined
+    if (!sessionId) {
+      const started = startWorkoutSession()
+      if (!started.ok) return
+      sessionId = started.value.id
+    }
+    const existing = await evolu.loadQuery(sessionExercises(sessionId))
+    if (!existing.some((w) => String(w.exerciseId) === String(exercise.id))) {
+      addExerciseToWorkout(sessionId, exercise.id, existing.length)
+    }
+    navigate('/')
   }
 
   return (
@@ -93,8 +111,7 @@ export function ExerciseDetailPage() {
           </p>
         </Card>
 
-        {/* Log today CTA is wired up in Milestone 4 (workout logging). */}
-        <Button fullWidth disabled title="Available once workout logging ships">
+        <Button fullWidth onClick={handleLogToday}>
           Log today
         </Button>
       </div>

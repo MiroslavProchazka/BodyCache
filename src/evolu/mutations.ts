@@ -4,6 +4,7 @@ import type {
   Equipment,
   ExerciseId,
   ExercisePhotoId,
+  ExerciseSetId,
   ExerciseType,
   WorkoutExerciseId,
   WorkoutSessionId,
@@ -38,6 +39,22 @@ export interface AddPhotoInput {
 /** Numeric/text fields for a single set. */
 export interface AddSetInput {
   readonly orderIndex: number
+  readonly completedAt?: string | null
+  readonly weightKg?: number | null
+  readonly reps?: number | null
+  readonly addedWeightKg?: number | null
+  readonly assistanceWeightKg?: number | null
+  readonly durationSec?: number | null
+  readonly distanceMeters?: number | null
+  readonly inclinePercent?: number | null
+  readonly speedKmh?: number | null
+  readonly resistanceLevel?: number | null
+  readonly rpe?: number | null
+  readonly notes?: string | null
+}
+
+/** Patch for updating a logged set (all fields optional). */
+export interface UpdateSetPatch {
   readonly weightKg?: number | null
   readonly reps?: number | null
   readonly addedWeightKg?: number | null
@@ -124,6 +141,7 @@ export const useBodyCacheMutations = () => {
     insert('exerciseSet', {
       workoutExerciseId,
       orderIndex: setData.orderIndex,
+      completedAt: setData.completedAt ?? null,
       weightKg: setData.weightKg ?? null,
       reps: setData.reps ?? null,
       addedWeightKg: setData.addedWeightKg ?? null,
@@ -137,6 +155,26 @@ export const useBodyCacheMutations = () => {
       notes: setData.notes ?? null,
     })
 
+  const updateSet = (id: ExerciseSetId, patch: UpdateSetPatch) =>
+    update('exerciseSet', { id, ...patch })
+
+  /** Toggle a set's completion. Stamps `completedAt` (now) or clears it. */
+  const setSetCompleted = (id: ExerciseSetId, completed: boolean) =>
+    update('exerciseSet', {
+      id,
+      completedAt: completed ? new Date().toISOString() : null,
+    })
+
+  const removeSet = (id: ExerciseSetId) =>
+    update('exerciseSet', { id, isDeleted: 1 })
+
+  const removeExerciseFromWorkout = (id: WorkoutExerciseId) =>
+    update('workoutExercise', { id, isDeleted: 1 })
+
+  /** Discard an in-progress session (e.g. started by mistake). */
+  const discardWorkoutSession = (id: WorkoutSessionId) =>
+    update('workoutSession', { id, isDeleted: 1 })
+
   return {
     createExercise,
     updateExercise,
@@ -145,7 +183,12 @@ export const useBodyCacheMutations = () => {
     setPrimaryPhoto,
     startWorkoutSession,
     finishWorkoutSession,
+    discardWorkoutSession,
     addExerciseToWorkout,
+    removeExerciseFromWorkout,
     addSet,
+    updateSet,
+    setSetCompleted,
+    removeSet,
   }
 }

@@ -115,6 +115,10 @@ export const Schema = {
     id: ExerciseSetId,
     workoutExerciseId: WorkoutExerciseId,
     orderIndex: Evolu.NonNegativeInt,
+    // Set null while a row is still being entered; stamped when the user
+    // taps the set complete. Drives the tap-to-complete UX and lets the app
+    // ignore half-entered rows when computing last performance / PRs.
+    completedAt: Evolu.nullOr(Evolu.DateIso),
     weightKg: Evolu.nullOr(Evolu.NonNegativeNumber),
     reps: Evolu.nullOr(Evolu.NonNegativeInt),
     addedWeightKg: Evolu.nullOr(Evolu.NonNegativeNumber),
