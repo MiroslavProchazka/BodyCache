@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { Clock } from 'lucide-react'
 import { completedSetsForSession } from '@/evolu/queries'
@@ -13,6 +14,7 @@ import { summarizeSession } from './sessionSummary'
 
 /** Home recap of the most recent finished workout: name + three stat tiles. */
 export function LastWorkoutCard({ session }: { session: WorkoutSessionRow }) {
+  const navigate = useNavigate()
   const { unit } = useUnits()
   const rows = useQuery(completedSetsForSession(session.id as WorkoutSessionId))
   const summary = summarizeSession(rows)
@@ -22,7 +24,11 @@ export function LastWorkoutCard({ session }: { session: WorkoutSessionRow }) {
       : '—'
 
   return (
-    <div className="rounded-[22px] border border-white/[0.07] bg-surface p-[18px]">
+    <button
+      type="button"
+      onClick={() => navigate(`/history/${session.id as WorkoutSessionId}`)}
+      className="block w-full rounded-[22px] border border-white/[0.07] bg-surface p-[18px] text-left"
+    >
       <div className="mb-[14px] flex items-center justify-between">
         <Overline className="whitespace-nowrap">
           Last workout · {session.startedAt ? formatRelativeDay(session.startedAt) : '—'}
@@ -40,6 +46,6 @@ export function LastWorkoutCard({ session }: { session: WorkoutSessionRow }) {
         <StatTile value={summary.setCount} label="sets" />
         <StatTile value={formatVolume(summary.volumeKg, unit)} label={`${unit} lifted`} />
       </div>
-    </div>
+    </button>
   )
 }

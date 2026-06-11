@@ -174,6 +174,72 @@ export const finishedWorkoutSessions = evolu.createQuery((db) =>
     .orderBy('startedAt', 'desc'),
 )
 
+/**
+ * Every completed set across all finished sessions, with its session id, body
+ * part and the session's start time. One query feeds the whole History list
+ * (per-session summaries, grouped in JS) and the all-time aggregate stats —
+ * avoiding an N+1 query per session row.
+ */
+export const finishedSessionSets = evolu.createQuery((db) =>
+  db
+    .selectFrom('exerciseSet')
+    .innerJoin('workoutExercise', 'workoutExercise.id', 'exerciseSet.workoutExerciseId')
+    .innerJoin('workoutSession', 'workoutSession.id', 'workoutExercise.workoutSessionId')
+    .innerJoin('exercise', 'exercise.id', 'workoutExercise.exerciseId')
+    .where('exerciseSet.isDeleted', 'is', null)
+    .where('exerciseSet.completedAt', 'is not', null)
+    .where('workoutExercise.isDeleted', 'is', null)
+    .where('workoutSession.isDeleted', 'is', null)
+    .where('workoutSession.status', '=', status('finished'))
+    .select([
+      'exerciseSet.id as id',
+      'exerciseSet.weightKg as weightKg',
+      'exerciseSet.reps as reps',
+      'workoutExercise.exerciseId as exerciseId',
+      'workoutExercise.orderIndex as exerciseOrder',
+      'exercise.bodyPart as bodyPart',
+      'workoutExercise.workoutSessionId as sessionId',
+      'workoutSession.startedAt as sessionStartedAt',
+    ]),
+)
+
+/**
+ * Completed sets within a single session, joined to their exercise, with the
+ * full metric columns needed to render each set per its type. Ordered by
+ * exercise then set; callers group by `workoutExerciseId` for the breakdown on
+ * the session detail screen.
+ */
+export const sessionSetsDetailed = (sessionId: WorkoutSessionId) =>
+  evolu.createQuery((db) =>
+    db
+      .selectFrom('exerciseSet')
+      .innerJoin('workoutExercise', 'workoutExercise.id', 'exerciseSet.workoutExerciseId')
+      .innerJoin('exercise', 'exercise.id', 'workoutExercise.exerciseId')
+      .where('exerciseSet.isDeleted', 'is', null)
+      .where('exerciseSet.completedAt', 'is not', null)
+      .where('workoutExercise.isDeleted', 'is', null)
+      .where('workoutExercise.workoutSessionId', '=', sessionId)
+      .select([
+        'exerciseSet.id as id',
+        'exerciseSet.orderIndex as orderIndex',
+        'exerciseSet.weightKg as weightKg',
+        'exerciseSet.reps as reps',
+        'exerciseSet.addedWeightKg as addedWeightKg',
+        'exerciseSet.assistanceWeightKg as assistanceWeightKg',
+        'exerciseSet.durationSec as durationSec',
+        'exerciseSet.distanceMeters as distanceMeters',
+        'workoutExercise.id as workoutExerciseId',
+        'workoutExercise.orderIndex as exerciseOrder',
+        'workoutExercise.exerciseId as exerciseId',
+        'exercise.name as exerciseName',
+        'exercise.type as exerciseType',
+        'exercise.bodyPart as bodyPart',
+        'exercise.primaryPhotoId as primaryPhotoId',
+      ])
+      .orderBy('workoutExercise.orderIndex')
+      .orderBy('exerciseSet.orderIndex'),
+  )
+
 /** A single session by id (any status, non-deleted). */
 export const sessionById = (id: WorkoutSessionId) =>
   evolu.createQuery((db) =>

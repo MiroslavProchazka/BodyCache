@@ -23,6 +23,25 @@ export const formatShortDate = (date: Date | string): string => {
   })
 }
 
+/** Local YYYY-MM key for a date, used to group workouts by month. */
+export const monthKey = (date: Date | string): string => {
+  const d = typeof date === 'string' ? new Date(date) : date
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+/**
+ * Month header label: "June" within the current year, "June 2025" otherwise.
+ * `now` is injectable for testing.
+ */
+export const formatMonth = (date: Date | string, now: Date = new Date()): string => {
+  const d = typeof date === 'string' ? new Date(date) : date
+  const opts: Intl.DateTimeFormatOptions =
+    d.getFullYear() === now.getFullYear()
+      ? { month: 'long' }
+      : { month: 'long', year: 'numeric' }
+  return d.toLocaleDateString(undefined, opts)
+}
+
 /** Compact relative label: "Today", "Yesterday", or a short date. */
 export const formatRelativeDay = (date: Date | string): string => {
   const d = typeof date === 'string' ? new Date(date) : date

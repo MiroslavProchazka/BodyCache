@@ -175,6 +175,14 @@ export const useBodyCacheMutations = () => {
   const discardWorkoutSession = (id: WorkoutSessionId) =>
     update('workoutSession', { id, isDeleted: 1 })
 
+  /**
+   * Soft-delete a finished session from history. Child rows (exercises, sets)
+   * stay in place but are excluded everywhere by the session join + isDeleted
+   * filter, so they never resurface.
+   */
+  const deleteWorkoutSession = (id: WorkoutSessionId) =>
+    update('workoutSession', { id, isDeleted: 1 })
+
   return {
     createExercise,
     updateExercise,
@@ -184,6 +192,7 @@ export const useBodyCacheMutations = () => {
     startWorkoutSession,
     finishWorkoutSession,
     discardWorkoutSession,
+    deleteWorkoutSession,
     addExerciseToWorkout,
     removeExerciseFromWorkout,
     addSet,
