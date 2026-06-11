@@ -1,7 +1,10 @@
 import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Camera, X, ArrowLeft } from 'lucide-react'
+import { evolu } from '@/evolu/evolu'
+import { sessionExercises } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
+import type { WorkoutSessionId } from '@/evolu/schema'
 import {
   EXERCISE_TYPES,
   BODY_PARTS,
@@ -23,7 +26,10 @@ import { storePhoto } from '@/shared/utils/photos'
  */
 export function CreateExercisePage() {
   const navigate = useNavigate()
-  const { createExercise, addExercisePhoto, setPrimaryPhoto } = useBodyCacheMutations()
+  const [searchParams] = useSearchParams()
+  const sessionId = searchParams.get('session') as WorkoutSessionId | null
+  const { createExercise, addExercisePhoto, setPrimaryPhoto, addExerciseToWorkout } =
+    useBodyCacheMutations()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [name, setName] = useState('')
@@ -67,6 +73,15 @@ export function CreateExercisePage() {
           thumbnailUri: stored.thumbnailRef,
         })
         if (photoResult.ok) setPrimaryPhoto(exerciseId, photoResult.value.id)
+      }
+
+      // Opened from an active workout (`?session=`): append the new exercise to
+      // it and return to the workout instead of the library detail.
+      if (sessionId) {
+        const existing = await evolu.loadQuery(sessionExercises(sessionId))
+        addExerciseToWorkout(sessionId, exerciseId, existing.length)
+        navigate('/', { replace: true })
+        return
       }
 
       // Navigation unmounts this page, so we intentionally do NOT reset
