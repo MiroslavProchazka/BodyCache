@@ -6,6 +6,8 @@ import { ActiveWorkoutPage } from '@/features/workouts/ActiveWorkoutPage'
 import { AddExercisePage } from '@/features/workouts/AddExercisePage'
 import { LogExercisePage } from '@/features/workouts/LogExercisePage'
 import { FinishPage } from '@/features/workouts/FinishPage'
+import { HistoryPage } from '@/features/workouts/HistoryPage'
+import { SessionDetailPage } from '@/features/workouts/SessionDetailPage'
 import { ExerciseLibraryPage } from '@/features/exercises/ExerciseLibraryPage'
 import { ExerciseDetailPage } from '@/features/exercises/ExerciseDetailPage'
 import { CreateExercisePage } from '@/features/exercises/CreateExercisePage'
@@ -25,6 +27,8 @@ export function App() {
           <Route path="/workout/add-exercise" element={<AddExercisePage />} />
           <Route path="/workout/log/:exerciseId" element={<LogExercisePage />} />
           <Route path="/workout/finish" element={<FinishPage />} />
+          <Route path="/history" element={<HistoryPage />} />
+          <Route path="/history/:id" element={<SessionDetailPage />} />
           <Route path="/library" element={<ExerciseLibraryPage />} />
           <Route path="/library/new" element={<CreateExercisePage />} />
           <Route path="/library/:id" element={<ExerciseDetailPage />} />

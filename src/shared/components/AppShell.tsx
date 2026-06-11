@@ -4,7 +4,7 @@ import { BottomNav } from './BottomNav'
 import { ResumeBar } from './ResumeBar'
 
 /** Routes that show the bottom tab bar (the three tab roots). */
-const TAB_ROOTS = new Set(['/', '/library', '/settings'])
+const TAB_ROOTS = new Set(['/', '/history', '/library', '/settings'])
 
 interface AppShellProps {
   children: ReactNode

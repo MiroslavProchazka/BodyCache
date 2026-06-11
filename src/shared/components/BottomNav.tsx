@@ -1,8 +1,9 @@
 import { NavLink } from 'react-router-dom'
-import { Home, LayoutGrid, Settings } from 'lucide-react'
+import { Home, LayoutGrid, CalendarDays, Settings } from 'lucide-react'
 
 const tabs = [
   { to: '/', label: 'Today', Icon: Home },
+  { to: '/history', label: 'History', Icon: CalendarDays },
   { to: '/library', label: 'Library', Icon: LayoutGrid },
   { to: '/settings', label: 'Settings', Icon: Settings },
 ] as const
