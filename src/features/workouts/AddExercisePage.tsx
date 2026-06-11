@@ -1,119 +1,139 @@
 import { useMemo, useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { ArrowLeft, Plus, Search } from 'lucide-react'
-import { activeWorkoutSession, allExercises, sessionExercises } from '@/evolu/queries'
-import { useBodyCacheMutations } from '@/evolu/mutations'
-import type { ExerciseId, ExercisePhotoId, WorkoutSessionId } from '@/evolu/schema'
-import { Button } from '@/shared/components/Button'
-import { PhotoThumb } from '@/features/exercises/PhotoThumb'
+import { ChevronLeft, Plus } from 'lucide-react'
+import { activeWorkoutSession, allExercises, completedSetsForExercise } from '@/evolu/queries'
+import type { ExerciseRow } from '@/evolu/rows'
+import { BODY_PARTS } from '@/evolu/schema'
+import type { ExerciseId, ExercisePhotoId, ExerciseType } from '@/evolu/schema'
+import { CircleButton } from '@/shared/components/CircleButton'
+import { SearchField } from '@/shared/components/SearchField'
+import { FilterChips } from '@/shared/components/FilterChips'
+import { humanize } from '@/shared/utils/bodyParts'
+import { useUnits } from '@/shared/units/UnitsContext'
+import { ExerciseTile } from '@/features/exercises/ExerciseTile'
+import { toHistorySets, lastSummaryLabel } from '@/features/exercises/history'
 
-/**
- * Pick an exercise from the library to add to the active workout, or jump to
- * creating a new one (carrying the session so it's added on save). Redirects
- * home if there is no active session.
- */
+const CHIP_OPTIONS = [
+  { value: 'all', label: 'All' },
+  ...BODY_PARTS.map((p) => ({ value: p, label: humanize(p) })),
+]
+
+/** Pick an existing exercise to log, or create a new one. Needs an active session. */
 export function AddExercisePage() {
-  const sessions = useQuery(activeWorkoutSession)
-  const session = sessions[0]
-  if (!session) return <Navigate to="/" replace />
-  return <AddExerciseInner sessionId={session.id} />
+  const active = useQuery(activeWorkoutSession)[0]
+  if (!active) return <Navigate to="/" replace />
+  return <AddExerciseInner />
 }
 
-function AddExerciseInner({ sessionId }: { sessionId: WorkoutSessionId }) {
+function AddExerciseInner() {
   const navigate = useNavigate()
-  const { addExerciseToWorkout } = useBodyCacheMutations()
+  const active = useQuery(activeWorkoutSession)[0]
   const exercises = useQuery(allExercises)
-  const inWorkout = useQuery(sessionExercises(sessionId))
   const [search, setSearch] = useState('')
+  const [part, setPart] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return exercises
-    return exercises.filter((e) => String(e.name).toLowerCase().includes(q))
-  }, [exercises, search])
-
-  const addedIds = useMemo(
-    () => new Set(inWorkout.map((w) => String(w.exerciseId))),
-    [inWorkout],
-  )
-
-  const handlePick = (exerciseId: ExerciseId) => {
-    if (!addedIds.has(String(exerciseId))) {
-      addExerciseToWorkout(sessionId, exerciseId, inWorkout.length)
-    }
-    navigate('/', { replace: true })
-  }
+    return exercises.filter((e) => {
+      if (part && e.bodyPart !== part) return false
+      if (!q) return true
+      return [e.name, e.bodyPart, e.equipment]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q))
+    })
+  }, [exercises, search, part])
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-4 px-4 py-5">
-      <header className="flex items-center gap-3">
-        <button
-          onClick={() => navigate(-1)}
-          className="text-gray-400 hover:text-gray-200"
-          aria-label="Back"
-        >
-          <ArrowLeft size={22} />
-        </button>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-100">Add exercise</h1>
+    <div className="px-5 pb-[130px] pt-[6px]">
+      <header className="mb-[18px] flex items-center gap-3">
+        <CircleButton onClick={() => navigate('/workout')} label="Back">
+          <ChevronLeft size={18} strokeWidth={1.75} />
+        </CircleButton>
+        <h1 className="font-display text-[22px] font-semibold tracking-tight text-white">
+          Add exercise
+        </h1>
       </header>
 
-      <div className="relative">
-        <Search
-          size={18}
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-        />
-        <input
-          type="search"
-          inputMode="search"
-          placeholder="Search exercises"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-xl border border-gray-800 bg-gray-900 py-3 pl-10 pr-3 text-base text-gray-100 placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none"
+      <div className="mb-[14px]">
+        <SearchField value={search} onChange={setSearch} />
+      </div>
+
+      <div className="mb-4">
+        <FilterChips
+          options={CHIP_OPTIONS}
+          value={part}
+          onChange={setPart}
+          allValue="all"
+          ariaLabel="Filter by body part"
         />
       </div>
 
-      <Link to={`/library/new?session=${sessionId}`}>
-        <Button variant="secondary" fullWidth>
-          <Plus size={18} /> New exercise
-        </Button>
-      </Link>
+      <button
+        type="button"
+        onClick={() => navigate(`/library/new?session=${active.id}`)}
+        className="mb-[18px] flex w-full items-center gap-[13px] rounded-2xl border border-neon/30 bg-gradient-to-br from-neon/[0.16] to-neon/[0.05] p-[15px] text-left"
+      >
+        <div
+          className="flex h-[42px] w-[42px] flex-none items-center justify-center bg-neon text-ink"
+          style={{ borderRadius: '13px 13px 13px 4px' }}
+        >
+          <Plus size={22} strokeWidth={2} />
+        </div>
+        <div>
+          <div className="text-[15px] font-semibold text-white">Create new exercise</div>
+          <div className="mt-[2px] text-[12.5px] text-muted">Snap a photo of the machine</div>
+        </div>
+      </button>
 
       {filtered.length === 0 ? (
-        <p className="py-10 text-center text-sm text-gray-500">
+        <p className="py-10 text-center text-sm text-faint">
           {exercises.length === 0
             ? 'Your library is empty — create your first exercise.'
-            : 'No exercises match your search.'}
+            : 'No exercises match.'}
         </p>
       ) : (
-        <div className="flex flex-col gap-2">
-          {filtered.map((exercise) => {
-            const added = addedIds.has(String(exercise.id))
-            return (
-              <button
-                key={exercise.id}
-                type="button"
-                onClick={() => handlePick(exercise.id)}
-                className="flex items-center gap-3 rounded-2xl border border-gray-800 bg-gray-900 p-3 text-left active:bg-gray-800/60"
-              >
-                <PhotoThumb
-                  photoId={exercise.primaryPhotoId as ExercisePhotoId | null}
-                  className="h-12 w-12 shrink-0 rounded-xl"
-                  alt={String(exercise.name)}
-                />
-                <span className="min-w-0 flex-1 truncate text-base font-semibold text-gray-100">
-                  {exercise.name}
-                </span>
-                {added ? (
-                  <span className="shrink-0 text-xs font-medium text-emerald-400">Added</span>
-                ) : (
-                  <Plus size={20} className="shrink-0 text-gray-500" />
-                )}
-              </button>
-            )
-          })}
+        <div className="flex flex-col gap-[10px]">
+          {filtered.map((exercise) => (
+            <PickerRow key={exercise.id} exercise={exercise} />
+          ))}
         </div>
       )}
     </div>
+  )
+}
+
+/** A single exercise row in the picker, with its last-performance summary. */
+function PickerRow({ exercise }: { exercise: ExerciseRow }) {
+  const navigate = useNavigate()
+  const { unit } = useUnits()
+  const type = exercise.type as ExerciseType
+  const history = toHistorySets(useQuery(completedSetsForExercise(exercise.id as ExerciseId)))
+
+  return (
+    <button
+      type="button"
+      onClick={() => navigate(`/workout/log/${exercise.id as ExerciseId}`)}
+      className="flex w-full items-center gap-[13px] rounded-2xl border border-white/[0.07] bg-surface p-3 text-left"
+    >
+      <ExerciseTile
+        photoId={exercise.primaryPhotoId as ExercisePhotoId | null}
+        bodyPart={exercise.bodyPart}
+        radius="14px 14px 14px 4px"
+        className="h-[46px] w-[46px] flex-none"
+        glyphSize={23}
+      />
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[15.5px] font-semibold tracking-tight text-white">
+          {exercise.name}
+        </div>
+        <div className="mt-[2px] truncate text-[12.5px] text-muted">
+          {lastSummaryLabel(history, type, unit)}
+        </div>
+      </div>
+      <div className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-full bg-neon/[0.12] text-neon">
+        <Plus size={18} strokeWidth={2} />
+      </div>
+    </button>
   )
 }

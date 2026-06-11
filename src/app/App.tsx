@@ -2,18 +2,17 @@ import { Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { AppShell } from '@/shared/components/AppShell'
 import { TodayPage } from '@/features/workouts/TodayPage'
+import { ActiveWorkoutPage } from '@/features/workouts/ActiveWorkoutPage'
 import { AddExercisePage } from '@/features/workouts/AddExercisePage'
+import { LogExercisePage } from '@/features/workouts/LogExercisePage'
+import { FinishPage } from '@/features/workouts/FinishPage'
 import { ExerciseLibraryPage } from '@/features/exercises/ExerciseLibraryPage'
 import { ExerciseDetailPage } from '@/features/exercises/ExerciseDetailPage'
 import { CreateExercisePage } from '@/features/exercises/CreateExercisePage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 
 function PageFallback() {
-  return (
-    <div className="flex min-h-full items-center justify-center py-20 text-gray-500">
-      Loading…
-    </div>
-  )
+  return <div className="flex min-h-[50vh] items-center justify-center text-faint">Loading…</div>
 }
 
 export function App() {
@@ -22,7 +21,10 @@ export function App() {
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route path="/" element={<TodayPage />} />
+          <Route path="/workout" element={<ActiveWorkoutPage />} />
           <Route path="/workout/add-exercise" element={<AddExercisePage />} />
+          <Route path="/workout/log/:exerciseId" element={<LogExercisePage />} />
+          <Route path="/workout/finish" element={<FinishPage />} />
           <Route path="/library" element={<ExerciseLibraryPage />} />
           <Route path="/library/new" element={<CreateExercisePage />} />
           <Route path="/library/:id" element={<ExerciseDetailPage />} />

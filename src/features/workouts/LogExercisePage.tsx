@@ -1,0 +1,311 @@
+import { Fragment, useState } from 'react'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { useQuery } from '@evolu/react'
+import { ChevronLeft, Copy, Plus, Minus, X, Check } from 'lucide-react'
+import {
+  activeWorkoutSession,
+  exerciseById,
+  sessionExercises,
+  setsForWorkoutExercise,
+  completedSetsForExercise,
+} from '@/evolu/queries'
+import { useBodyCacheMutations } from '@/evolu/mutations'
+import type {
+  ExerciseId,
+  ExercisePhotoId,
+  ExerciseType,
+  WorkoutExerciseId,
+  WorkoutSessionId,
+} from '@/evolu/schema'
+import { CircleButton } from '@/shared/components/CircleButton'
+import { StickyAction } from '@/shared/components/StickyAction'
+import { Overline } from '@/shared/components/Overline'
+import { useToast } from '@/shared/components/Toast'
+import { useUnits } from '@/shared/units/UnitsContext'
+import { metaLine } from '@/shared/utils/bodyParts'
+import { formatRelativeDay } from '@/shared/utils/dates'
+import { toDisplayWeight, formatSetSummary } from '@/shared/utils/units'
+import { previousSession, sessionTrend, bestSet } from '@/shared/utils/exerciseStats'
+import { ExerciseTile } from '@/features/exercises/ExerciseTile'
+import { TrendBadge } from '@/features/exercises/TrendBadge'
+import { toHistorySets } from '@/features/exercises/history'
+import { SET_FIELDS, DEFAULT_VALUES, type SetFieldDef, type SetFieldKey } from './setFields'
+
+/** A set being edited: the active values for its type's fields, in kg/native units. */
+type DraftSet = Partial<Record<SetFieldKey, number>>
+
+export function LogExercisePage() {
+  const active = useQuery(activeWorkoutSession)[0]
+  const { exerciseId } = useParams<{ exerciseId: string }>()
+  if (!active) return <Navigate to="/" replace />
+  if (!exerciseId) return <Navigate to="/workout" replace />
+  return <LogInner sessionId={active.id} exerciseId={exerciseId as ExerciseId} />
+}
+
+function LogInner({
+  sessionId,
+  exerciseId,
+}: {
+  sessionId: WorkoutSessionId
+  exerciseId: ExerciseId
+}) {
+  const navigate = useNavigate()
+  const { unit } = useUnits()
+  const { showToast } = useToast()
+  const { addExerciseToWorkout, addSet, removeSet } = useBodyCacheMutations()
+
+  const exercise = useQuery(exerciseById(exerciseId))[0]
+  const entries = useQuery(sessionExercises(sessionId))
+  const existing = entries.find((e) => String(e.exerciseId) === String(exerciseId))
+  const existingSets = useQuery(
+    setsForWorkoutExercise((existing?.id ?? '') as WorkoutExerciseId),
+  )
+  const history = toHistorySets(useQuery(completedSetsForExercise(exerciseId)))
+
+  const type = (exercise?.type as ExerciseType) ?? 'strength'
+  const fields = SET_FIELDS[type]
+  const prev = previousSession(history, sessionId)
+  const trend = sessionTrend(history, type, sessionId)
+
+  /** Read the type's fields off a source row, falling back to defaults. */
+  const fieldsOf = (source: Partial<Record<SetFieldKey, number | null>> | null): DraftSet => {
+    const d: DraftSet = {}
+    for (const f of fields) d[f.key] = source?.[f.key] ?? DEFAULT_VALUES[f.key]
+    return d
+  }
+
+  // Seed once: existing sets (editing) → previous top set (one row) → defaults.
+  const [draft, setDraft] = useState<DraftSet[]>(() => {
+    if (existing && existingSets.length > 0) return existingSets.map((s) => fieldsOf(s))
+    const top = prev ? bestSet(prev.sets, type) : null
+    return [fieldsOf(top)]
+  })
+
+  const clampValue = (value: number, f: SetFieldDef) =>
+    Math.max(0, f.integer ? Math.round(value) : Math.round(value * 10) / 10)
+
+  const step = (index: number, f: SetFieldDef, dir: 1 | -1) =>
+    setDraft((ds) =>
+      ds.map((d, j) =>
+        j === index ? { ...d, [f.key]: clampValue((d[f.key] ?? 0) + dir * f.step, f) } : d,
+      ),
+    )
+
+  const addDraftSet = () =>
+    setDraft((ds) => [...ds, { ...(ds[ds.length - 1] ?? fieldsOf(null)) }])
+
+  const removeDraftSet = (index: number) =>
+    setDraft((ds) => ds.filter((_, j) => j !== index))
+
+  const copyPrevious = () => {
+    if (!prev || prev.sets.length === 0) return
+    setDraft(prev.sets.map((s) => fieldsOf(s)))
+    showToast('Copied last workout')
+  }
+
+  // A draft counts when its rep count (or, for repless types, its primary
+  // metric) is positive — mirrors the prototype's "reps > 0" rule.
+  const repsField = fields.find((f) => f.key === 'reps')
+  const isValid = (d: DraftSet) =>
+    repsField ? (d.reps ?? 0) > 0 : (d[fields[0].key] ?? 0) > 0
+  const validCount = draft.filter(isValid).length
+
+  const handleSave = () => {
+    const valid = draft.filter(isValid)
+    if (valid.length === 0) {
+      navigate('/workout')
+      return
+    }
+    let workoutExerciseId = existing?.id
+    if (!workoutExerciseId) {
+      const created = addExerciseToWorkout(sessionId, exerciseId, entries.length)
+      if (!created.ok) return
+      workoutExerciseId = created.value.id
+    } else {
+      // Replace the entry's sets with the freshly-edited draft.
+      for (const s of existingSets) removeSet(s.id)
+    }
+    const now = new Date().toISOString()
+    valid.forEach((d, i) => {
+      addSet(workoutExerciseId, { orderIndex: i, completedAt: now, ...d })
+    })
+    showToast('Set saved')
+    navigate('/workout')
+  }
+
+  if (!exercise) {
+    return (
+      <div className="px-5 py-16 text-center text-muted">
+        <p>Exercise not found.</p>
+        <button
+          type="button"
+          onClick={() => navigate('/workout')}
+          className="mt-3 font-semibold text-neon"
+        >
+          Back to workout
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className="px-5 pb-[160px] pt-[6px]">
+        <header className="mb-[18px] flex items-center gap-3">
+          <CircleButton onClick={() => navigate('/workout')} label="Back">
+            <ChevronLeft size={18} strokeWidth={1.75} />
+          </CircleButton>
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-display text-[20px] font-semibold leading-[1.1] tracking-tight text-white">
+              {exercise.name}
+            </div>
+            <div className="mt-[2px] truncate text-[12.5px] text-muted">
+              {metaLine(exercise.bodyPart, exercise.equipment) || humanizeType(type)}
+            </div>
+          </div>
+          <ExerciseTile
+            photoId={exercise.primaryPhotoId as ExercisePhotoId | null}
+            bodyPart={exercise.bodyPart}
+            radius="14px 14px 14px 4px"
+            className="h-[44px] w-[44px] flex-none"
+          />
+        </header>
+
+        {/* Previous performance */}
+        <div className="mb-[18px] rounded-[18px] border border-white/[0.07] bg-surface p-[15px]">
+          <div className="mb-3 flex items-center justify-between">
+            <Overline className="whitespace-nowrap">
+              Last time · {prev ? formatRelativeDay(prev.startedAt) : '—'}
+            </Overline>
+            {(trend.dir === 'up' || trend.dir === 'down') && (
+              <TrendBadge trend={trend} unit={unit} size={15} />
+            )}
+          </div>
+          {prev ? (
+            <div className="flex flex-col gap-2">
+              {prev.sets.map((s, i) => (
+                <div key={s.id} className="flex items-center justify-between text-sm">
+                  <span className="whitespace-nowrap font-medium text-muted">Set {i + 1}</span>
+                  <span className="whitespace-nowrap font-semibold tnum text-white">
+                    {formatSetSummary(s, type, unit)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm leading-[1.45] text-muted">
+              First time logging this — no previous data yet. Lift away.
+            </p>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={copyPrevious}
+          disabled={!prev}
+          className="mb-[18px] flex w-full items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-inset p-[13px] text-sm font-semibold text-soft disabled:opacity-40"
+        >
+          <Copy size={17} strokeWidth={1.75} />
+          Copy last workout
+        </button>
+
+        <Overline className="mb-3">Today's sets</Overline>
+        <div className="mb-[14px] flex flex-col gap-3">
+          {draft.map((d, i) => (
+            <div
+              key={i}
+              className="rounded-[20px] border border-white/[0.07] bg-surface px-[14px] pb-4 pt-[14px]"
+            >
+              <div className="mb-[14px] flex items-center justify-between">
+                <span className="whitespace-nowrap rounded-lg bg-neon/[0.12] px-[10px] py-1 text-[12.5px] font-semibold text-neon">
+                  Set {i + 1}
+                </span>
+                {draft.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeDraftSet(i)}
+                    aria-label={`Remove set ${i + 1}`}
+                    className="flex h-[30px] w-[30px] items-center justify-center rounded-full text-faint"
+                  >
+                    <X size={17} strokeWidth={1.9} />
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                {fields.map((f, idx) => (
+                  <Fragment key={f.key}>
+                    {idx > 0 && <div className="w-px self-stretch bg-white/[0.08]" />}
+                    <div className="min-w-0 flex-1 text-center">
+                      <div className="mb-[9px] text-[10.5px] font-semibold uppercase tracking-[0.08em] text-faint">
+                        {f.isWeight ? `${f.label} (${unit})` : f.label}
+                      </div>
+                      <div className="flex items-center justify-between gap-1">
+                        <StepButton onClick={() => step(i, f, -1)} label={`Decrease ${f.label}`}>
+                          <Minus size={20} strokeWidth={2} />
+                        </StepButton>
+                        <span
+                          className="font-display text-[28px] font-semibold tnum text-white"
+                          style={{ minWidth: f.isWeight ? 44 : 32 }}
+                        >
+                          {f.isWeight ? toDisplayWeight(d[f.key] ?? 0, unit) : (d[f.key] ?? 0)}
+                        </span>
+                        <StepButton onClick={() => step(i, f, 1)} label={`Increase ${f.label}`}>
+                          <Plus size={20} strokeWidth={2} />
+                        </StepButton>
+                      </div>
+                    </div>
+                  </Fragment>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={addDraftSet}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-white/[0.16] p-[14px] text-[14.5px] font-semibold text-muted"
+        >
+          <Plus size={18} strokeWidth={2} />
+          Add set
+        </button>
+      </div>
+
+      <StickyAction>
+        <button
+          type="button"
+          onClick={handleSave}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-neon py-[17px] text-base font-bold text-ink transition-transform active:scale-[0.99]"
+        >
+          <Check size={20} strokeWidth={2} />
+          Save {validCount} {validCount === 1 ? 'set' : 'sets'}
+        </button>
+      </StickyAction>
+    </>
+  )
+}
+
+/** 44px circular stepper button (− / +). */
+function StepButton({
+  onClick,
+  label,
+  children,
+}: {
+  onClick: () => void
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="flex h-11 w-11 flex-none items-center justify-center rounded-full border border-white/10 bg-inset text-neon transition-transform active:scale-[0.94]"
+    >
+      {children}
+    </button>
+  )
+}
+
+const humanizeType = (type: ExerciseType): string =>
+  type.charAt(0).toUpperCase() + type.slice(1)

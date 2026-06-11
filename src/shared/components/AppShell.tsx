@@ -1,17 +1,38 @@
-import type { ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
 import { BottomNav } from './BottomNav'
+import { ResumeBar } from './ResumeBar'
+
+/** Routes that show the bottom tab bar (the three tab roots). */
+const TAB_ROOTS = new Set(['/', '/library', '/settings'])
 
 interface AppShellProps {
   children: ReactNode
 }
 
+/**
+ * Full-bleed mobile shell: a scrolling content column with a bottom tab bar on
+ * the tab roots and a floating resume pill when a workout is in progress.
+ * Content is centered to a phone-ish max width so it also looks right on
+ * desktop.
+ */
 export function AppShell({ children }: AppShellProps) {
+  const { pathname } = useLocation()
+  const showTabBar = TAB_ROOTS.has(pathname)
+
   return (
-    <div className="flex h-dvh flex-col bg-gray-950 text-gray-100">
-      <main className="flex-1 overflow-y-auto pb-16">
-        {children}
+    <div className="flex h-dvh flex-col bg-ink text-white">
+      <main className="no-scrollbar relative flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="mx-auto w-full max-w-md">{children}</div>
       </main>
-      <BottomNav />
+      {showTabBar && (
+        <>
+          <Suspense fallback={null}>
+            <ResumeBar />
+          </Suspense>
+          <BottomNav />
+        </>
+      )}
     </div>
   )
 }

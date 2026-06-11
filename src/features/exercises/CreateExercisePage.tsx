@@ -1,47 +1,41 @@
 import { useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Camera, X, ArrowLeft } from 'lucide-react'
-import { evolu } from '@/evolu/evolu'
-import { sessionExercises } from '@/evolu/queries'
+import { Camera, ChevronLeft, X } from 'lucide-react'
 import { useBodyCacheMutations } from '@/evolu/mutations'
-import type { WorkoutSessionId } from '@/evolu/schema'
 import {
-  EXERCISE_TYPES,
   BODY_PARTS,
   EQUIPMENT,
   type BodyPart,
   type Equipment,
-  type ExerciseType,
+  type WorkoutSessionId,
 } from '@/evolu/schema'
-import { Button } from '@/shared/components/Button'
+import { CircleButton } from '@/shared/components/CircleButton'
+import { Overline } from '@/shared/components/Overline'
+import { StickyAction } from '@/shared/components/StickyAction'
+import { humanize } from '@/shared/utils/bodyParts'
 import { storePhoto } from '@/shared/utils/photos'
 
 /**
- * Create a reusable exercise. Photo-first: the capture/upload control leads.
- * Name + type are required; everything else is optional. On success the photo
- * binary goes to IndexedDB and only its metadata is linked in Evolu.
- *
- * When opened with `?session=<id>` the new exercise is also appended to that
- * active workout (per spec §7.4) — wired in Milestone 4 via the session param.
+ * Create a reusable exercise. Photo-first: the capture/upload control leads, so
+ * you recognise the machine next time. Created exercises default to the
+ * strength (weight × reps) type — the common gym-machine case.
  */
 export function CreateExercisePage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const sessionId = searchParams.get('session') as WorkoutSessionId | null
-  const { createExercise, addExercisePhoto, setPrimaryPhoto, addExerciseToWorkout } =
-    useBodyCacheMutations()
+  const { createExercise, addExercisePhoto, setPrimaryPhoto } = useBodyCacheMutations()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [name, setName] = useState('')
-  const [type, setType] = useState<ExerciseType>('strength')
   const [bodyPart, setBodyPart] = useState<BodyPart | ''>('')
   const [equipment, setEquipment] = useState<Equipment | ''>('')
-  const [notes, setNotes] = useState('')
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const canSave = name.trim().length > 0 && !saving
+  const goBack = () => navigate(sessionId ? '/workout/add-exercise' : '/library')
 
   const onPickPhoto = (file: File | null) => {
     if (previewUrl) URL.revokeObjectURL(previewUrl)
@@ -55,10 +49,9 @@ export function CreateExercisePage() {
     try {
       const result = createExercise({
         name: name.trim(),
-        type,
+        type: 'strength',
         bodyPart: bodyPart || null,
         equipment: equipment || null,
-        notes: notes.trim() || null,
       })
       if (!result.ok) {
         setSaving(false)
@@ -68,42 +61,36 @@ export function CreateExercisePage() {
 
       if (photoFile) {
         const stored = await storePhoto(photoFile)
-        const photoResult = addExercisePhoto(exerciseId, {
+        const photo = addExercisePhoto(exerciseId, {
           localUri: stored.ref,
           thumbnailUri: stored.thumbnailRef,
         })
-        if (photoResult.ok) setPrimaryPhoto(exerciseId, photoResult.value.id)
+        if (photo.ok) setPrimaryPhoto(exerciseId, photo.value.id)
       }
 
-      // Opened from an active workout (`?session=`): append the new exercise to
-      // it and return to the workout instead of the library detail.
-      if (sessionId) {
-        const existing = await evolu.loadQuery(sessionExercises(sessionId))
-        addExerciseToWorkout(sessionId, exerciseId, existing.length)
-        navigate('/', { replace: true })
-        return
-      }
-
-      // Navigation unmounts this page, so we intentionally do NOT reset
-      // `saving` afterwards (that would setState on an unmounted component).
-      navigate(`/library/${exerciseId}`, { replace: true })
+      // From the picker: jump straight into logging the new exercise; otherwise
+      // land on its detail page. Navigation unmounts this page, so we don't
+      // reset `saving` on the happy path.
+      navigate(sessionId ? `/workout/log/${exerciseId}` : `/library/${exerciseId}`, {
+        replace: true,
+      })
     } catch {
-      // Storing the photo failed; let the user retry rather than hang.
       setSaving(false)
     }
   }
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-5 px-4 py-5">
-      <header className="flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-gray-200">
-          <ArrowLeft size={22} />
-        </button>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-100">New exercise</h1>
-      </header>
+    <>
+      <div className="px-5 pb-[150px] pt-[6px]">
+        <header className="mb-[18px] flex items-center gap-3">
+          <CircleButton onClick={goBack} label="Back">
+            <ChevronLeft size={18} strokeWidth={1.75} />
+          </CircleButton>
+          <h1 className="font-display text-[22px] font-semibold tracking-tight text-white">
+            New exercise
+          </h1>
+        </header>
 
-      {/* Photo capture / upload */}
-      <div>
         <input
           ref={fileRef}
           type="file"
@@ -113,114 +100,87 @@ export function CreateExercisePage() {
           onChange={(e) => onPickPhoto(e.target.files?.[0] ?? null)}
         />
         {previewUrl ? (
-          <div className="relative aspect-video w-full overflow-hidden rounded-2xl">
+          <div
+            className="relative mb-[18px] h-[150px] w-full overflow-hidden"
+            style={{ borderRadius: '24px 24px 24px 6px' }}
+          >
             <img src={previewUrl} alt="" className="h-full w-full object-cover" />
             <button
+              type="button"
               onClick={() => onPickPhoto(null)}
-              className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white"
               aria-label="Remove photo"
+              className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white"
             >
               <X size={18} />
             </button>
           </div>
         ) : (
           <button
+            type="button"
             onClick={() => fileRef.current?.click()}
-            className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-gray-700 bg-gray-900 text-gray-400 active:bg-gray-800"
+            className="mb-[18px] flex h-[150px] w-full flex-col items-center justify-center gap-[10px] border-[1.5px] border-dashed border-white/[0.18] bg-surface"
+            style={{ borderRadius: '24px 24px 24px 6px' }}
           >
-            <Camera size={32} strokeWidth={1.5} />
-            <span className="text-sm">Add a photo of the machine</span>
+            <div className="flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-inset text-neon">
+              <Camera size={26} strokeWidth={1.75} />
+            </div>
+            <div className="text-[14.5px] font-semibold text-soft">
+              Add a photo of the machine
+            </div>
+            <div className="text-xs text-faint">Helps you recognise it next time</div>
           </button>
         )}
-      </div>
 
-      <Field label="Name" required>
+        <Overline className="mb-2">Name</Overline>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Chest Press"
-          className={inputClass}
+          placeholder="e.g. Chest Press Machine"
           autoFocus
+          className="mb-[18px] w-full rounded-2xl border border-white/10 bg-surface p-[14px] text-[15px] text-white placeholder:text-faint focus:outline-none"
         />
-      </Field>
 
-      <Field label="Type" required>
-        <ChipSelect
-          options={EXERCISE_TYPES}
-          value={type}
-          onChange={(v) => setType(v as ExerciseType)}
-        />
-      </Field>
-
-      <Field label="Body part">
-        <ChipSelect
+        <Overline className="mb-[10px]">Body part</Overline>
+        <SelectChips
           options={BODY_PARTS}
           value={bodyPart}
-          onChange={(v) => setBodyPart(v === bodyPart ? '' : (v as BodyPart))}
-          clearable
+          onChange={(v) => setBodyPart((v === bodyPart ? '' : v) as BodyPart | '')}
         />
-      </Field>
 
-      <Field label="Equipment">
-        <ChipSelect
+        <div className="h-[18px]" />
+
+        <Overline className="mb-[10px]">Equipment</Overline>
+        <SelectChips
           options={EQUIPMENT}
           value={equipment}
-          onChange={(v) => setEquipment(v === equipment ? '' : (v as Equipment))}
-          clearable
+          onChange={(v) => setEquipment((v === equipment ? '' : v) as Equipment | '')}
         />
-      </Field>
+      </div>
 
-      <Field label="Notes">
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={3}
-          placeholder="Seat height, grip, settings…"
-          className={inputClass}
-        />
-      </Field>
-
-      <Button fullWidth disabled={!canSave} onClick={handleSubmit}>
-        {saving ? 'Saving…' : 'Save exercise'}
-      </Button>
-    </div>
+      <StickyAction>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={!canSave}
+          className="w-full rounded-2xl bg-neon py-[17px] text-base font-bold text-ink transition-transform active:scale-[0.99] disabled:bg-surface disabled:text-faint disabled:opacity-60"
+        >
+          {saving ? 'Saving…' : 'Save exercise'}
+        </button>
+      </StickyAction>
+    </>
   )
 }
 
-const inputClass =
-  'w-full rounded-xl border border-gray-800 bg-gray-900 px-3 py-3 text-base text-gray-100 placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none'
-
-function Field({
-  label,
-  required,
-  children,
-}: {
-  label: string
-  required?: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <label className="flex flex-col gap-2">
-      <span className="text-sm font-medium text-gray-300">
-        {label}
-        {required && <span className="text-indigo-400"> *</span>}
-      </span>
-      {children}
-    </label>
-  )
-}
-
-function ChipSelect({
+/** Single-select pill group (deselect by tapping the active chip). */
+function SelectChips({
   options,
   value,
   onChange,
-  clearable = false,
 }: {
   options: readonly string[]
   value: string
-  onChange: (v: string) => void
-  clearable?: boolean
+  onChange: (value: string) => void
 }) {
   return (
     <div className="flex flex-wrap gap-2">
@@ -230,13 +190,13 @@ function ChipSelect({
           <button
             key={opt}
             type="button"
-            onClick={() => onChange(clearable && active ? '' : opt)}
+            onClick={() => onChange(opt)}
             className={[
-              'rounded-full px-3 py-1.5 text-sm capitalize transition-colors',
-              active ? 'bg-indigo-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700',
+              'rounded-full border px-[15px] py-[9px] text-[13.5px] font-semibold transition-colors',
+              active ? 'border-neon bg-neon text-ink' : 'border-white/10 bg-surface text-muted',
             ].join(' ')}
           >
-            {opt.replace('_', ' ')}
+            {humanize(opt)}
           </button>
         )
       })}

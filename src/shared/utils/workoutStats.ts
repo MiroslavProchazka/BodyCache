@@ -39,3 +39,21 @@ export const formatElapsed = (
   const m = totalMin % 60
   return `${h}h ${String(m).padStart(2, '0')}m`
 }
+
+/**
+ * Derive a workout's name from the body parts trained, mirroring the design
+ * prototype's split logic:
+ * - Push day — all of chest / shoulders / arms / core
+ * - Pull day — all of back / arms
+ * - Leg day — all legs
+ * - otherwise Full body day
+ */
+export const workoutName = (bodyParts: readonly (string | null)[]): string => {
+  const parts = [...new Set(bodyParts.filter((p): p is string => Boolean(p)))]
+  if (parts.length === 0) return 'Workout'
+  const all = (allowed: string[]) => parts.every((p) => allowed.includes(p))
+  if (all(['chest', 'shoulders', 'arms', 'core'])) return 'Push day'
+  if (all(['back', 'arms'])) return 'Pull day'
+  if (all(['legs'])) return 'Leg day'
+  return 'Full body day'
+}

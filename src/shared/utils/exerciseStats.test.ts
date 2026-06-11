@@ -5,6 +5,9 @@ import {
   bestSet,
   isPersonalRecord,
   previousSession,
+  groupSessions,
+  sessionTrend,
+  averageTopWeightKg,
   type HistorySet,
   type MetricSet,
 } from './exerciseStats'
@@ -126,5 +129,79 @@ describe('previousSession', () => {
     const prev = previousSession(history, 'current')
     expect(prev?.sessionId).toBe('old')
     expect(prev?.sets.map((s) => s.id)).toEqual(['old'])
+  })
+})
+
+const session = (
+  id: string,
+  startedAt: string,
+  sets: Partial<MetricSet>[],
+): HistorySet[] =>
+  sets.map((over, i) =>
+    hist({ id: `${id}-${i}`, sessionId: id, sessionStartedAt: startedAt, orderIndex: i, ...over }),
+  )
+
+describe('groupSessions', () => {
+  it('groups by session, newest first, with sets ordered', () => {
+    const history = [
+      ...session('s2', '2026-03-02T10:00:00.000Z', [{ weightKg: 80, reps: 8 }, { weightKg: 80, reps: 6 }]),
+      ...session('s1', '2026-02-01T10:00:00.000Z', [{ weightKg: 70, reps: 10 }]),
+    ]
+    const groups = groupSessions(history)
+    expect(groups.map((g) => g.sessionId)).toEqual(['s2', 's1'])
+    expect(groups[0].sets.map((s) => s.orderIndex)).toEqual([0, 1])
+  })
+
+  it('drops empty sets and the excluded session', () => {
+    const history = [
+      ...session('cur', '2026-03-10T10:00:00.000Z', [{ weightKg: 100, reps: 5 }]),
+      ...session('old', '2026-02-01T10:00:00.000Z', [{}, { weightKg: 70, reps: 10 }]),
+    ]
+    const groups = groupSessions(history, 'cur')
+    expect(groups.map((g) => g.sessionId)).toEqual(['old'])
+    expect(groups[0].sets).toHaveLength(1)
+  })
+})
+
+describe('sessionTrend', () => {
+  it('is "new" with fewer than two sessions', () => {
+    const history = session('s1', '2026-02-01T10:00:00.000Z', [{ weightKg: 70, reps: 10 }])
+    expect(sessionTrend(history, 'strength').dir).toBe('new')
+  })
+
+  it('reports an upward weight delta against the prior session', () => {
+    const history = [
+      ...session('s2', '2026-03-02T10:00:00.000Z', [{ weightKg: 82.5, reps: 8 }]),
+      ...session('s1', '2026-02-01T10:00:00.000Z', [{ weightKg: 80, reps: 8 }]),
+    ]
+    const trend = sessionTrend(history, 'strength')
+    expect(trend.dir).toBe('up')
+    expect(trend.delta).toBe(2.5)
+    expect(trend.field).toBe('weight')
+  })
+
+  it('excludes the in-progress session when comparing', () => {
+    const history = [
+      ...session('cur', '2026-03-10T10:00:00.000Z', [{ weightKg: 100, reps: 5 }]),
+      ...session('s2', '2026-03-02T10:00:00.000Z', [{ weightKg: 75, reps: 8 }]),
+      ...session('s1', '2026-02-01T10:00:00.000Z', [{ weightKg: 80, reps: 8 }]),
+    ]
+    const trend = sessionTrend(history, 'strength', 'cur')
+    expect(trend.dir).toBe('down')
+    expect(trend.delta).toBe(-5)
+  })
+})
+
+describe('averageTopWeightKg', () => {
+  it('averages each session top-set weight', () => {
+    const history = [
+      ...session('s2', '2026-03-02T10:00:00.000Z', [{ weightKg: 80, reps: 8 }, { weightKg: 70, reps: 10 }]),
+      ...session('s1', '2026-02-01T10:00:00.000Z', [{ weightKg: 60, reps: 10 }]),
+    ]
+    expect(averageTopWeightKg(history, 'strength')).toBe(70)
+  })
+
+  it('is null without weighted history', () => {
+    expect(averageTopWeightKg([], 'strength')).toBeNull()
   })
 })

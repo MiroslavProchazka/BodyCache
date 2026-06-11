@@ -106,6 +106,8 @@ export const sessionExercises = (sessionId: WorkoutSessionId) =>
         'workoutExercise.notes as notes',
         'exercise.name as exerciseName',
         'exercise.type as exerciseType',
+        'exercise.bodyPart as bodyPart',
+        'exercise.equipment as equipment',
         'exercise.primaryPhotoId as primaryPhotoId',
       ])
       .orderBy('workoutExercise.orderIndex'),
@@ -170,4 +172,70 @@ export const finishedWorkoutSessions = evolu.createQuery((db) =>
     .where('isDeleted', 'is', null)
     .where('status', '=', status('finished'))
     .orderBy('startedAt', 'desc'),
+)
+
+/** A single session by id (any status, non-deleted). */
+export const sessionById = (id: WorkoutSessionId) =>
+  evolu.createQuery((db) =>
+    db
+      .selectFrom('workoutSession')
+      .selectAll()
+      .where('id', '=', id)
+      .where('isDeleted', 'is', null),
+  )
+
+/**
+ * Completed sets within a finished session, joined to their exercise (for
+ * body part / volume / naming). Feeds the Home "last workout" card and the
+ * Finish summary. Ordered by exercise then set.
+ */
+export const completedSetsForSession = (sessionId: WorkoutSessionId) =>
+  evolu.createQuery((db) =>
+    db
+      .selectFrom('exerciseSet')
+      .innerJoin('workoutExercise', 'workoutExercise.id', 'exerciseSet.workoutExerciseId')
+      .innerJoin('exercise', 'exercise.id', 'workoutExercise.exerciseId')
+      .where('exerciseSet.isDeleted', 'is', null)
+      .where('exerciseSet.completedAt', 'is not', null)
+      .where('workoutExercise.isDeleted', 'is', null)
+      .where('workoutExercise.workoutSessionId', '=', sessionId)
+      .select([
+        'exerciseSet.id as id',
+        'exerciseSet.weightKg as weightKg',
+        'exerciseSet.reps as reps',
+        'workoutExercise.exerciseId as exerciseId',
+        'workoutExercise.orderIndex as exerciseOrder',
+        'exercise.bodyPart as bodyPart',
+      ])
+      .orderBy('workoutExercise.orderIndex'),
+  )
+
+/**
+ * Distinct exercises that have been performed in a finished session, each with
+ * the most recent such session's start time, newest first. Rows repeat per
+ * completed set; callers de-duplicate by `id` to get a recency-ordered list
+ * for the Home "recent exercises" rail.
+ */
+export const performedExercises = evolu.createQuery((db) =>
+  db
+    .selectFrom('exerciseSet')
+    .innerJoin('workoutExercise', 'workoutExercise.id', 'exerciseSet.workoutExerciseId')
+    .innerJoin('workoutSession', 'workoutSession.id', 'workoutExercise.workoutSessionId')
+    .innerJoin('exercise', 'exercise.id', 'workoutExercise.exerciseId')
+    .where('exerciseSet.isDeleted', 'is', null)
+    .where('exerciseSet.completedAt', 'is not', null)
+    .where('workoutExercise.isDeleted', 'is', null)
+    .where('workoutSession.isDeleted', 'is', null)
+    .where('workoutSession.status', '=', status('finished'))
+    .where('exercise.isDeleted', 'is', null)
+    .select([
+      'exercise.id as id',
+      'exercise.name as name',
+      'exercise.type as type',
+      'exercise.bodyPart as bodyPart',
+      'exercise.equipment as equipment',
+      'exercise.primaryPhotoId as primaryPhotoId',
+      'workoutSession.startedAt as startedAt',
+    ])
+    .orderBy('workoutSession.startedAt', 'desc'),
 )
