@@ -24,9 +24,7 @@ export default defineConfig({
         'src/evolu/queries.ts',
         'src/evolu/mutations.ts',
         'src/evolu/schema.ts',
-        // Browser/Evolu-bound integration code — exercised by the Playwright
-        // E2E suite rather than unit tests.
-        'src/features/settings/useDataTransfer.ts',
+        // Render-only React hook — exercised by the Playwright E2E suite.
         'src/shared/utils/usePhotoUrl.ts',
       ],
     },
