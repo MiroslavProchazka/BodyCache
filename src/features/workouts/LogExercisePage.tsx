@@ -25,14 +25,31 @@ import { useUnits } from '@/shared/units/UnitsContext'
 import { metaLine } from '@/shared/utils/bodyParts'
 import { formatRelativeDay } from '@/shared/utils/dates'
 import { toDisplayWeight, formatSetSummary } from '@/shared/utils/units'
-import { previousSession, sessionTrend, bestSet } from '@/shared/utils/exerciseStats'
+import {
+  previousSession,
+  sessionTrend,
+  bestSet,
+  isPersonalRecord,
+  type MetricSet,
+} from '@/shared/utils/exerciseStats'
 import { ExerciseTile } from '@/features/exercises/ExerciseTile'
 import { TrendBadge } from '@/features/exercises/TrendBadge'
+import { PrBadge } from '@/features/exercises/PrBadge'
 import { toHistorySets } from '@/features/exercises/history'
 import { SET_FIELDS, DEFAULT_VALUES, type SetFieldDef, type SetFieldKey } from './setFields'
 
 /** A set being edited: the active values for its type's fields, in kg/native units. */
 type DraftSet = Partial<Record<SetFieldKey, number>>
+
+/** A draft as a `MetricSet` for PR comparison; metrics it doesn't carry are null. */
+const metricOf = (d: DraftSet): MetricSet => ({
+  weightKg: d.weightKg ?? null,
+  reps: d.reps ?? null,
+  addedWeightKg: d.addedWeightKg ?? null,
+  assistanceWeightKg: null,
+  durationSec: d.durationSec ?? null,
+  distanceMeters: d.distanceMeters ?? null,
+})
 
 export function LogExercisePage() {
   const active = useQuery(activeWorkoutSession)[0]
@@ -66,6 +83,10 @@ function LogInner({
   const fields = SET_FIELDS[type]
   const prev = previousSession(history, sessionId)
   const trend = sessionTrend(history, type, sessionId)
+  // The "stored best" to beat: every completed set from prior sessions. We
+  // exclude the in-progress session so today's own sets never count as the
+  // record a set has to beat.
+  const priorSets = history.filter((s) => String(s.sessionId) !== String(sessionId))
 
   /** Read the type's fields off a source row, falling back to defaults. */
   const fieldsOf = (source: Partial<Record<SetFieldKey, number | null>> | null): DraftSet => {
@@ -217,9 +238,12 @@ function LogInner({
               className="rounded-[20px] border border-white/[0.07] bg-surface px-[14px] pb-4 pt-[14px]"
             >
               <div className="mb-[14px] flex items-center justify-between">
-                <span className="whitespace-nowrap rounded-lg bg-neon/[0.12] px-[10px] py-1 text-[12.5px] font-semibold text-neon">
-                  Set {i + 1}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="whitespace-nowrap rounded-lg bg-neon/[0.12] px-[10px] py-1 text-[12.5px] font-semibold text-neon">
+                    Set {i + 1}
+                  </span>
+                  {isPersonalRecord(metricOf(d), priorSets, type) && <PrBadge />}
+                </div>
                 {draft.length > 1 && (
                   <button
                     type="button"
