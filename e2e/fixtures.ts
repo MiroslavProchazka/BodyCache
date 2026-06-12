@@ -12,7 +12,7 @@ export async function completeOnboarding(page: Page): Promise<void> {
   // Wait for Evolu to boot and the gate to resolve to onboarding (or the app).
   if (await name.isVisible({ timeout: 30_000 }).catch(() => false)) {
     await name.fill('Tester')
-    await page.getByRole('button', { name: 'Prefer not to say' }).click()
+    await page.getByRole('button', { name: 'Other', exact: true }).click()
     await page.getByRole('button', { name: 'Start lifting' }).click()
     // Onboarding swaps in the app shell once the profile is created.
     await expect(page.getByPlaceholder('What should we call you?')).toHaveCount(0)
