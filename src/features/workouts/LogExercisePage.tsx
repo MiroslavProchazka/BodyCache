@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { ChevronLeft, Copy, Plus, Minus, X, Check } from 'lucide-react'
+import { ChevronLeft, Copy, Plus, Minus, X, Check, Timer } from 'lucide-react'
 import {
   activeWorkoutSession,
   exerciseById,
@@ -23,6 +23,7 @@ import { StickyAction } from '@/shared/components/StickyAction'
 import { Overline } from '@/shared/components/Overline'
 import { useToast } from '@/shared/components/Toast'
 import { useUnits } from '@/shared/units/UnitsContext'
+import { useRestTimer } from '@/shared/rest/RestTimerContext'
 import { metaLine } from '@/shared/utils/bodyParts'
 import { formatRelativeDay } from '@/shared/utils/dates'
 import { toDisplayWeight, formatSetSummary } from '@/shared/utils/units'
@@ -79,6 +80,7 @@ function LogInner({
   const navigate = useNavigate()
   const { unit } = useUnits()
   const { showToast } = useToast()
+  const rest = useRestTimer()
   const { addExerciseToWorkout, addSet, removeSet } = useBodyCacheMutations()
 
   const exercise = useQuery(exerciseById(exerciseId))[0]
@@ -336,14 +338,25 @@ function LogInner({
           ))}
         </div>
 
-        <button
-          type="button"
-          onClick={addDraftSet}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-white/[0.16] p-[14px] text-[14.5px] font-semibold text-muted"
-        >
-          <Plus size={18} strokeWidth={2} />
-          Add set
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={addDraftSet}
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-white/[0.16] p-[14px] text-[14.5px] font-semibold text-muted"
+          >
+            <Plus size={18} strokeWidth={2} />
+            Add set
+          </button>
+          <button
+            type="button"
+            onClick={() => rest.start()}
+            aria-label="Start rest timer"
+            className="flex items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-inset px-[18px] text-[14.5px] font-semibold text-soft active:scale-[0.98]"
+          >
+            <Timer size={18} strokeWidth={2} />
+            Rest
+          </button>
+        </div>
       </div>
 
       <StickyAction>
