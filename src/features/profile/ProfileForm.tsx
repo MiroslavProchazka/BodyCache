@@ -4,8 +4,8 @@ import { GENDERS, type Gender } from '@/evolu/schema'
 import { Overline } from '@/shared/components/Overline'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { toDisplayWeight } from '@/shared/utils/units'
-import { humanize } from '@/shared/utils/bodyParts'
 import { randomSeed } from '@/shared/utils/avatar'
+import { genderLabel } from './profile'
 import { Avatar } from './Avatar'
 
 export interface ProfileFormValues {
@@ -71,7 +71,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps
       />
 
       <Overline className="mb-2">Gender</Overline>
-      <div className="mb-[18px] flex flex-wrap gap-2">
+      <div className="mb-[18px] flex gap-2">
         {GENDERS.map((g) => {
           const active = gender === g
           return (
@@ -79,14 +79,15 @@ export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps
               key={g}
               type="button"
               onClick={() => setGender(g)}
+              aria-pressed={active}
               className={[
-                'rounded-full border px-[15px] py-[9px] text-[13.5px] font-semibold transition-colors',
+                'flex-1 rounded-full border py-[10px] text-center text-[13.5px] font-semibold transition-colors',
                 active
                   ? 'border-neon bg-neon text-ink'
                   : 'border-white/10 bg-surface text-muted',
               ].join(' ')}
             >
-              {humanize(g)}
+              {genderLabel(g)}
             </button>
           )
         })}

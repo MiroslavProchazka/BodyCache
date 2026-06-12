@@ -8,17 +8,20 @@ describe('narrowGender', () => {
     expect(narrowGender('other')).toBe('other')
   })
 
-  it('falls back to prefer_not_to_say for unknown/empty values', () => {
-    expect(narrowGender('alien')).toBe('prefer_not_to_say')
-    expect(narrowGender(null)).toBe('prefer_not_to_say')
-    expect(narrowGender(undefined)).toBe('prefer_not_to_say')
+  it('falls back to other for unknown/empty values', () => {
+    expect(narrowGender('alien')).toBe('other')
+    expect(narrowGender(null)).toBe('other')
+    expect(narrowGender(undefined)).toBe('other')
+    // Legacy rows from before the option was removed narrow to "other".
+    expect(narrowGender('prefer_not_to_say')).toBe('other')
   })
 })
 
 describe('genderLabel', () => {
-  it('humanizes the value', () => {
-    expect(genderLabel('male')).toBe('Male')
-    expect(genderLabel('prefer_not_to_say')).toBe('Prefer not to say')
+  it('labels the stored values as Men / Women / Other', () => {
+    expect(genderLabel('male')).toBe('Men')
+    expect(genderLabel('female')).toBe('Women')
+    expect(genderLabel('other')).toBe('Other')
   })
 })
 

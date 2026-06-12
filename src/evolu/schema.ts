@@ -80,7 +80,7 @@ export type WorkoutStatus = (typeof WORKOUT_STATUSES)[number]
 export const SET_TYPES = ['warmup', 'drop', 'failure'] as const
 export type SetType = (typeof SET_TYPES)[number]
 
-export const GENDERS = ['male', 'female', 'other', 'prefer_not_to_say'] as const
+export const GENDERS = ['male', 'female', 'other'] as const
 export type Gender = (typeof GENDERS)[number]
 
 // --- Schema ---------------------------------------------------------------
