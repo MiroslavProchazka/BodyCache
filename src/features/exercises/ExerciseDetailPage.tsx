@@ -11,7 +11,12 @@ import { StickyAction } from '@/shared/components/StickyAction'
 import { Button } from '@/shared/components/Button'
 import { metaLine } from '@/shared/utils/bodyParts'
 import { formatRelativeDay } from '@/shared/utils/dates'
-import { formatWeight, formatSetSummary } from '@/shared/utils/units'
+import {
+  formatWeight,
+  formatSetSummary,
+  formatDuration,
+  formatDistance,
+} from '@/shared/utils/units'
 import {
   bestSet,
   groupSessions,
@@ -20,10 +25,12 @@ import {
   workingSets,
 } from '@/shared/utils/exerciseStats'
 import { bestOneRepMax } from '@/shared/utils/oneRepMax'
+import { progressSeries } from '@/shared/utils/progress'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { SetTypeTag } from '@/features/workouts/SetTypeTag'
 import { ExerciseTile } from './ExerciseTile'
 import { TrendBadge } from './TrendBadge'
+import { ProgressChart } from './ProgressChart'
 import { toHistorySets } from './history'
 
 /** Everything about one exercise — best, average, last, and full history. */
@@ -61,6 +68,22 @@ export function ExerciseDetailPage() {
   // Estimated 1RM only makes sense for loaded weight × reps efforts.
   const oneRm =
     type === 'strength' || type === 'freeform' ? bestOneRepMax(records) : null
+
+  // One point per session for the progress chart (oldest → newest).
+  const series = progressSeries(history, type)
+  const formatMetric = (v: number): string => {
+    switch (type) {
+      case 'strength':
+      case 'freeform':
+        return formatWeight(v, unit)
+      case 'bodyweight':
+        return `${v} reps`
+      case 'timed':
+        return formatDuration(v)
+      case 'distance':
+        return formatDistance(v)
+    }
+  }
 
   const handleDelete = () => {
     if (!window.confirm(`Delete "${exercise.name}"? This can't be undone.`)) return
@@ -166,6 +189,13 @@ export function ExerciseDetailPage() {
                 </span>
               ))}
             </div>
+          </div>
+        )}
+
+        {series.length >= 2 && (
+          <div className="mb-4 rounded-[18px] border border-white/[0.07] bg-surface p-[15px]">
+            <Overline className="mb-3">Progress · {series.length} sessions</Overline>
+            <ProgressChart points={series} format={formatMetric} />
           </div>
         )}
 

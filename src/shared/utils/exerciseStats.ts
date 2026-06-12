@@ -181,7 +181,7 @@ export const groupSessions = (
 }
 
 /** The first ranking metric of a set for its type (weight, reps, sec or m). */
-const primaryMetric = (set: MetricSet, type: ExerciseType): number =>
+export const primaryMetric = (set: MetricSet, type: ExerciseType): number =>
   rankTuple(set, type)[0]
 
 /** Which field the trend delta is expressed in, per exercise type. */
