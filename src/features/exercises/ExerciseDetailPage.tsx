@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { ChevronLeft, Trash2, Trophy, LineChart } from 'lucide-react'
+import { ChevronLeft, Trash2, Trophy, LineChart, Dumbbell } from 'lucide-react'
 import { evolu } from '@/evolu/evolu'
 import { exerciseById, completedSetsForExercise, activeWorkoutSession } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
@@ -19,6 +19,7 @@ import {
   averageTopWeightKg,
   workingSets,
 } from '@/shared/utils/exerciseStats'
+import { bestOneRepMax } from '@/shared/utils/oneRepMax'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { SetTypeTag } from '@/features/workouts/SetTypeTag'
 import { ExerciseTile } from './ExerciseTile'
@@ -57,6 +58,9 @@ export function ExerciseDetailPage() {
   const avg = averageTopWeightKg(records, type)
   const trend = sessionTrend(records, type)
   const last = groups[0]
+  // Estimated 1RM only makes sense for loaded weight × reps efforts.
+  const oneRm =
+    type === 'strength' || type === 'freeform' ? bestOneRepMax(records) : null
 
   const handleDelete = () => {
     if (!window.confirm(`Delete "${exercise.name}"? This can't be undone.`)) return
@@ -118,15 +122,27 @@ export function ExerciseDetailPage() {
               {best ? formatSetSummary(best, type, unit) : '—'}
             </div>
           </div>
-          <div className="flex-1 rounded-2xl border border-white/[0.07] bg-surface p-[13px]">
-            <div className="mb-2 flex items-center gap-[6px] text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
-              <LineChart size={14} strokeWidth={1.75} />
-              Average
+          {oneRm != null ? (
+            <div className="flex-1 rounded-2xl border border-white/[0.07] bg-surface p-[13px]">
+              <div className="mb-2 flex items-center gap-[6px] text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
+                <Dumbbell size={14} strokeWidth={1.75} />
+                Est. 1RM
+              </div>
+              <div className="font-display text-[19px] font-semibold tnum text-white">
+                {formatWeight(oneRm, unit)}
+              </div>
             </div>
-            <div className="font-display text-[19px] font-semibold tnum text-white">
-              {avg != null ? formatWeight(avg, unit) : '—'}
+          ) : (
+            <div className="flex-1 rounded-2xl border border-white/[0.07] bg-surface p-[13px]">
+              <div className="mb-2 flex items-center gap-[6px] text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
+                <LineChart size={14} strokeWidth={1.75} />
+                Average
+              </div>
+              <div className="font-display text-[19px] font-semibold tnum text-white">
+                {avg != null ? formatWeight(avg, unit) : '—'}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {last && (
