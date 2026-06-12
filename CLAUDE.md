@@ -42,8 +42,12 @@ what is my best?*
 
 - App loads offline after first visit. Workout logging works fully offline.
 - Never require login. Never block saving on network/sync status.
-- Sync is currently local-only (`transports: []` in `src/evolu/evolu.ts`);
-  relay sync is a later addition. Sync status should be visible but not blocking.
+- Relay sync is enabled in `src/evolu/evolu.ts` via a WebSocket transport
+  (`VITE_EVOLU_RELAY_URL`, default `wss://free.evoluhq.com`; empty string =
+  local-only). Evolu is end-to-end encrypted — the relay sees only ciphertext.
+  Writes commit locally first and sync in the background, so saving never blocks
+  on the network. Sync status is shown in the Settings card via connectivity
+  (`useOnlineStatus`), since Evolu doesn't yet expose a live `SyncState`.
 
 ## Data & image rules
 
