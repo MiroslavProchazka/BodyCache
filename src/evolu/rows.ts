@@ -1,5 +1,6 @@
 import type { Query } from '@evolu/common'
 import type {
+  userProfile,
   allExercises,
   workoutExercisesForSession,
   sessionExercises,
@@ -16,6 +17,7 @@ import type {
 /** Extract the row shape from an Evolu `Query`. */
 export type RowOf<Q> = Q extends Query<infer R> ? R : never
 
+export type ProfileRow = RowOf<typeof userProfile>
 export type ExerciseRow = RowOf<typeof allExercises>
 export type WorkoutExerciseRow = RowOf<ReturnType<typeof workoutExercisesForSession>>
 export type SessionExerciseRow = RowOf<ReturnType<typeof sessionExercises>>

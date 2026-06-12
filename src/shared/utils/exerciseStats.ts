@@ -26,9 +26,23 @@ export interface HistorySet extends MetricSet {
   readonly orderIndex: number
   readonly sessionId: string
   readonly sessionStartedAt: string
+  /** `null` = normal set; warm-ups are excluded from records (see `workingSets`). */
+  readonly setType: string | null
 }
 
 const n = (v: number | null): number => v ?? 0
+
+/** A set carrying a (possibly null) set type. */
+interface TypedSet {
+  readonly setType?: string | null
+}
+
+/** True for warm-up sets, which don't count toward bests, PRs or trends. */
+export const isWarmupSet = (set: TypedSet): boolean => set.setType === 'warmup'
+
+/** Drop warm-up sets, keeping the working sets that count toward records. */
+export const workingSets = <T extends TypedSet>(sets: readonly T[]): T[] =>
+  sets.filter((s) => !isWarmupSet(s))
 
 /** True when a set carries at least one positive, loggable metric. */
 export const hasMetrics = (set: MetricSet): boolean =>
@@ -167,7 +181,7 @@ export const groupSessions = (
 }
 
 /** The first ranking metric of a set for its type (weight, reps, sec or m). */
-const primaryMetric = (set: MetricSet, type: ExerciseType): number =>
+export const primaryMetric = (set: MetricSet, type: ExerciseType): number =>
   rankTuple(set, type)[0]
 
 /** Which field the trend delta is expressed in, per exercise type. */

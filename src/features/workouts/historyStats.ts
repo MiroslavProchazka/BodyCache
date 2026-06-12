@@ -77,6 +77,7 @@ export interface DetailSet {
   readonly assistanceWeightKg: number | null
   readonly durationSec: number | null
   readonly distanceMeters: number | null
+  readonly setType: string | null
 }
 
 /**

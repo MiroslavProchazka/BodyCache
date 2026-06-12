@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { ChevronLeft, Copy, Plus, Minus, X, Check } from 'lucide-react'
+import { ChevronLeft, Copy, Plus, Minus, X, Check, Timer } from 'lucide-react'
 import {
   activeWorkoutSession,
   exerciseById,
@@ -14,6 +14,7 @@ import type {
   ExerciseId,
   ExercisePhotoId,
   ExerciseType,
+  SetType,
   WorkoutExerciseId,
   WorkoutSessionId,
 } from '@/evolu/schema'
@@ -22,6 +23,7 @@ import { StickyAction } from '@/shared/components/StickyAction'
 import { Overline } from '@/shared/components/Overline'
 import { useToast } from '@/shared/components/Toast'
 import { useUnits } from '@/shared/units/UnitsContext'
+import { useRestTimer } from '@/shared/rest/RestTimerContext'
 import { metaLine } from '@/shared/utils/bodyParts'
 import { formatRelativeDay } from '@/shared/utils/dates'
 import { toDisplayWeight, formatSetSummary } from '@/shared/utils/units'
@@ -30,6 +32,7 @@ import {
   sessionTrend,
   bestSet,
   isPersonalRecord,
+  workingSets,
   type MetricSet,
 } from '@/shared/utils/exerciseStats'
 import { ExerciseTile } from '@/features/exercises/ExerciseTile'
@@ -37,9 +40,17 @@ import { TrendBadge } from '@/features/exercises/TrendBadge'
 import { PrBadge } from '@/features/exercises/PrBadge'
 import { toHistorySets } from '@/features/exercises/history'
 import { SET_FIELDS, DEFAULT_VALUES, type SetFieldDef, type SetFieldKey } from './setFields'
+import { SetTypeTag } from './SetTypeTag'
+import { narrowSetType, nextSetType, setTypeLabel } from './setTypes'
 
 /** A set being edited: the active values for its type's fields, in kg/native units. */
 type DraftSet = Partial<Record<SetFieldKey, number>>
+
+/** A draft set row: its metric values plus an optional set type. */
+interface DraftRow {
+  fields: DraftSet
+  setType: SetType | null
+}
 
 /** A draft as a `MetricSet` for PR comparison; metrics it doesn't carry are null. */
 const metricOf = (d: DraftSet): MetricSet => ({
@@ -69,6 +80,7 @@ function LogInner({
   const navigate = useNavigate()
   const { unit } = useUnits()
   const { showToast } = useToast()
+  const rest = useRestTimer()
   const { addExerciseToWorkout, addSet, removeSet } = useBodyCacheMutations()
 
   const exercise = useQuery(exerciseById(exerciseId))[0]
@@ -83,10 +95,12 @@ function LogInner({
   const fields = SET_FIELDS[type]
   const prev = previousSession(history, sessionId)
   const trend = sessionTrend(history, type, sessionId)
-  // The "stored best" to beat: every completed set from prior sessions. We
-  // exclude the in-progress session so today's own sets never count as the
-  // record a set has to beat.
-  const priorSets = history.filter((s) => String(s.sessionId) !== String(sessionId))
+  // The "stored best" to beat: every working (non-warm-up) completed set from
+  // prior sessions. We exclude the in-progress session so today's own sets
+  // never count as the record a set has to beat, and warm-ups never count.
+  const priorSets = workingSets(
+    history.filter((s) => String(s.sessionId) !== String(sessionId)),
+  )
 
   /** Read the type's fields off a source row, falling back to defaults. */
   const fieldsOf = (source: Partial<Record<SetFieldKey, number | null>> | null): DraftSet => {
@@ -95,11 +109,12 @@ function LogInner({
     return d
   }
 
-  // Seed once: existing sets (editing) → previous top set (one row) → defaults.
-  const [draft, setDraft] = useState<DraftSet[]>(() => {
-    if (existing && existingSets.length > 0) return existingSets.map((s) => fieldsOf(s))
-    const top = prev ? bestSet(prev.sets, type) : null
-    return [fieldsOf(top)]
+  // Seed once: existing sets (editing) → previous top working set → defaults.
+  const [draft, setDraft] = useState<DraftRow[]>(() => {
+    if (existing && existingSets.length > 0)
+      return existingSets.map((s) => ({ fields: fieldsOf(s), setType: narrowSetType(s.setType) }))
+    const top = prev ? bestSet(workingSets(prev.sets), type) : null
+    return [{ fields: fieldsOf(top), setType: null }]
   })
 
   const clampValue = (value: number, f: SetFieldDef) =>
@@ -107,20 +122,38 @@ function LogInner({
 
   const step = (index: number, f: SetFieldDef, dir: 1 | -1) =>
     setDraft((ds) =>
-      ds.map((d, j) =>
-        j === index ? { ...d, [f.key]: clampValue((d[f.key] ?? 0) + dir * f.step, f) } : d,
+      ds.map((row, j) =>
+        j === index
+          ? {
+              ...row,
+              fields: {
+                ...row.fields,
+                [f.key]: clampValue((row.fields[f.key] ?? 0) + dir * f.step, f),
+              },
+            }
+          : row,
       ),
     )
 
+  /** Cycle a row's set type: Normal → Warm-up → Drop → Failure → Normal. */
+  const cycleType = (index: number) =>
+    setDraft((ds) =>
+      ds.map((row, j) => (j === index ? { ...row, setType: nextSetType(row.setType) } : row)),
+    )
+
+  // New sets clone the last row's values but start as a normal working set.
   const addDraftSet = () =>
-    setDraft((ds) => [...ds, { ...(ds[ds.length - 1] ?? fieldsOf(null)) }])
+    setDraft((ds) => [
+      ...ds,
+      { fields: { ...(ds[ds.length - 1]?.fields ?? fieldsOf(null)) }, setType: null },
+    ])
 
   const removeDraftSet = (index: number) =>
     setDraft((ds) => ds.filter((_, j) => j !== index))
 
   const copyPrevious = () => {
     if (!prev || prev.sets.length === 0) return
-    setDraft(prev.sets.map((s) => fieldsOf(s)))
+    setDraft(prev.sets.map((s) => ({ fields: fieldsOf(s), setType: narrowSetType(s.setType) })))
     showToast('Copied last workout')
   }
 
@@ -129,10 +162,10 @@ function LogInner({
   const repsField = fields.find((f) => f.key === 'reps')
   const isValid = (d: DraftSet) =>
     repsField ? (d.reps ?? 0) > 0 : (d[fields[0].key] ?? 0) > 0
-  const validCount = draft.filter(isValid).length
+  const validCount = draft.filter((row) => isValid(row.fields)).length
 
   const handleSave = () => {
-    const valid = draft.filter(isValid)
+    const valid = draft.filter((row) => isValid(row.fields))
     if (valid.length === 0) {
       navigate('/workout')
       return
@@ -147,8 +180,13 @@ function LogInner({
       for (const s of existingSets) removeSet(s.id)
     }
     const now = new Date().toISOString()
-    valid.forEach((d, i) => {
-      addSet(workoutExerciseId, { orderIndex: i, completedAt: now, ...d })
+    valid.forEach((row, i) => {
+      addSet(workoutExerciseId, {
+        orderIndex: i,
+        completedAt: now,
+        setType: row.setType,
+        ...row.fields,
+      })
     })
     showToast('Set saved')
     navigate('/workout')
@@ -206,7 +244,10 @@ function LogInner({
             <div className="flex flex-col gap-2">
               {prev.sets.map((s, i) => (
                 <div key={s.id} className="flex items-center justify-between text-sm">
-                  <span className="whitespace-nowrap font-medium text-muted">Set {i + 1}</span>
+                  <span className="flex items-center gap-2">
+                    <span className="whitespace-nowrap font-medium text-muted">Set {i + 1}</span>
+                    <SetTypeTag value={s.setType} />
+                  </span>
                   <span className="whitespace-nowrap font-semibold tnum text-white">
                     {formatSetSummary(s, type, unit)}
                   </span>
@@ -232,7 +273,7 @@ function LogInner({
 
         <Overline className="mb-3">Today's sets</Overline>
         <div className="mb-[14px] flex flex-col gap-3">
-          {draft.map((d, i) => (
+          {draft.map((row, i) => (
             <div
               key={i}
               className="rounded-[20px] border border-white/[0.07] bg-surface px-[14px] pb-4 pt-[14px]"
@@ -242,7 +283,17 @@ function LogInner({
                   <span className="whitespace-nowrap rounded-lg bg-neon/[0.12] px-[10px] py-1 text-[12.5px] font-semibold text-neon">
                     Set {i + 1}
                   </span>
-                  {isPersonalRecord(metricOf(d), priorSets, type) && <PrBadge />}
+                  {/* Tap to cycle the set type (Normal → Warm-up → Drop → Failure). */}
+                  <button
+                    type="button"
+                    onClick={() => cycleType(i)}
+                    aria-label={`Set ${i + 1} type: ${setTypeLabel(row.setType)}`}
+                    className="whitespace-nowrap rounded-lg border border-white/10 px-[10px] py-1 text-[12px] font-semibold text-muted active:scale-[0.97]"
+                  >
+                    {setTypeLabel(row.setType)}
+                  </button>
+                  {row.setType !== 'warmup' &&
+                    isPersonalRecord(metricOf(row.fields), priorSets, type) && <PrBadge />}
                 </div>
                 {draft.length > 1 && (
                   <button
@@ -271,7 +322,9 @@ function LogInner({
                           className="font-display text-[28px] font-semibold tnum text-white"
                           style={{ minWidth: f.isWeight ? 44 : 32 }}
                         >
-                          {f.isWeight ? toDisplayWeight(d[f.key] ?? 0, unit) : (d[f.key] ?? 0)}
+                          {f.isWeight
+                            ? toDisplayWeight(row.fields[f.key] ?? 0, unit)
+                            : (row.fields[f.key] ?? 0)}
                         </span>
                         <StepButton onClick={() => step(i, f, 1)} label={`Increase ${f.label}`}>
                           <Plus size={20} strokeWidth={2} />
@@ -285,14 +338,25 @@ function LogInner({
           ))}
         </div>
 
-        <button
-          type="button"
-          onClick={addDraftSet}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-white/[0.16] p-[14px] text-[14.5px] font-semibold text-muted"
-        >
-          <Plus size={18} strokeWidth={2} />
-          Add set
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={addDraftSet}
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-white/[0.16] p-[14px] text-[14.5px] font-semibold text-muted"
+          >
+            <Plus size={18} strokeWidth={2} />
+            Add set
+          </button>
+          <button
+            type="button"
+            onClick={() => rest.start()}
+            aria-label="Start rest timer"
+            className="flex items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-inset px-[18px] text-[14.5px] font-semibold text-soft active:scale-[0.98]"
+          >
+            <Timer size={18} strokeWidth={2} />
+            Rest
+          </button>
+        </div>
       </div>
 
       <StickyAction>

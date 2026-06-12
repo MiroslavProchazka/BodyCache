@@ -24,6 +24,20 @@ const status = (value: WorkoutStatus): typeof Evolu.NonEmptyString100.Type =>
  * and `1` once soft-deleted).
  */
 
+/**
+ * The user's profile. Modelled as a singleton: there is one profile per owner,
+ * so callers read the first row. Ordered by `createdAt` for a deterministic
+ * pick if two devices ever created one before syncing.
+ */
+export const userProfile = evolu.createQuery((db) =>
+  db
+    .selectFrom('profile')
+    .selectAll()
+    .where('isDeleted', 'is', null)
+    .orderBy('createdAt')
+    .limit(1),
+)
+
 /** All non-deleted exercises, ordered by name. */
 export const allExercises = evolu.createQuery((db) =>
   db
@@ -180,6 +194,7 @@ export const completedSetsForExercise = (exerciseId: ExerciseId) =>
         'exerciseSet.assistanceWeightKg as assistanceWeightKg',
         'exerciseSet.durationSec as durationSec',
         'exerciseSet.distanceMeters as distanceMeters',
+        'exerciseSet.setType as setType',
         'workoutExercise.workoutSessionId as sessionId',
         'workoutSession.startedAt as sessionStartedAt',
       ])
@@ -251,6 +266,7 @@ export const sessionSetsDetailed = (sessionId: WorkoutSessionId) =>
         'exerciseSet.assistanceWeightKg as assistanceWeightKg',
         'exerciseSet.durationSec as durationSec',
         'exerciseSet.distanceMeters as distanceMeters',
+        'exerciseSet.setType as setType',
         'workoutExercise.id as workoutExerciseId',
         'workoutExercise.orderIndex as exerciseOrder',
         'workoutExercise.exerciseId as exerciseId',

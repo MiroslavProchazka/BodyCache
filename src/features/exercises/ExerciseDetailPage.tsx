@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { ChevronLeft, Trash2, Trophy, LineChart } from 'lucide-react'
+import { ChevronLeft, Trash2, Trophy, LineChart, Dumbbell } from 'lucide-react'
 import { evolu } from '@/evolu/evolu'
 import { exerciseById, completedSetsForExercise, activeWorkoutSession } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
@@ -11,16 +11,26 @@ import { StickyAction } from '@/shared/components/StickyAction'
 import { Button } from '@/shared/components/Button'
 import { metaLine } from '@/shared/utils/bodyParts'
 import { formatRelativeDay } from '@/shared/utils/dates'
-import { formatWeight, formatSetSummary } from '@/shared/utils/units'
+import {
+  formatWeight,
+  formatSetSummary,
+  formatDuration,
+  formatDistance,
+} from '@/shared/utils/units'
 import {
   bestSet,
   groupSessions,
   sessionTrend,
   averageTopWeightKg,
+  workingSets,
 } from '@/shared/utils/exerciseStats'
+import { bestOneRepMax } from '@/shared/utils/oneRepMax'
+import { progressSeries } from '@/shared/utils/progress'
 import { useUnits } from '@/shared/units/UnitsContext'
+import { SetTypeTag } from '@/features/workouts/SetTypeTag'
 import { ExerciseTile } from './ExerciseTile'
 import { TrendBadge } from './TrendBadge'
+import { ProgressChart } from './ProgressChart'
 import { toHistorySets } from './history'
 
 /** Everything about one exercise — best, average, last, and full history. */
@@ -48,11 +58,32 @@ export function ExerciseDetailPage() {
   }
 
   const type = exercise.type as ExerciseType
+  // Records ignore warm-up sets; the session list below still shows them.
+  const records = workingSets(history)
   const groups = groupSessions(history)
-  const best = bestSet(history, type)
-  const avg = averageTopWeightKg(history, type)
-  const trend = sessionTrend(history, type)
+  const best = bestSet(records, type)
+  const avg = averageTopWeightKg(records, type)
+  const trend = sessionTrend(records, type)
   const last = groups[0]
+  // Estimated 1RM only makes sense for loaded weight × reps efforts.
+  const oneRm =
+    type === 'strength' || type === 'freeform' ? bestOneRepMax(records) : null
+
+  // One point per session for the progress chart (oldest → newest).
+  const series = progressSeries(history, type)
+  const formatMetric = (v: number): string => {
+    switch (type) {
+      case 'strength':
+      case 'freeform':
+        return formatWeight(v, unit)
+      case 'bodyweight':
+        return `${v} reps`
+      case 'timed':
+        return formatDuration(v)
+      case 'distance':
+        return formatDistance(v)
+    }
+  }
 
   const handleDelete = () => {
     if (!window.confirm(`Delete "${exercise.name}"? This can't be undone.`)) return
@@ -114,15 +145,27 @@ export function ExerciseDetailPage() {
               {best ? formatSetSummary(best, type, unit) : '—'}
             </div>
           </div>
-          <div className="flex-1 rounded-2xl border border-white/[0.07] bg-surface p-[13px]">
-            <div className="mb-2 flex items-center gap-[6px] text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
-              <LineChart size={14} strokeWidth={1.75} />
-              Average
+          {oneRm != null ? (
+            <div className="flex-1 rounded-2xl border border-white/[0.07] bg-surface p-[13px]">
+              <div className="mb-2 flex items-center gap-[6px] text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
+                <Dumbbell size={14} strokeWidth={1.75} />
+                Est. 1RM
+              </div>
+              <div className="font-display text-[19px] font-semibold tnum text-white">
+                {formatWeight(oneRm, unit)}
+              </div>
             </div>
-            <div className="font-display text-[19px] font-semibold tnum text-white">
-              {avg != null ? formatWeight(avg, unit) : '—'}
+          ) : (
+            <div className="flex-1 rounded-2xl border border-white/[0.07] bg-surface p-[13px]">
+              <div className="mb-2 flex items-center gap-[6px] text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
+                <LineChart size={14} strokeWidth={1.75} />
+                Average
+              </div>
+              <div className="font-display text-[19px] font-semibold tnum text-white">
+                {avg != null ? formatWeight(avg, unit) : '—'}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {last && (
@@ -139,12 +182,20 @@ export function ExerciseDetailPage() {
               {last.sets.map((s) => (
                 <span
                   key={s.id}
-                  className="whitespace-nowrap rounded-[9px] bg-inset px-[11px] py-[7px] text-[13px] font-semibold tnum text-soft"
+                  className="inline-flex items-center gap-[6px] whitespace-nowrap rounded-[9px] bg-inset px-[11px] py-[7px] text-[13px] font-semibold tnum text-soft"
                 >
                   {formatSetSummary(s, type, unit, true)}
+                  <SetTypeTag value={s.setType} />
                 </span>
               ))}
             </div>
+          </div>
+        )}
+
+        {series.length >= 2 && (
+          <div className="mb-4 rounded-[18px] border border-white/[0.07] bg-surface p-[15px]">
+            <Overline className="mb-3">Progress · {series.length} sessions</Overline>
+            <ProgressChart points={series} format={formatMetric} />
           </div>
         )}
 
@@ -153,7 +204,7 @@ export function ExerciseDetailPage() {
             <Overline className="mb-3">History</Overline>
             <div className="flex flex-col gap-[10px]">
               {groups.map((g) => {
-                const top = bestSet(g.sets, type)
+                const top = bestSet(workingSets(g.sets), type)
                 return (
                   <div
                     key={g.sessionId}

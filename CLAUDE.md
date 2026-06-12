@@ -73,9 +73,16 @@ what is my best?*
 ## Explicitly out of scope (do NOT build)
 
 Social feed/sharing, routine/template builder, nutrition, AI trainer/coach,
-Apple Health / Google Fit, user accounts, complex planning, cloud image sync,
-paid tiers, multi-user. Rest timer, set-types (warm-up/drop/failure), 1RM and
-progress charts are **v2** — leave room in the schema, don't build them now.
+Apple Health / Google Fit, user accounts (login/auth), complex planning, cloud
+image sync, paid tiers, multi-user.
+
+The former v2 items are now **built** (Phase C): rest timer (`shared/rest`),
+set-types (warm-up/drop/failure on `exerciseSet.setType`; warm-ups excluded from
+records via `workingSets`), estimated 1RM (`oneRepMax.ts`, Epley) and progress
+charts (`progress.ts` + `ProgressChart`). A local **profile** (`profile` table,
+synced) with a generated avatar and a **required first-run onboarding** gate
+(`RootGate`) also ship here — note this is personal metadata, not a user
+account: there is no login/auth.
 
 ## Code quality
 
@@ -95,4 +102,5 @@ progress charts are **v2** — leave room in the schema, don't build them now.
 ## Milestones (from the product spec)
 
 1. App shell ✅ &nbsp; 2. Evolu schema ✅ &nbsp; 3. Exercise library ✅ &nbsp;
-4. Workout logging &nbsp; 5. History & stats &nbsp; 6. Settings & polish.
+4. Workout logging ✅ &nbsp; 5. History & stats ✅ &nbsp; 6. Settings & polish ✅
+&nbsp; 7. Sync (Phase B) ✅ &nbsp; 8. Profile + v2 features (Phase C) ✅.

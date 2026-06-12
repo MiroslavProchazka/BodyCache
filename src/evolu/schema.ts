@@ -30,6 +30,9 @@ export type WorkoutExerciseId = typeof WorkoutExerciseId.Type
 export const ExerciseSetId = Evolu.id('ExerciseSet')
 export type ExerciseSetId = typeof ExerciseSetId.Type
 
+export const ProfileId = Evolu.id('Profile')
+export type ProfileId = typeof ProfileId.Type
+
 // --- Enum-like value sets -------------------------------------------------
 
 export const EXERCISE_TYPES = [
@@ -69,6 +72,16 @@ export type Equipment = (typeof EQUIPMENT)[number]
 
 export const WORKOUT_STATUSES = ['active', 'finished'] as const
 export type WorkoutStatus = (typeof WORKOUT_STATUSES)[number]
+
+/**
+ * Optional per-set annotation. A `null` set type is a normal working set; the
+ * named types let the app exclude warm-ups from records and tint set chips.
+ */
+export const SET_TYPES = ['warmup', 'drop', 'failure'] as const
+export type SetType = (typeof SET_TYPES)[number]
+
+export const GENDERS = ['male', 'female', 'other', 'prefer_not_to_say'] as const
+export type Gender = (typeof GENDERS)[number]
 
 // --- Schema ---------------------------------------------------------------
 
@@ -129,6 +142,26 @@ export const Schema = {
     speedKmh: Evolu.nullOr(Evolu.NonNegativeNumber),
     resistanceLevel: Evolu.nullOr(Evolu.NonNegativeInt),
     rpe: Evolu.nullOr(Evolu.NonNegativeInt),
+    // Stored as NonEmptyString100; null = normal set, else narrowed to `SetType`.
+    setType: Evolu.nullOr(Evolu.NonEmptyString100),
     notes: Evolu.nullOr(Evolu.NonEmptyString1000),
+  },
+
+  /**
+   * The user's profile. A singleton in practice (one row per owner); the app
+   * reads the first live row. `weightKg`/`heightCm` are canonical metric units
+   * (weight displayed in the active kg/lb unit). `avatarSeed` is a short string
+   * the app turns into a generated SVG avatar — never an image binary, per the
+   * photo rules.
+   */
+  profile: {
+    id: ProfileId,
+    name: Evolu.NonEmptyString100,
+    // Stored as NonEmptyString100; constrained to `Gender` in the app layer.
+    gender: Evolu.NonEmptyString100,
+    weightKg: Evolu.NonNegativeNumber,
+    heightCm: Evolu.NonNegativeInt,
+    age: Evolu.NonNegativeInt,
+    avatarSeed: Evolu.NonEmptyString100,
   },
 }

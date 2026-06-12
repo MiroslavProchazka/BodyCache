@@ -2,6 +2,7 @@ import { Suspense, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import { BottomNav } from './BottomNav'
 import { ResumeBar } from './ResumeBar'
+import { RestTimerBar } from '@/shared/rest/RestTimerBar'
 
 /** Routes that show the bottom tab bar (the three tab roots). */
 const TAB_ROOTS = new Set(['/', '/history', '/library', '/settings'])
@@ -25,6 +26,8 @@ export function AppShell({ children }: AppShellProps) {
       <main className="no-scrollbar relative flex-1 overflow-y-auto overflow-x-hidden">
         <div className="mx-auto w-full max-w-md">{children}</div>
       </main>
+      {/* Floating rest countdown — available on every in-app screen. */}
+      <RestTimerBar />
       {showTabBar && (
         <>
           <Suspense fallback={null}>

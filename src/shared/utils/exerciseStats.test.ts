@@ -8,6 +8,8 @@ import {
   groupSessions,
   sessionTrend,
   averageTopWeightKg,
+  isWarmupSet,
+  workingSets,
   type HistorySet,
   type MetricSet,
 } from './exerciseStats'
@@ -29,6 +31,7 @@ const hist = (over: Partial<HistorySet>): HistorySet => ({
   orderIndex: 0,
   sessionId: 's',
   sessionStartedAt: '2026-01-01T00:00:00.000Z',
+  setType: null,
   ...over,
 })
 
@@ -203,5 +206,31 @@ describe('averageTopWeightKg', () => {
 
   it('is null without weighted history', () => {
     expect(averageTopWeightKg([], 'strength')).toBeNull()
+  })
+})
+
+describe('isWarmupSet / workingSets', () => {
+  it('detects warm-up sets', () => {
+    expect(isWarmupSet({ setType: 'warmup' })).toBe(true)
+    expect(isWarmupSet({ setType: 'drop' })).toBe(false)
+    expect(isWarmupSet({ setType: null })).toBe(false)
+    expect(isWarmupSet({})).toBe(false)
+  })
+
+  it('drops warm-ups, keeping working sets', () => {
+    const sets = [
+      hist({ id: 'a', weightKg: 40, reps: 10, setType: 'warmup' }),
+      hist({ id: 'b', weightKg: 80, reps: 8, setType: null }),
+      hist({ id: 'c', weightKg: 90, reps: 6, setType: 'failure' }),
+    ]
+    expect(workingSets(sets).map((s) => s.id)).toEqual(['b', 'c'])
+  })
+
+  it('keeps a warm-up from beating the working best when filtered first', () => {
+    const sets = [
+      hist({ id: 'w', weightKg: 200, reps: 1, setType: 'warmup' }),
+      hist({ id: 'r', weightKg: 100, reps: 5, setType: null }),
+    ]
+    expect(bestSet(workingSets(sets), 'strength')?.id).toBe('r')
   })
 })

@@ -16,6 +16,7 @@ import { formatVolume, formatSetSummary } from '@/shared/utils/units'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { summarizeSession } from './sessionSummary'
 import { groupExerciseSets, type SessionExerciseGroup } from './historyStats'
+import { SetTypeTag } from './SetTypeTag'
 
 /** A finished workout's full recap: stats plus the per-exercise set breakdown. */
 export function SessionDetailPage() {
@@ -154,9 +155,10 @@ function ExerciseBreakdown({
         {group.sets.map((s) => (
           <span
             key={s.id}
-            className="whitespace-nowrap rounded-[9px] bg-inset px-[10px] py-[6px] text-[12.5px] font-semibold tnum text-soft"
+            className="inline-flex items-center gap-[6px] whitespace-nowrap rounded-[9px] bg-inset px-[10px] py-[6px] text-[12.5px] font-semibold tnum text-soft"
           >
             {formatSetSummary(s, group.type, unit, true)}
+            <SetTypeTag value={s.setType} />
           </span>
         ))}
       </div>
