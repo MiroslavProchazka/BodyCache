@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 
 test.describe('Settings', () => {
   test('the unit preference persists across reloads', async ({ page }) => {

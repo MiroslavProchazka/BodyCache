@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 
 /** Create an exercise from the library and confirm it persists in the list. */
 test('create an exercise and find it in the library', async ({ page }) => {
