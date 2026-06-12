@@ -17,8 +17,10 @@ import {
   groupSessions,
   sessionTrend,
   averageTopWeightKg,
+  workingSets,
 } from '@/shared/utils/exerciseStats'
 import { useUnits } from '@/shared/units/UnitsContext'
+import { SetTypeTag } from '@/features/workouts/SetTypeTag'
 import { ExerciseTile } from './ExerciseTile'
 import { TrendBadge } from './TrendBadge'
 import { toHistorySets } from './history'
@@ -48,10 +50,12 @@ export function ExerciseDetailPage() {
   }
 
   const type = exercise.type as ExerciseType
+  // Records ignore warm-up sets; the session list below still shows them.
+  const records = workingSets(history)
   const groups = groupSessions(history)
-  const best = bestSet(history, type)
-  const avg = averageTopWeightKg(history, type)
-  const trend = sessionTrend(history, type)
+  const best = bestSet(records, type)
+  const avg = averageTopWeightKg(records, type)
+  const trend = sessionTrend(records, type)
   const last = groups[0]
 
   const handleDelete = () => {
@@ -139,9 +143,10 @@ export function ExerciseDetailPage() {
               {last.sets.map((s) => (
                 <span
                   key={s.id}
-                  className="whitespace-nowrap rounded-[9px] bg-inset px-[11px] py-[7px] text-[13px] font-semibold tnum text-soft"
+                  className="inline-flex items-center gap-[6px] whitespace-nowrap rounded-[9px] bg-inset px-[11px] py-[7px] text-[13px] font-semibold tnum text-soft"
                 >
                   {formatSetSummary(s, type, unit, true)}
+                  <SetTypeTag value={s.setType} />
                 </span>
               ))}
             </div>
@@ -153,7 +158,7 @@ export function ExerciseDetailPage() {
             <Overline className="mb-3">History</Overline>
             <div className="flex flex-col gap-[10px]">
               {groups.map((g) => {
-                const top = bestSet(g.sets, type)
+                const top = bestSet(workingSets(g.sets), type)
                 return (
                   <div
                     key={g.sessionId}

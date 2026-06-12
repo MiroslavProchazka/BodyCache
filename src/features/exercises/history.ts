@@ -23,6 +23,7 @@ export const toHistorySets = (rows: readonly ExerciseHistorySetRow[]): HistorySe
             distanceMeters: r.distanceMeters,
             sessionId: r.sessionId,
             sessionStartedAt: r.sessionStartedAt,
+            setType: r.setType,
           },
         ]
       : [],

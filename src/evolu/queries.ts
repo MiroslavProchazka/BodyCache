@@ -194,6 +194,7 @@ export const completedSetsForExercise = (exerciseId: ExerciseId) =>
         'exerciseSet.assistanceWeightKg as assistanceWeightKg',
         'exerciseSet.durationSec as durationSec',
         'exerciseSet.distanceMeters as distanceMeters',
+        'exerciseSet.setType as setType',
         'workoutExercise.workoutSessionId as sessionId',
         'workoutSession.startedAt as sessionStartedAt',
       ])
@@ -265,6 +266,7 @@ export const sessionSetsDetailed = (sessionId: WorkoutSessionId) =>
         'exerciseSet.assistanceWeightKg as assistanceWeightKg',
         'exerciseSet.durationSec as durationSec',
         'exerciseSet.distanceMeters as distanceMeters',
+        'exerciseSet.setType as setType',
         'workoutExercise.id as workoutExerciseId',
         'workoutExercise.orderIndex as exerciseOrder',
         'workoutExercise.exerciseId as exerciseId',
