@@ -20,15 +20,18 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:4173',
     trace: 'on-first-retry',
     viewport: { width: 390, height: 844 }, // mobile-first, one-handed
   },
   projects: [{ name: 'chromium', use: { ...devices['Pixel 7'] } }],
+  // Serve a production build (vite preview) rather than the dev server: it's
+  // closer to what ships and avoids first-load on-the-fly compile timeouts that
+  // make the SQLite-WASM (Evolu) boot flaky under `vite dev`.
   webServer: {
-    command: 'npm run dev -- --port 5173 --strictPort',
-    url: 'http://localhost:5173',
+    command: 'npm run build && npm run preview -- --port 4173 --strictPort',
+    url: 'http://localhost:4173',
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 180_000,
   },
 })
