@@ -12,6 +12,7 @@ import { ExerciseLibraryPage } from '@/features/exercises/ExerciseLibraryPage'
 import { ExerciseDetailPage } from '@/features/exercises/ExerciseDetailPage'
 import { CreateExercisePage } from '@/features/exercises/CreateExercisePage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
+import { ProfilePage } from '@/features/profile/ProfilePage'
 
 function PageFallback() {
   return <div className="flex min-h-[50vh] items-center justify-center text-faint">Loading…</div>
@@ -33,6 +34,7 @@ export function App() {
           <Route path="/library/new" element={<CreateExercisePage />} />
           <Route path="/library/:id" element={<ExerciseDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/profile" element={<ProfilePage />} />
           {/* Unknown routes fall back to Today rather than a blank shell. */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

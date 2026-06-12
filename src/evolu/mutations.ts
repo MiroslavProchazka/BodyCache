@@ -6,6 +6,9 @@ import type {
   ExercisePhotoId,
   ExerciseSetId,
   ExerciseType,
+  Gender,
+  ProfileId,
+  SetType,
   WorkoutExerciseId,
   WorkoutSessionId,
 } from './schema'
@@ -50,6 +53,7 @@ export interface AddSetInput {
   readonly speedKmh?: number | null
   readonly resistanceLevel?: number | null
   readonly rpe?: number | null
+  readonly setType?: SetType | null
   readonly notes?: string | null
 }
 
@@ -65,7 +69,28 @@ export interface UpdateSetPatch {
   readonly speedKmh?: number | null
   readonly resistanceLevel?: number | null
   readonly rpe?: number | null
+  readonly setType?: SetType | null
   readonly notes?: string | null
+}
+
+/** Input for creating the user's profile. */
+export interface CreateProfileInput {
+  readonly name: string
+  readonly gender: Gender
+  readonly weightKg: number
+  readonly heightCm: number
+  readonly age: number
+  readonly avatarSeed: string
+}
+
+/** Patch for updating the profile (all fields optional). */
+export interface UpdateProfilePatch {
+  readonly name?: string
+  readonly gender?: Gender
+  readonly weightKg?: number
+  readonly heightCm?: number
+  readonly age?: number
+  readonly avatarSeed?: string
 }
 
 /**
@@ -76,6 +101,19 @@ export interface UpdateSetPatch {
  */
 export const useBodyCacheMutations = () => {
   const { insert, update } = useEvolu()
+
+  const createProfile = (input: CreateProfileInput) =>
+    insert('profile', {
+      name: input.name,
+      gender: input.gender,
+      weightKg: input.weightKg,
+      heightCm: input.heightCm,
+      age: input.age,
+      avatarSeed: input.avatarSeed,
+    })
+
+  const updateProfile = (id: ProfileId, patch: UpdateProfilePatch) =>
+    update('profile', { id, ...patch })
 
   const createExercise = (input: CreateExerciseInput) =>
     insert('exercise', {
@@ -152,6 +190,7 @@ export const useBodyCacheMutations = () => {
       speedKmh: setData.speedKmh ?? null,
       resistanceLevel: setData.resistanceLevel ?? null,
       rpe: setData.rpe ?? null,
+      setType: setData.setType ?? null,
       notes: setData.notes ?? null,
     })
 
@@ -184,6 +223,8 @@ export const useBodyCacheMutations = () => {
     update('workoutSession', { id, isDeleted: 1 })
 
   return {
+    createProfile,
+    updateProfile,
     createExercise,
     updateExercise,
     softDeleteExercise,

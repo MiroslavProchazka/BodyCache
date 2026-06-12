@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@evolu/react'
 import {
   Cloud,
   CloudOff,
@@ -9,16 +11,21 @@ import {
   Loader2,
   type LucideIcon,
 } from 'lucide-react'
+import { userProfile } from '@/evolu/queries'
 import { Overline } from '@/shared/components/Overline'
 import { useToast } from '@/shared/components/Toast'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { useOnlineStatus } from '@/shared/utils/useOnlineStatus'
+import { Avatar } from '@/features/profile/Avatar'
+import { formatProfileMeta } from '@/features/profile/profile'
 import { useDataTransfer } from './useDataTransfer'
 
 /** Settings — storage status, display units, and data management. */
 export function SettingsPage() {
   const { unit, setUnit } = useUnits()
   const online = useOnlineStatus()
+  const navigate = useNavigate()
+  const profile = useQuery(userProfile)[0]
   const { showToast } = useToast()
   const { exportBackup, exportCsv, importBackup } = useDataTransfer()
   const fileInput = useRef<HTMLInputElement>(null)
@@ -66,6 +73,24 @@ export function SettingsPage() {
       <h1 className="mb-5 font-display text-[26px] font-semibold tracking-tight text-white">
         Settings
       </h1>
+
+      {/* Profile — tap to edit name, body metrics and avatar. */}
+      {profile && (
+        <button
+          type="button"
+          onClick={() => navigate('/settings/profile')}
+          className="mb-[18px] flex w-full items-center gap-[13px] rounded-[18px] border border-white/[0.07] bg-surface p-4 text-left active:scale-[0.99]"
+        >
+          <Avatar seed={profile.avatarSeed ?? profile.id} size={52} className="flex-none" />
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[16px] font-semibold text-white">{profile.name}</div>
+            <div className="mt-[2px] truncate text-[12.5px] text-muted">
+              {formatProfileMeta(profile, unit)}
+            </div>
+          </div>
+          <ChevronRight size={18} strokeWidth={1.75} className="flex-none text-faint" />
+        </button>
+      )}
 
       {/* Sync status — local-first writes, encrypted relay sync in the
           background. Connectivity is our honest status proxy: Evolu doesn't
