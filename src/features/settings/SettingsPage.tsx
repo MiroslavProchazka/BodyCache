@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import {
   Cloud,
+  CloudOff,
   Download,
   Upload,
   Copy,
@@ -11,11 +12,13 @@ import {
 import { Overline } from '@/shared/components/Overline'
 import { useToast } from '@/shared/components/Toast'
 import { useUnits } from '@/shared/units/UnitsContext'
+import { useOnlineStatus } from '@/shared/utils/useOnlineStatus'
 import { useDataTransfer } from './useDataTransfer'
 
 /** Settings — storage status, display units, and data management. */
 export function SettingsPage() {
   const { unit, setUnit } = useUnits()
+  const online = useOnlineStatus()
   const { showToast } = useToast()
   const { exportBackup, exportCsv, importBackup } = useDataTransfer()
   const fileInput = useRef<HTMLInputElement>(null)
@@ -64,22 +67,10 @@ export function SettingsPage() {
         Settings
       </h1>
 
-      {/* Storage status — local-first today; relay sync is a later addition. */}
-      <div className="mb-[18px] flex items-center gap-[13px] rounded-[18px] border border-white/[0.07] bg-surface p-4">
-        <div className="flex h-11 w-11 flex-none items-center justify-center rounded-[14px] bg-neon/[0.14] text-neon">
-          <Cloud size={22} strokeWidth={1.75} />
-        </div>
-        <div className="flex-1">
-          <div className="text-[15px] font-semibold text-white">Saved on this device</div>
-          <div className="mt-[2px] text-[12.5px] text-muted">
-            Works offline · encrypted sync coming soon
-          </div>
-        </div>
-        <span
-          className="h-[9px] w-[9px] rounded-full bg-neon"
-          style={{ boxShadow: '0 0 0 4px rgba(96,225,152,.16)' }}
-        />
-      </div>
+      {/* Sync status — local-first writes, encrypted relay sync in the
+          background. Connectivity is our honest status proxy: Evolu doesn't
+          expose a live SyncState yet, and saving never blocks on the network. */}
+      <SyncStatusCard online={online} />
 
       <Overline className="mb-[10px]">Units</Overline>
       <div className="mb-[22px] flex rounded-2xl border border-white/[0.08] bg-surface p-1">
@@ -130,6 +121,46 @@ export function SettingsPage() {
         <br />
         v1.0 — not your coach
       </div>
+    </div>
+  )
+}
+
+/**
+ * Storage + sync status. Always reassures that data is saved on the device;
+ * the connectivity line tells the user whether background sync is reaching the
+ * relay right now. Photos stay device-local (cross-device image sync is out of
+ * MVP scope), so the copy promises sync of "workouts", not photos.
+ */
+function SyncStatusCard({ online }: { online: boolean }) {
+  const Icon = online ? Cloud : CloudOff
+  return (
+    <div className="mb-[18px] flex items-center gap-[13px] rounded-[18px] border border-white/[0.07] bg-surface p-4">
+      <div
+        className={[
+          'flex h-11 w-11 flex-none items-center justify-center rounded-[14px]',
+          online ? 'bg-neon/[0.14] text-neon' : 'bg-white/[0.06] text-muted',
+        ].join(' ')}
+      >
+        <Icon size={22} strokeWidth={1.75} />
+      </div>
+      <div className="flex-1">
+        <div className="text-[15px] font-semibold text-white">
+          {online ? 'Syncing your workouts' : 'Saved on this device'}
+        </div>
+        <div className="mt-[2px] text-[12.5px] text-muted">
+          {online
+            ? 'Encrypted · across your devices · photos stay here'
+            : "Offline — changes sync once you're back online"}
+        </div>
+      </div>
+      <span
+        aria-hidden
+        className={[
+          'h-[9px] w-[9px] rounded-full',
+          online ? 'bg-neon' : 'bg-muted',
+        ].join(' ')}
+        style={online ? { boxShadow: '0 0 0 4px rgba(96,225,152,.16)' } : undefined}
+      />
     </div>
   )
 }

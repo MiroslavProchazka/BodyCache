@@ -29,7 +29,11 @@ export default defineConfig({
   // closer to what ships and avoids first-load on-the-fly compile timeouts that
   // make the SQLite-WASM (Evolu) boot flaky under `vite dev`.
   webServer: {
-    command: 'npm run build && npm run preview -- --port 4173 --strictPort',
+    // Build with sync disabled (empty relay URL) so E2E stays hermetic — no
+    // dependency on a public relay and no test data leaving the box. Logging
+    // and persistence still run through Evolu's local SQLite store.
+    command:
+      'VITE_EVOLU_RELAY_URL= npm run build && npm run preview -- --port 4173 --strictPort',
     url: 'http://localhost:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
