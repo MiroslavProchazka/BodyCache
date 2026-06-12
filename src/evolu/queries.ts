@@ -33,6 +33,29 @@ export const allExercises = evolu.createQuery((db) =>
     .orderBy('name'),
 )
 
+/**
+ * Whole-table "live rows" queries used by the backup/export feature in
+ * Settings. They mirror `allExercises` for the remaining tables so a backup can
+ * snapshot every non-deleted row the user still has. Soft-deleted rows are
+ * intentionally excluded — a backup captures the data the user kept, not the
+ * data they threw away.
+ */
+export const allExercisePhotos = evolu.createQuery((db) =>
+  db.selectFrom('exercisePhoto').selectAll().where('isDeleted', 'is', null),
+)
+
+export const allWorkoutSessions = evolu.createQuery((db) =>
+  db.selectFrom('workoutSession').selectAll().where('isDeleted', 'is', null),
+)
+
+export const allWorkoutExercises = evolu.createQuery((db) =>
+  db.selectFrom('workoutExercise').selectAll().where('isDeleted', 'is', null),
+)
+
+export const allExerciseSets = evolu.createQuery((db) =>
+  db.selectFrom('exerciseSet').selectAll().where('isDeleted', 'is', null),
+)
+
 /** A single exercise by id (non-deleted). */
 export const exerciseById = (id: ExerciseId) =>
   evolu.createQuery((db) =>

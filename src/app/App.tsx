@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { AppShell } from '@/shared/components/AppShell'
 import { TodayPage } from '@/features/workouts/TodayPage'
 import { ActiveWorkoutPage } from '@/features/workouts/ActiveWorkoutPage'
@@ -33,6 +33,8 @@ export function App() {
           <Route path="/library/new" element={<CreateExercisePage />} />
           <Route path="/library/:id" element={<ExerciseDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          {/* Unknown routes fall back to Today rather than a blank shell. */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     </AppShell>

@@ -79,6 +79,47 @@ export const resolvePhotoUrl = async (
   return blob ? URL.createObjectURL(blob) : null
 }
 
+/** Read the raw `Blob` for a stored reference (`idb://…`), or null. */
+export const readPhotoBlob = async (
+  ref: string | null | undefined,
+): Promise<Blob | null> => {
+  if (!ref || !ref.startsWith(REF_PREFIX)) return null
+  const blob = await tx<Blob | undefined>('readonly', (s) =>
+    s.get(ref.slice(REF_PREFIX.length)),
+  )
+  return blob ?? null
+}
+
+/**
+ * Write a `Blob` back to IndexedDB at an exact reference. Used when restoring a
+ * backup so the restored `exercisePhoto` rows resolve to real images again.
+ */
+export const writePhotoBlob = async (ref: string, blob: Blob): Promise<void> => {
+  if (!ref.startsWith(REF_PREFIX)) return
+  await tx('readwrite', (s) => s.put(blob, ref.slice(REF_PREFIX.length)))
+}
+
+/** Encode a `Blob` as a base64 string (no data-URL prefix). */
+export const blobToBase64 = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const result = reader.result as string
+      // Strip the `data:<mime>;base64,` prefix, keeping only the payload.
+      resolve(result.slice(result.indexOf(',') + 1))
+    }
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(blob)
+  })
+
+/** Decode a base64 string back into a `Blob` of the given mime type. */
+export const base64ToBlob = (base64: string, mime: string): Blob => {
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+  return new Blob([bytes], { type: mime })
+}
+
 /** Delete a stored image and its thumbnail by their references. */
 export const deletePhoto = async (
   ...refs: (string | null | undefined)[]
