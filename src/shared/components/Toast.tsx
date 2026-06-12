@@ -23,7 +23,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [message, setMessage] = useState<string | null>(null)
   // Re-key the node so re-showing the same message restarts the animation.
   const [seq, setSeq] = useState(0)
-  const timer = useRef<ReturnType<typeof setTimeout>>()
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const showToast = useCallback((next: string) => {
     if (timer.current) clearTimeout(timer.current)

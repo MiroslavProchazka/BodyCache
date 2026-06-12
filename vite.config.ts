@@ -4,6 +4,24 @@ import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
 export default defineConfig({
+  server: {
+    headers: {
+      // Evolu's SQLite OPFS worker requires SharedArrayBuffer, which Chromium
+      // exposes only when the app is cross-origin isolated. Playwright serves
+      // the Vite dev app in CI, so keep the dev server isolated too.
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
+  },
+  preview: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
+  },
+  optimizeDeps: {
+    exclude: ['@evolu/sqlite-wasm'],
+  },
   plugins: [
     react(),
     VitePWA({
