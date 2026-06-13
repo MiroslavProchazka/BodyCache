@@ -70,7 +70,7 @@ export const EQUIPMENT = [
 ] as const
 export type Equipment = (typeof EQUIPMENT)[number]
 
-export const WORKOUT_STATUSES = ['active', 'finished'] as const
+export const WORKOUT_STATUSES = ['active', 'paused', 'finished'] as const
 export type WorkoutStatus = (typeof WORKOUT_STATUSES)[number]
 
 /**
@@ -114,6 +114,13 @@ export const Schema = {
     notes: Evolu.nullOr(Evolu.NonEmptyString1000),
     // Stored as NonEmptyString100; constrained to `WorkoutStatus` in the app layer.
     status: Evolu.NonEmptyString100,
+    // Pause support. `resumedAt` is the start of the current active interval
+    // (equal to `startedAt` for a never-paused session, null while paused);
+    // `pausedTotalSec` banks active seconds from prior intervals and, on
+    // finish, holds the session's total active duration. Both are null for
+    // legacy rows created before pause shipped.
+    resumedAt: Evolu.nullOr(Evolu.DateIso),
+    pausedTotalSec: Evolu.nullOr(Evolu.NonNegativeInt),
   },
 
   workoutExercise: {

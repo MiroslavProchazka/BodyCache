@@ -7,7 +7,7 @@ import type { WorkoutSessionId } from '@/evolu/schema'
 import { Overline } from '@/shared/components/Overline'
 import { StatTile } from '@/shared/components/StatTile'
 import { formatRelativeDay } from '@/shared/utils/dates'
-import { formatElapsed } from '@/shared/utils/workoutStats'
+import { finishedDurationSec, formatDurationSec } from '@/shared/utils/workoutStats'
 import { formatVolume } from '@/shared/utils/units'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { summarizeSession } from './sessionSummary'
@@ -18,10 +18,8 @@ export function LastWorkoutCard({ session }: { session: WorkoutSessionRow }) {
   const { unit } = useUnits()
   const rows = useQuery(completedSetsForSession(session.id as WorkoutSessionId))
   const summary = summarizeSession(rows)
-  const duration =
-    session.startedAt && session.finishedAt
-      ? formatElapsed(session.startedAt, session.finishedAt)
-      : '—'
+  const durationSec = finishedDurationSec(session)
+  const duration = durationSec != null ? formatDurationSec(durationSec) : '—'
 
   return (
     <button

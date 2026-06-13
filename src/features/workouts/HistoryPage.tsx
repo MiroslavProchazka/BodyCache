@@ -7,7 +7,7 @@ import type { WorkoutSessionId } from '@/evolu/schema'
 import { StatTile } from '@/shared/components/StatTile'
 import { Overline } from '@/shared/components/Overline'
 import { formatRelativeDay, formatMonth, monthKey } from '@/shared/utils/dates'
-import { formatElapsed } from '@/shared/utils/workoutStats'
+import { finishedDurationSec, formatDurationSec } from '@/shared/utils/workoutStats'
 import { formatVolume } from '@/shared/utils/units'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { sessionSummaries, historyTotals } from './historyStats'
@@ -105,10 +105,8 @@ function SessionRow({
   onClick: () => void
 }) {
   const { unit } = useUnits()
-  const duration =
-    session.startedAt && session.finishedAt
-      ? formatElapsed(session.startedAt, session.finishedAt)
-      : null
+  const durationSec = finishedDurationSec(session)
+  const duration = durationSec != null ? formatDurationSec(durationSec) : null
   const name = summary?.name ?? 'Workout'
   const setCount = summary?.setCount ?? 0
   const exerciseCount = summary?.exerciseCount ?? 0

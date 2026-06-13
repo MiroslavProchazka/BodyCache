@@ -1,17 +1,22 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { Dumbbell, Play, ArrowRight } from 'lucide-react'
+import { Dumbbell, Play, ArrowRight, X, Trash2 } from 'lucide-react'
 import {
   activeWorkoutSession,
+  completedSetsForSession,
   finishedWorkoutSessions,
   performedExercises,
   sessionExercises,
 } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { WorkoutSessionRow } from '@/evolu/rows'
-import type { ExerciseId, ExercisePhotoId, ExerciseType } from '@/evolu/schema'
-import { formatElapsed } from '@/shared/utils/workoutStats'
+import type { ExerciseId, ExercisePhotoId, ExerciseType, WorkoutSessionId } from '@/evolu/schema'
+import {
+  activeElapsedSec,
+  formatDurationSec,
+  isStaleAbandonedSession,
+} from '@/shared/utils/workoutStats'
 import { RecentExerciseCard } from '@/features/exercises/RecentExerciseCard'
 import { LastWorkoutCard } from './LastWorkoutCard'
 
@@ -72,7 +77,7 @@ export function TodayPage() {
       </p>
 
       {active ? (
-        <ContinueCard session={active} onClick={() => navigate('/workout')} />
+        <ActiveSessionCard session={active} />
       ) : (
         <button
           type="button"
@@ -129,42 +134,101 @@ export function TodayPage() {
   )
 }
 
-/** The "Continue lifting" CTA, with a live exercise count + elapsed time. */
-function ContinueCard({
-  session,
-  onClick,
-}: {
-  session: WorkoutSessionRow
-  onClick: () => void
-}) {
+/**
+ * The in-progress workout on Home. Normally the "Continue lifting" CTA with a
+ * live exercise count + (pause-aware) elapsed time. If the session was left
+ * open for hours with nothing logged, it switches to a stale prompt offering a
+ * one-tap discard — so a forgotten empty workout never ticks on forever.
+ */
+function ActiveSessionCard({ session }: { session: WorkoutSessionRow }) {
+  const navigate = useNavigate()
+  const { discardWorkoutSession } = useBodyCacheMutations()
   const exercises = useQuery(sessionExercises(session.id))
+  const completedSets = useQuery(completedSetsForSession(session.id as WorkoutSessionId))
   const [now, setNow] = useState(() => new Date().toISOString())
   useEffect(() => {
     const t = setInterval(() => setNow(new Date().toISOString()), 1000)
     return () => clearInterval(t)
   }, [])
 
+  const paused = session.status === 'paused'
+  const elapsedSec = activeElapsedSec(session, now)
+  const stale = isStaleAbandonedSession(elapsedSec, completedSets.length)
+
+  const handleDiscard = () => {
+    const message =
+      completedSets.length > 0
+        ? 'Discard this workout? Everything you logged will be lost. This can’t be undone.'
+        : 'Discard this empty workout?'
+    if (!window.confirm(message)) return
+    discardWorkoutSession(session.id as WorkoutSessionId)
+  }
+
+  if (stale) {
+    return (
+      <div className="mb-[14px] rounded-[24px] border border-white/[0.08] bg-surface p-5">
+        <div className="mb-[6px] text-xs font-semibold uppercase tracking-[0.08em] text-faint">
+          Workout left open · {formatDurationSec(elapsedSec)}
+        </div>
+        <div className="font-display text-[20px] font-semibold tracking-tight text-white">
+          Still going?
+        </div>
+        <div className="mt-[3px] text-[13.5px] text-muted">
+          Nothing was logged. Discard it, or jump back in.
+        </div>
+        <div className="mt-4 flex gap-[10px]">
+          <button
+            type="button"
+            onClick={handleDiscard}
+            className="flex flex-1 items-center justify-center gap-[7px] rounded-[16px] border border-white/10 bg-inset py-[13px] text-[14.5px] font-semibold text-soft"
+          >
+            <Trash2 size={16} strokeWidth={1.85} />
+            Discard
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/workout')}
+            className="flex flex-[1.2] items-center justify-center gap-[7px] rounded-[16px] bg-gradient-to-br from-neon to-brand py-[13px] text-[14.5px] font-bold text-ink"
+          >
+            Resume
+            <ArrowRight size={17} strokeWidth={2} />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="mb-[14px] flex w-full items-center justify-between rounded-[24px] bg-gradient-to-br from-neon to-brand p-5 text-left text-ink"
-    >
-      <div>
-        <div className="mb-[6px] text-xs font-semibold uppercase tracking-[0.08em] opacity-[0.65]">
-          Workout in progress
+    <div className="relative mb-[14px]">
+      <button
+        type="button"
+        onClick={() => navigate('/workout')}
+        className="flex w-full items-center justify-between rounded-[24px] bg-gradient-to-br from-neon to-brand p-5 pr-[58px] text-left text-ink"
+      >
+        <div>
+          <div className="mb-[6px] text-xs font-semibold uppercase tracking-[0.08em] opacity-[0.65]">
+            {paused ? 'Workout paused' : 'Workout in progress'}
+          </div>
+          <div className="font-display text-[22px] font-semibold tracking-tight">
+            {paused ? 'Resume lifting' : 'Continue lifting'}
+          </div>
+          <div className="mt-[3px] text-[13.5px] font-medium opacity-[0.7]">
+            {exercises.length} {exercises.length === 1 ? 'exercise' : 'exercises'} ·{' '}
+            {formatDurationSec(elapsedSec)}
+          </div>
         </div>
-        <div className="font-display text-[22px] font-semibold tracking-tight">
-          Continue lifting
+        <div className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-full bg-ink/[0.16]">
+          <ArrowRight size={22} strokeWidth={1.9} />
         </div>
-        <div className="mt-[3px] text-[13.5px] font-medium opacity-[0.7]">
-          {exercises.length} {exercises.length === 1 ? 'exercise' : 'exercises'} ·{' '}
-          {formatElapsed(session.startedAt ?? now, now)}
-        </div>
-      </div>
-      <div className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-full bg-ink/[0.16]">
-        <ArrowRight size={22} strokeWidth={1.9} />
-      </div>
-    </button>
+      </button>
+      <button
+        type="button"
+        onClick={handleDiscard}
+        aria-label="Discard workout"
+        className="absolute right-[14px] top-[14px] flex h-7 w-7 items-center justify-center rounded-full bg-ink/[0.16] text-ink"
+      >
+        <X size={16} strokeWidth={2.2} />
+      </button>
+    </div>
   )
 }

@@ -6,7 +6,7 @@ import type { WorkoutSessionRow } from '@/evolu/rows'
 import type { WorkoutSessionId } from '@/evolu/schema'
 import { Button } from '@/shared/components/Button'
 import { StatTile } from '@/shared/components/StatTile'
-import { formatElapsed } from '@/shared/utils/workoutStats'
+import { finishedDurationSec, formatDurationSec } from '@/shared/utils/workoutStats'
 import { formatVolume } from '@/shared/utils/units'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { summarizeSession } from './sessionSummary'
@@ -28,10 +28,8 @@ function FinishInner({ session }: { session: WorkoutSessionRow }) {
   const { unit } = useUnits()
   const rows = useQuery(completedSetsForSession(session.id as WorkoutSessionId))
   const summary = summarizeSession(rows)
-  const duration =
-    session.startedAt && session.finishedAt
-      ? formatElapsed(session.startedAt, session.finishedAt)
-      : '—'
+  const durationSec = finishedDurationSec(session)
+  const duration = durationSec != null ? formatDurationSec(durationSec) : '—'
 
   return (
     <div className="flex flex-col items-center px-5 pb-[130px] pt-[30px] text-center">
