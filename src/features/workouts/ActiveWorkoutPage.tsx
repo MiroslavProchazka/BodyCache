@@ -10,6 +10,7 @@ import { CircleButton } from '@/shared/components/CircleButton'
 import { StickyAction } from '@/shared/components/StickyAction'
 import { activeElapsedSec, formatDurationSec } from '@/shared/utils/workoutStats'
 import { WorkoutEntryCard } from './WorkoutEntryCard'
+import { MuscleDistributionCard } from './MuscleDistributionCard'
 
 /** The live session: elapsed timer, logged exercises, add, pause, and finish. */
 export function ActiveWorkoutPage() {
@@ -20,12 +21,8 @@ export function ActiveWorkoutPage() {
 
 function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
   const navigate = useNavigate()
-  const {
-    finishWorkoutSession,
-    discardWorkoutSession,
-    pauseWorkoutSession,
-    resumeWorkoutSession,
-  } = useBodyCacheMutations()
+  const { finishWorkoutSession, discardWorkoutSession, pauseWorkoutSession, resumeWorkoutSession } =
+    useBodyCacheMutations()
   const entries = useQuery(sessionExercises(session.id as WorkoutSessionId))
 
   const [now, setNow] = useState(() => new Date().toISOString())
@@ -101,6 +98,8 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
             </CircleButton>
           </div>
         </header>
+
+        <MuscleDistributionCard sessionId={session.id as WorkoutSessionId} />
 
         {empty ? (
           <div className="mb-4 rounded-[22px] border-[1.5px] border-dashed border-white/[0.14] px-6 py-[38px] text-center">

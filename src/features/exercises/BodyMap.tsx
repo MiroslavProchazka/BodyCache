@@ -29,22 +29,67 @@ const BASE = '#345C45' // resting muscle / forearms
 const NEUTRAL = '#284B38' // head, neck, hands, knees, feet (never highlights)
 const GAP = '#0B2417' // gap stroke — matches the recommended container background
 
+/** Per-muscle intensity, 0..1. Drives the live-distribution fill. */
+export type MuscleLevels = Partial<Record<Exclude<MuscleKey, ''>, number>>
+
+const hex = (h: string): [number, number, number] => {
+  const s = h.replace('#', '')
+  return [parseInt(s.slice(0, 2), 16), parseInt(s.slice(2, 4), 16), parseInt(s.slice(4, 6), 16)]
+}
+
+/** Per-channel linear interpolation between two hex colors → `rgb(...)`. */
+const lerp = (a: string, b: string, t: number): string => {
+  const A = hex(a)
+  const B = hex(b)
+  const c = A.map((x, i) => Math.round(x + (B[i] - x) * t))
+  return `rgb(${c[0]},${c[1]},${c[2]})`
+}
+
 interface BodyMapProps {
   /** Which figure(s) to render. */
   view?: BodyView
-  /** Which muscle group to highlight neon. Empty = no highlight. */
+  /** Primary muscle group, rendered full neon. Empty = no highlight. */
   active?: MuscleKey
+  /** Secondary muscle groups (comma-separated keys), rendered at 45% neon. */
+  secondary?: string
+  /**
+   * Intensity map. When present it OVERRIDES `active`/`secondary`: each muscle
+   * is filled `lerp(BASE, NEON, level)`. Used by the live distribution map.
+   */
+  levels?: MuscleLevels
   /** Show a small "Front" / "Back" caption under each figure. */
   captions?: boolean
   /** Figure width in px. Height is derived: `figH = round(fw * 2.33)`. */
   fw?: number
 }
 
-export function BodyMap({ view = 'both', active = '', captions = false, fw = 112 }: BodyMapProps) {
+export function BodyMap({
+  view = 'both',
+  active = '',
+  secondary = '',
+  levels,
+  captions = false,
+  fw = 112,
+}: BodyMapProps) {
   const figW = fw
   const figH = Math.round(fw * 2.33)
-  /** Fill for a muscle region: neon when active, else base. */
-  const f = (k: MuscleKey): string => (active === k ? NEON : BASE)
+  const secondaries = secondary
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean)
+  /**
+   * Fill for a muscle region. In `levels` mode the intensity map wins; else the
+   * primary is full neon, secondaries are 45% neon, everything else rests.
+   */
+  const f = (k: Exclude<MuscleKey, ''>): string => {
+    if (levels) {
+      const t = Math.max(0, Math.min(1, levels[k] ?? 0))
+      return t <= 0.001 ? BASE : lerp(BASE, NEON, t)
+    }
+    if (active === k) return NEON
+    if (secondaries.includes(k)) return lerp(BASE, NEON, 0.45)
+    return BASE
+  }
 
   const fill = {
     delt: f('shoulders'),
