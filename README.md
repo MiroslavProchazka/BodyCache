@@ -66,7 +66,9 @@ Dev server runs on http://localhost:5173 by default.
 
 ## Offline and PWA Notes
 
-- Evolu currently runs in local-only mode (`transports: []`) and does not sync to backend yet.
+- Evolu is configured for encrypted relay sync by default (`VITE_EVOLU_RELAY_URL`, defaults to `wss://free.evoluhq.com`).
+- Set `VITE_EVOLU_RELAY_URL=` (empty value) to force local-only mode with no sync.
+- End-to-end tests intentionally run with sync disabled to keep test data local and deterministic.
 - PWA assets and manifest are configured through Vite PWA plugin.
 
 ## Current Status

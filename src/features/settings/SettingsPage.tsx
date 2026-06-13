@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import {
@@ -11,6 +11,7 @@ import {
   Loader2,
   type LucideIcon,
 } from 'lucide-react'
+import { useEvolu } from '@/evolu/evolu'
 import { userProfile } from '@/evolu/queries'
 import { Overline } from '@/shared/components/Overline'
 import { useToast } from '@/shared/components/Toast'
@@ -20,10 +21,12 @@ import { formatDuration } from '@/shared/utils/units'
 import { useOnlineStatus } from '@/shared/utils/useOnlineStatus'
 import { Avatar } from '@/features/profile/Avatar'
 import { formatProfileMeta } from '@/features/profile/profile'
+import { parseRestoreMnemonic } from './mnemonic'
 import { useDataTransfer } from './useDataTransfer'
 
 /** Settings — storage status, display units, and data management. */
 export function SettingsPage() {
+  const evolu = useEvolu()
   const { unit, setUnit } = useUnits()
   const { defaultSec, setDefaultSec } = useRestTimer()
   const online = useOnlineStatus()
@@ -34,6 +37,30 @@ export function SettingsPage() {
   const fileInput = useRef<HTMLInputElement>(null)
   // Which data action is in flight, so we can disable the rows + show a spinner.
   const [busy, setBusy] = useState<null | 'backup' | 'restore' | 'csv'>(null)
+  const [currentMnemonic, setCurrentMnemonic] = useState('')
+  const [ownerReady, setOwnerReady] = useState(false)
+  const [showMnemonic, setShowMnemonic] = useState(false)
+  const [mnemonicInput, setMnemonicInput] = useState('')
+  const [mnemonicError, setMnemonicError] = useState('')
+  const [mnemonicBusy, setMnemonicBusy] = useState<null | 'restore' | 'reset'>(null)
+
+  useEffect(() => {
+    let active = true
+    evolu.appOwner
+      .then((owner) => {
+        if (!active) return
+        setCurrentMnemonic(owner.mnemonic ?? '')
+        setOwnerReady(true)
+      })
+      .catch(() => {
+        if (!active) return
+        setOwnerReady(true)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [evolu])
 
   const run = async (kind: 'backup' | 'csv', fn: () => Promise<void>) => {
     if (busy) return
@@ -71,6 +98,76 @@ export function SettingsPage() {
     }
   }
 
+  const toggleMnemonic = () => {
+    setShowMnemonic((v) => !v)
+  }
+
+  const copyMnemonic = async () => {
+    if (!currentMnemonic) {
+      showToast('Recovery phrase is not ready yet')
+      return
+    }
+    try {
+      if (typeof navigator === 'undefined' || !navigator.clipboard) {
+        throw new Error('clipboard_unavailable')
+      }
+      await navigator.clipboard.writeText(currentMnemonic)
+      showToast('Recovery phrase copied')
+    } catch {
+      showToast('Copy failed - copy the phrase manually')
+    }
+  }
+
+  const handleMnemonicInputChange = (value: string) => {
+    setMnemonicInput(value)
+    if (mnemonicError) setMnemonicError('')
+  }
+
+  const restoreFromMnemonic = async () => {
+    if (mnemonicBusy) return
+
+    const parsed = parseRestoreMnemonic(currentMnemonic, mnemonicInput)
+    if (!parsed.ok) {
+      setMnemonicError(parsed.error)
+      return
+    }
+
+    if (
+      !window.confirm(
+        'Restore this recovery phrase? The app will reload and switch to that synced owner. Photos stay on this device.',
+      )
+    ) {
+      return
+    }
+
+    setMnemonicBusy('restore')
+    try {
+      await evolu.restoreAppOwner(parsed.value)
+    } catch {
+      setMnemonicBusy(null)
+      setMnemonicError('Restore failed. Check the phrase and try again.')
+    }
+  }
+
+  const generateNewMnemonic = async () => {
+    if (mnemonicBusy) return
+    if (
+      !window.confirm(
+        'Generate a new recovery phrase? This starts a new owner and reloads the app.',
+      )
+    ) {
+      return
+    }
+
+    setMnemonicBusy('reset')
+    try {
+      await evolu.resetAppOwner()
+    } catch {
+      setMnemonicBusy(null)
+      showToast('Could not generate a new phrase')
+    }
+  }
+
   return (
     <div className="px-5 pb-[130px] pt-[6px]">
       <h1 className="mb-5 font-display text-[26px] font-semibold tracking-tight text-white">
@@ -99,6 +196,85 @@ export function SettingsPage() {
           background. Connectivity is our honest status proxy: Evolu doesn't
           expose a live SyncState yet, and saving never blocks on the network. */}
       <SyncStatusCard online={online} />
+
+      <Overline className="mb-[10px]">Recovery phrase</Overline>
+      <div className="mb-[22px] rounded-[18px] border border-white/[0.07] bg-surface p-4">
+        <p className="text-[13px] leading-relaxed text-muted">
+          Use your recovery phrase to restore the same synced owner on another device. Keep it
+          private. Photos remain local to each device.
+        </p>
+
+        <div className="mt-3 rounded-[14px] border border-white/[0.08] bg-inset p-3">
+          {!ownerReady ? (
+            <p className="text-[12.5px] text-faint">Loading recovery phrase...</p>
+          ) : showMnemonic ? (
+            <p className="select-text break-words font-mono text-[13px] leading-relaxed text-soft">
+              {currentMnemonic}
+            </p>
+          ) : (
+            <p className="text-[12.5px] text-faint">
+              Hidden for safety. Reveal it only when you need to restore another device.
+            </p>
+          )}
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={toggleMnemonic}
+            disabled={!ownerReady}
+            className="rounded-[12px] border border-white/[0.09] bg-inset px-3 py-[10px] text-[13.5px] font-semibold text-soft disabled:opacity-50"
+          >
+            {showMnemonic ? 'Hide phrase' : 'Reveal phrase'}
+          </button>
+          <button
+            type="button"
+            onClick={copyMnemonic}
+            disabled={!ownerReady || !showMnemonic || !currentMnemonic}
+            className="rounded-[12px] border border-neon/30 bg-neon/10 px-3 py-[10px] text-[13.5px] font-semibold text-neon disabled:opacity-50"
+          >
+            Copy phrase
+          </button>
+        </div>
+
+        <div className="mt-4 border-t border-white/[0.06] pt-4">
+          <label
+            htmlFor="mnemonic-restore"
+            className="mb-2 block text-[12px] font-semibold text-faint"
+          >
+            Restore from phrase
+          </label>
+          <textarea
+            id="mnemonic-restore"
+            value={mnemonicInput}
+            onChange={(e) => handleMnemonicInputChange(e.target.value)}
+            rows={2}
+            placeholder="word1 word2 ... word12"
+            className="w-full rounded-[12px] border border-white/[0.08] bg-inset px-3 py-[10px] text-[13px] leading-relaxed text-soft placeholder:text-faint focus:outline-none"
+          />
+          {mnemonicError ? (
+            <p className="mt-2 text-[12px] font-medium text-[#F5B45A]">{mnemonicError}</p>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={restoreFromMnemonic}
+            disabled={mnemonicBusy !== null || !mnemonicInput.trim()}
+            className="mt-3 w-full rounded-[12px] bg-neon px-4 py-[11px] text-[13.5px] font-semibold text-ink disabled:opacity-50"
+          >
+            {mnemonicBusy === 'restore' ? 'Restoring...' : 'Restore phrase'}
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={generateNewMnemonic}
+          disabled={mnemonicBusy !== null}
+          className="mt-3 w-full rounded-[12px] border border-white/[0.09] bg-transparent px-4 py-[11px] text-[13px] font-semibold text-faint disabled:opacity-50"
+        >
+          {mnemonicBusy === 'reset' ? 'Generating...' : 'Generate new phrase'}
+        </button>
+      </div>
 
       <Overline className="mb-[10px]">Units</Overline>
       <div className="mb-[22px] flex rounded-2xl border border-white/[0.08] bg-surface p-1">
@@ -144,8 +320,8 @@ export function SettingsPage() {
         />
       </div>
       <p className="mt-[10px] px-1 text-[12px] leading-relaxed text-faint">
-        A backup is a single file with all your exercises, workouts and photos.
-        Keep it somewhere safe — it's the only copy off this device.
+        A backup is a single file with all your exercises, workouts and photos. Keep it somewhere
+        safe — it's the only copy off this device.
       </p>
 
       <input
@@ -195,10 +371,7 @@ function SyncStatusCard({ online }: { online: boolean }) {
       </div>
       <span
         aria-hidden
-        className={[
-          'h-[9px] w-[9px] rounded-full',
-          online ? 'bg-neon' : 'bg-muted',
-        ].join(' ')}
+        className={['h-[9px] w-[9px] rounded-full', online ? 'bg-neon' : 'bg-muted'].join(' ')}
         style={online ? { boxShadow: '0 0 0 4px rgba(96,225,152,.16)' } : undefined}
       />
     </div>

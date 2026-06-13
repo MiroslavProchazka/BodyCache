@@ -48,5 +48,8 @@ export const ExerciseDetailPage = lazyNamed(
   'ExerciseDetailPage',
 )
 
-export const SettingsPage = lazyNamed(() => import('@/features/settings/SettingsPage'), 'SettingsPage')
+export const SettingsPage = lazyNamed(
+  () => import('@/features/settings/SettingsPage'),
+  'SettingsPage',
+)
 export const ProfilePage = lazyNamed(() => import('@/features/profile/ProfilePage'), 'ProfilePage')

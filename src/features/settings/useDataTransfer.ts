@@ -14,12 +14,7 @@ import type {
   WorkoutSessionId,
   WorkoutExerciseId,
 } from '@/evolu/schema'
-import {
-  base64ToBlob,
-  blobToBase64,
-  readPhotoBlob,
-  writePhotoBlob,
-} from '@/shared/utils/photos'
+import { base64ToBlob, blobToBase64, readPhotoBlob, writePhotoBlob } from '@/shared/utils/photos'
 import {
   buildBackupFile,
   countRows,
@@ -55,9 +50,7 @@ const photoRefs = (rows: readonly SerializedRow[]): string[] => {
 }
 
 /** Read every referenced photo blob and encode it for the backup file. */
-const collectPhotos = async (
-  photoRows: readonly SerializedRow[],
-): Promise<BackupPhoto[]> => {
+const collectPhotos = async (photoRows: readonly SerializedRow[]): Promise<BackupPhoto[]> => {
   const out: BackupPhoto[] = []
   for (const ref of photoRefs(photoRows)) {
     const blob = await readPhotoBlob(ref)
@@ -110,11 +103,7 @@ export const useDataTransfer = () => {
       },
       photos,
     )
-    download(
-      `bodycache-backup-${stamp()}.json`,
-      'application/json',
-      JSON.stringify(file),
-    )
+    download(`bodycache-backup-${stamp()}.json`, 'application/json', JSON.stringify(file))
   }, [loadTables])
 
   /** Export finished-workout history as a spreadsheet-friendly CSV. */
