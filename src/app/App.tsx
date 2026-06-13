@@ -11,6 +11,7 @@ import { SessionDetailPage } from '@/features/workouts/SessionDetailPage'
 import { ExerciseLibraryPage } from '@/features/exercises/ExerciseLibraryPage'
 import { ExerciseDetailPage } from '@/features/exercises/ExerciseDetailPage'
 import { CreateExercisePage } from '@/features/exercises/CreateExercisePage'
+import { StarterLibraryPage } from '@/features/exercises/StarterLibraryPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 import { ProfilePage } from '@/features/profile/ProfilePage'
 
@@ -32,6 +33,7 @@ export function App() {
           <Route path="/history/:id" element={<SessionDetailPage />} />
           <Route path="/library" element={<ExerciseLibraryPage />} />
           <Route path="/library/new" element={<CreateExercisePage />} />
+          <Route path="/library/starter" element={<StarterLibraryPage />} />
           <Route path="/library/:id" element={<ExerciseDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/profile" element={<ProfilePage />} />
