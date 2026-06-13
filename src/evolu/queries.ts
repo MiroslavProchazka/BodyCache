@@ -101,13 +101,17 @@ export const photosForExercise = (exerciseId: ExerciseId) =>
       .orderBy('createdAt', 'desc'),
   )
 
-/** Most recent session with status 'active'. */
+/**
+ * Most recent in-progress session — either actively running or paused. Paused
+ * sessions must still surface so the user can resume (or discard) them, so this
+ * matches both statuses rather than 'active' alone.
+ */
 export const activeWorkoutSession = evolu.createQuery((db) =>
   db
     .selectFrom('workoutSession')
     .selectAll()
     .where('isDeleted', 'is', null)
-    .where('status', '=', status('active'))
+    .where('status', 'in', [status('active'), status('paused')])
     .orderBy('startedAt', 'desc')
     .limit(1),
 )

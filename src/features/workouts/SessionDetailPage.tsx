@@ -11,7 +11,7 @@ import { StatTile } from '@/shared/components/StatTile'
 import { ExerciseTile } from '@/features/exercises/ExerciseTile'
 import { humanize } from '@/shared/utils/bodyParts'
 import { formatRelativeDay } from '@/shared/utils/dates'
-import { formatElapsed } from '@/shared/utils/workoutStats'
+import { finishedDurationSec, formatDurationSec } from '@/shared/utils/workoutStats'
 import { formatVolume, formatSetSummary } from '@/shared/utils/units'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { summarizeSession } from './sessionSummary'
@@ -51,10 +51,8 @@ function SessionDetailInner({ session }: { session: WorkoutSessionRow }) {
 
   const summary = summarizeSession(rows)
   const groups = groupExerciseSets(rows)
-  const duration =
-    session.startedAt && session.finishedAt
-      ? formatElapsed(session.startedAt, session.finishedAt)
-      : '—'
+  const durationSec = finishedDurationSec(session)
+  const duration = durationSec != null ? formatDurationSec(durationSec) : '—'
 
   const handleDelete = () => {
     if (!window.confirm('Delete this workout from history? This can\'t be undone.')) return

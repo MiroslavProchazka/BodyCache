@@ -154,14 +154,45 @@ export const useBodyCacheMutations = () => {
       startedAt: now,
       date: now,
       status: 'active',
+      // The first active interval begins at start; no time banked yet.
+      resumedAt: now,
+      pausedTotalSec: 0,
     })
   }
 
-  const finishWorkoutSession = (id: WorkoutSessionId) =>
+  /**
+   * Pause a live session. `activeSec` is the active time accumulated so far
+   * (from `activeElapsedSec`); banking it and clearing `resumedAt` freezes the
+   * timer until the session resumes.
+   */
+  const pauseWorkoutSession = (id: WorkoutSessionId, activeSec: number) =>
+    update('workoutSession', {
+      id,
+      status: 'paused',
+      pausedTotalSec: Math.max(0, Math.floor(activeSec)),
+      resumedAt: null,
+    })
+
+  /** Resume a paused session: start a fresh active interval from now. */
+  const resumeWorkoutSession = (id: WorkoutSessionId) =>
+    update('workoutSession', {
+      id,
+      status: 'active',
+      resumedAt: new Date().toISOString(),
+    })
+
+  /**
+   * Finish a session. `activeSec` is the total active time (from
+   * `activeElapsedSec`); storing it as `pausedTotalSec` lets recaps show the
+   * worked duration excluding any paused stretches.
+   */
+  const finishWorkoutSession = (id: WorkoutSessionId, activeSec: number) =>
     update('workoutSession', {
       id,
       status: 'finished',
       finishedAt: new Date().toISOString(),
+      pausedTotalSec: Math.max(0, Math.floor(activeSec)),
+      resumedAt: null,
     })
 
   const addExerciseToWorkout = (
@@ -231,6 +262,8 @@ export const useBodyCacheMutations = () => {
     addExercisePhoto,
     setPrimaryPhoto,
     startWorkoutSession,
+    pauseWorkoutSession,
+    resumeWorkoutSession,
     finishWorkoutSession,
     discardWorkoutSession,
     deleteWorkoutSession,
