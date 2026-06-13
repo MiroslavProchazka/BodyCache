@@ -4,9 +4,26 @@ BodyCache is a mobile-first, offline-first PWA that helps you track gym exercise
 
 ## Requirements
 
-- Node.js >= 22.0.0
+- Node.js >= 22.0.0 (see `.nvmrc`)
 - npm >= 10
 - Modern browser with IndexedDB support
+
+### Node Version Management
+
+Use a Node version manager so local and CI runtimes match.
+
+With nvm:
+
+```bash
+nvm install
+nvm use
+```
+
+With fnm:
+
+```bash
+fnm use
+```
 
 ## Quick Start
 

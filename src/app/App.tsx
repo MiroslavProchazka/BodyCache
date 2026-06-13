@@ -1,19 +1,21 @@
 import { Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AppShell } from '@/shared/components/AppShell'
-import { TodayPage } from '@/features/workouts/TodayPage'
-import { ActiveWorkoutPage } from '@/features/workouts/ActiveWorkoutPage'
-import { AddExercisePage } from '@/features/workouts/AddExercisePage'
-import { LogExercisePage } from '@/features/workouts/LogExercisePage'
-import { FinishPage } from '@/features/workouts/FinishPage'
-import { HistoryPage } from '@/features/workouts/HistoryPage'
-import { SessionDetailPage } from '@/features/workouts/SessionDetailPage'
-import { ExerciseLibraryPage } from '@/features/exercises/ExerciseLibraryPage'
-import { ExerciseDetailPage } from '@/features/exercises/ExerciseDetailPage'
-import { CreateExercisePage } from '@/features/exercises/CreateExercisePage'
-import { StarterLibraryPage } from '@/features/exercises/StarterLibraryPage'
-import { SettingsPage } from '@/features/settings/SettingsPage'
-import { ProfilePage } from '@/features/profile/ProfilePage'
+import {
+  ActiveWorkoutPage,
+  AddExercisePage,
+  CreateExercisePage,
+  ExerciseDetailPage,
+  ExerciseLibraryPage,
+  FinishPage,
+  HistoryPage,
+  LogExercisePage,
+  ProfilePage,
+  SessionDetailPage,
+  SettingsPage,
+  StarterLibraryPage,
+  TodayPage,
+} from './routes.lazy'
 
 function PageFallback() {
   return <div className="flex min-h-[50vh] items-center justify-center text-faint">Loading…</div>
