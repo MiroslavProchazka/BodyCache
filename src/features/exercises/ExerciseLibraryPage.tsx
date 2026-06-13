@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { Plus, Dumbbell } from 'lucide-react'
+import { Plus, Dumbbell, ListPlus } from 'lucide-react'
 import { allExercises } from '@/evolu/queries'
 import { BODY_PARTS } from '@/evolu/schema'
 import { SearchField } from '@/shared/components/SearchField'
@@ -41,14 +41,24 @@ export function ExerciseLibraryPage() {
         <h1 className="font-display text-[26px] font-semibold tracking-tight text-white">
           Exercises
         </h1>
-        <button
-          type="button"
-          onClick={() => navigate('/library/new')}
-          aria-label="Create exercise"
-          className="flex h-[42px] w-[42px] items-center justify-center rounded-[14px] bg-neon text-ink"
-        >
-          <Plus size={22} strokeWidth={2} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate('/library/starter')}
+            aria-label="Add from starter library"
+            className="flex h-[42px] w-[42px] items-center justify-center rounded-[14px] border border-white/10 bg-surface text-soft"
+          >
+            <ListPlus size={21} strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/library/new')}
+            aria-label="Create exercise"
+            className="flex h-[42px] w-[42px] items-center justify-center rounded-[14px] bg-neon text-ink"
+          >
+            <Plus size={22} strokeWidth={2} />
+          </button>
+        </div>
       </header>
 
       {hasAny && (
@@ -75,9 +85,13 @@ export function ExerciseLibraryPage() {
           </div>
           <h2 className="font-display text-lg font-semibold text-white">No exercises yet</h2>
           <p className="max-w-xs text-sm text-muted">
-            Create your first exercise — snap a photo of the machine, name it, and you're set.
+            Add the basics from the starter library, or create your own — snap a photo of the
+            machine, name it, and you're set.
           </p>
-          <Button className="mt-2" onClick={() => navigate('/library/new')}>
+          <Button className="mt-2" onClick={() => navigate('/library/starter')}>
+            <ListPlus size={18} strokeWidth={2} /> Add starter exercises
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/library/new')}>
             <Plus size={18} strokeWidth={2} /> Create exercise
           </Button>
         </div>
