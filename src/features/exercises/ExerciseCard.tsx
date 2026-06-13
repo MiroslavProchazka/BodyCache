@@ -8,11 +8,13 @@ import { metaLine } from '@/shared/utils/bodyParts'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { ExerciseTile } from './ExerciseTile'
 import { TrendBadge } from './TrendBadge'
+import { bodyFor } from './muscleMap'
 import { toHistorySets, lastSummaryLabel } from './history'
 
 /**
  * Photo-first library grid card (our differentiator vs. text-first trackers):
- * a tinted/photographed shape-mask block leads, then name, meta, and the last
+ * a photographed shape-mask block leads — or, with no photo, a muscle BodyMap
+ * highlighting what the exercise works — then name, meta, and the last
  * performance with a trend arrow. Tap → detail.
  */
 export function ExerciseCard({ exercise }: { exercise: ExerciseRow }) {
@@ -21,6 +23,7 @@ export function ExerciseCard({ exercise }: { exercise: ExerciseRow }) {
   const type = exercise.type as ExerciseType
   const history = toHistorySets(useQuery(completedSetsForExercise(exercise.id as ExerciseId)))
   const trend = sessionTrend(history, type)
+  const body = bodyFor(exercise)
 
   return (
     <button
@@ -32,8 +35,9 @@ export function ExerciseCard({ exercise }: { exercise: ExerciseRow }) {
         photoId={exercise.primaryPhotoId as ExercisePhotoId | null}
         bodyPart={exercise.bodyPart}
         radius="18px 18px 18px 4px"
-        className="h-[88px] w-full"
+        className="h-[124px] w-full"
         glyphSize={34}
+        map={{ muscle: body.muscle, view: body.view, fw: 50 }}
       />
       <div className="p-3">
         <div className="truncate text-[14.5px] font-semibold leading-tight tracking-tight text-white">

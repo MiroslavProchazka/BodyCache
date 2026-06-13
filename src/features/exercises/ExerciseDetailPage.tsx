@@ -29,6 +29,8 @@ import { progressSeries } from '@/shared/utils/progress'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { SetTypeTag } from '@/features/workouts/SetTypeTag'
 import { ExerciseTile } from './ExerciseTile'
+import { BodyMap } from './BodyMap'
+import { bodyFor } from './muscleMap'
 import { TrendBadge } from './TrendBadge'
 import { ProgressChart } from './ProgressChart'
 import { toHistorySets } from './history'
@@ -58,6 +60,8 @@ export function ExerciseDetailPage() {
   }
 
   const type = exercise.type as ExerciseType
+  const body = bodyFor(exercise)
+  const photoId = exercise.primaryPhotoId as ExercisePhotoId | null
   // Records ignore warm-up sets; the session list below still shows them.
   const records = workingSets(history)
   const groups = groupSessions(history)
@@ -126,14 +130,35 @@ export function ExerciseDetailPage() {
           </button>
         </header>
 
-        <ExerciseTile
-          photoId={exercise.primaryPhotoId as ExercisePhotoId | null}
-          bodyPart={exercise.bodyPart}
-          radius="24px 24px 24px 6px"
-          className="mb-4 h-[150px] w-full"
-          glyphSize={56}
-          full
-        />
+        {photoId ? (
+          <ExerciseTile
+            photoId={photoId}
+            bodyPart={exercise.bodyPart}
+            radius="24px 24px 24px 6px"
+            className="mb-4 h-[150px] w-full"
+            glyphSize={56}
+            full
+            map={{ muscle: body.muscle, view: body.view, fw: 60 }}
+          />
+        ) : (
+          // Photo-free hero: the full front+back muscle map + a "Targets" pill.
+          <div
+            className="mb-4 border border-white/[0.06] px-3 pb-[14px] pt-[18px]"
+            style={{ background: '#0B2417', borderRadius: '24px 24px 24px 6px' }}
+          >
+            <div className="mx-auto w-fit">
+              <BodyMap view="both" active={body.muscle} captions fw={90} />
+            </div>
+            {body.muscle && (
+              <div className="mt-3 flex justify-center">
+                <span className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-neon/[0.12] px-[13px] py-[6px] text-[12.5px] font-semibold text-neon">
+                  <span className="h-2 w-2 rounded-full bg-neon" />
+                  Targets · {body.label}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mb-4 flex gap-[10px]">
           <div className="flex-1 rounded-2xl border border-white/[0.07] bg-surface p-[13px]">

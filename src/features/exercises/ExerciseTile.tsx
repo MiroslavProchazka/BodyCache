@@ -4,6 +4,16 @@ import { photoById } from '@/evolu/queries'
 import type { ExercisePhotoId } from '@/evolu/schema'
 import { usePhotoUrl } from '@/shared/utils/usePhotoUrl'
 import { tileGradient, tintFor } from '@/shared/utils/bodyParts'
+import { BodyMap, type BodyView, type MuscleKey } from './BodyMap'
+
+/** Muscle-map placeholder config (replaces the dumbbell when no photo). */
+export interface TileMap {
+  muscle: MuscleKey
+  view: BodyView
+  /** Figure width passed to BodyMap. */
+  fw: number
+  captions?: boolean
+}
 
 interface ExerciseTileProps {
   photoId: ExercisePhotoId | null
@@ -17,12 +27,17 @@ interface ExerciseTileProps {
   glyphSize?: number
   /** Prefer the full image over the thumbnail (detail hero). */
   full?: boolean
+  /**
+   * When set, the no-photo placeholder shows the muscle BodyMap (on the map
+   * background) instead of the dumbbell glyph. Dense lists omit this.
+   */
+  map?: TileMap
 }
 
 /**
  * The signature "shape mask" tile: a rounded square with one squared-off
- * corner. Shows the exercise's captured photo when present, otherwise a
- * body-part-tinted gradient with a dumbbell glyph (our photo-first placeholder).
+ * corner. Shows the exercise's captured photo when present, otherwise — if a
+ * `map` is given — a muscle BodyMap, else a body-part-tinted dumbbell glyph.
  */
 export function ExerciseTile({
   photoId,
@@ -31,6 +46,7 @@ export function ExerciseTile({
   className = '',
   glyphSize = 22,
   full = false,
+  map,
 }: ExerciseTileProps) {
   if (photoId)
     return (
@@ -41,6 +57,7 @@ export function ExerciseTile({
         className={className}
         glyphSize={glyphSize}
         full={full}
+        map={map}
       />
     )
   return (
@@ -49,6 +66,7 @@ export function ExerciseTile({
       radius={radius}
       className={className}
       glyphSize={glyphSize}
+      map={map}
     />
   )
 }
@@ -60,6 +78,7 @@ function ResolvedTile({
   className,
   glyphSize,
   full,
+  map,
 }: {
   photoId: ExercisePhotoId
   bodyPart?: string | null
@@ -67,6 +86,7 @@ function ResolvedTile({
   className: string
   glyphSize: number
   full: boolean
+  map?: TileMap
 }) {
   const rows = useQuery(photoById(photoId))
   const photo = rows[0]
@@ -80,6 +100,7 @@ function ResolvedTile({
         radius={radius}
         className={className}
         glyphSize={glyphSize}
+        map={map}
       />
     )
   return (
@@ -94,12 +115,24 @@ function Placeholder({
   radius,
   className,
   glyphSize,
+  map,
 }: {
   bodyPart?: string | null
   radius: string
   className: string
   glyphSize: number
+  map?: TileMap
 }) {
+  if (map)
+    return (
+      // The map background matches the gap strokes so muscle separations read.
+      <div
+        className={['flex items-center justify-center overflow-hidden', className].join(' ')}
+        style={{ borderRadius: radius, background: '#0B2417' }}
+      >
+        <BodyMap view={map.view} active={map.muscle} fw={map.fw} captions={map.captions} />
+      </div>
+    )
   return (
     <div
       className={['flex items-center justify-center', className].join(' ')}
