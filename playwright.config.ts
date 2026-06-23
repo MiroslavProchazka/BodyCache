@@ -19,6 +19,9 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? 'github' : 'list',
+  // Allow 90 s per test: ~30 s for Evolu/WASM cold boot, ~15 s for onboarding
+  // form submission, and ~45 s for the test body itself.
+  timeout: 90_000,
   use: {
     baseURL: 'http://localhost:4173',
     trace: 'on-first-retry',
