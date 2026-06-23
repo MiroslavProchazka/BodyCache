@@ -40,7 +40,11 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,wasm}'],
+        // The Evolu SQLite WASM binary can exceed Workbox's default 2 MiB
+        // precache cap; without this it is silently skipped and the DB cannot
+        // boot offline.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
