@@ -48,6 +48,23 @@ export const ExerciseDetailPage = lazyNamed(
   'ExerciseDetailPage',
 )
 
+export const PlanLibraryPage = lazyNamed(
+  () => import('@/features/plans/PlanLibraryPage'),
+  'PlanLibraryPage',
+)
+export const PlanDetailPage = lazyNamed(
+  () => import('@/features/plans/PlanDetailPage'),
+  'PlanDetailPage',
+)
+export const PlanEditorPage = lazyNamed(
+  () => import('@/features/plans/PlanEditorPage'),
+  'PlanEditorPage',
+)
+export const PlanAddExercisePage = lazyNamed(
+  () => import('@/features/plans/PlanAddExercisePage'),
+  'PlanAddExercisePage',
+)
+
 export const SettingsPage = lazyNamed(
   () => import('@/features/settings/SettingsPage'),
   'SettingsPage',

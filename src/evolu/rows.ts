@@ -12,6 +12,9 @@ import type {
   performedExercises,
   finishedWorkoutSessions,
   photosForExercise,
+  activePlans,
+  planExercises,
+  planSetsForPlanExercise,
 } from './queries'
 
 /** Extract the row shape from an Evolu `Query`. */
@@ -29,3 +32,6 @@ export type SessionSetRow = RowOf<ReturnType<typeof completedSetsForSession>>
 export type FinishedSessionSetRow = RowOf<typeof finishedSessionSets>
 export type SessionDetailSetRow = RowOf<ReturnType<typeof sessionSetsDetailed>>
 export type PerformedExerciseRow = RowOf<typeof performedExercises>
+export type PlanRow = RowOf<typeof activePlans>
+export type PlanExerciseRow = RowOf<ReturnType<typeof planExercises>>
+export type PlanSetRow = RowOf<ReturnType<typeof planSetsForPlanExercise>>

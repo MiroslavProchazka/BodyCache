@@ -7,6 +7,9 @@ import type {
   ExerciseSetId,
   ExerciseType,
   Gender,
+  PlanExerciseId,
+  PlanId,
+  PlanSetId,
   ProfileId,
   SetType,
   WorkoutExerciseId,
@@ -91,6 +94,39 @@ export interface UpdateProfilePatch {
   readonly heightCm?: number
   readonly age?: number
   readonly avatarSeed?: string
+}
+
+/** Input for creating a plan. */
+export interface CreatePlanInput {
+  readonly name: string
+  readonly notes?: string | null
+}
+
+/** Patch for updating a plan (all fields optional). */
+export interface UpdatePlanPatch {
+  readonly name?: string
+  readonly notes?: string | null
+}
+
+/** Target metric/text fields for a single plan set. */
+export interface AddPlanSetInput {
+  readonly orderIndex: number
+  readonly weightKg?: number | null
+  readonly reps?: number | null
+  readonly addedWeightKg?: number | null
+  readonly durationSec?: number | null
+  readonly distanceMeters?: number | null
+  readonly setType?: SetType | null
+}
+
+/** Patch for updating a plan set (all fields optional). */
+export interface UpdatePlanSetPatch {
+  readonly weightKg?: number | null
+  readonly reps?: number | null
+  readonly addedWeightKg?: number | null
+  readonly durationSec?: number | null
+  readonly distanceMeters?: number | null
+  readonly setType?: SetType | null
 }
 
 /**
@@ -245,6 +281,52 @@ export const useBodyCacheMutations = () => {
   const discardWorkoutSession = (id: WorkoutSessionId) =>
     update('workoutSession', { id, isDeleted: 1 })
 
+  // --- Plans (routines) ---------------------------------------------------
+
+  const createPlan = (input: CreatePlanInput) =>
+    insert('plan', {
+      name: input.name,
+      status: 'active',
+      notes: input.notes ?? null,
+    })
+
+  const updatePlan = (id: PlanId, patch: UpdatePlanPatch) => update('plan', { id, ...patch })
+
+  /** Hide a plan from the library without losing it. */
+  const archivePlan = (id: PlanId) => update('plan', { id, status: 'archived' })
+
+  /** Bring an archived plan back into the active library. */
+  const restorePlan = (id: PlanId) => update('plan', { id, status: 'active' })
+
+  const softDeletePlan = (id: PlanId) => update('plan', { id, isDeleted: 1 })
+
+  const addExerciseToPlan = (planId: PlanId, exerciseId: ExerciseId, orderIndex: number) =>
+    insert('planExercise', { planId, exerciseId, orderIndex })
+
+  const removeExerciseFromPlan = (id: PlanExerciseId) =>
+    update('planExercise', { id, isDeleted: 1 })
+
+  /** Move a plan exercise within its plan (reorder). */
+  const setPlanExerciseOrder = (id: PlanExerciseId, orderIndex: number) =>
+    update('planExercise', { id, orderIndex })
+
+  const addPlanSet = (planExerciseId: PlanExerciseId, setData: AddPlanSetInput) =>
+    insert('planSet', {
+      planExerciseId,
+      orderIndex: setData.orderIndex,
+      weightKg: setData.weightKg ?? null,
+      reps: setData.reps ?? null,
+      addedWeightKg: setData.addedWeightKg ?? null,
+      durationSec: setData.durationSec ?? null,
+      distanceMeters: setData.distanceMeters ?? null,
+      setType: setData.setType ?? null,
+    })
+
+  const updatePlanSet = (id: PlanSetId, patch: UpdatePlanSetPatch) =>
+    update('planSet', { id, ...patch })
+
+  const removePlanSet = (id: PlanSetId) => update('planSet', { id, isDeleted: 1 })
+
   /**
    * Soft-delete a finished session from history. Child rows (exercises, sets)
    * stay in place but are excluded everywhere by the session join + isDeleted
@@ -273,5 +355,16 @@ export const useBodyCacheMutations = () => {
     updateSet,
     setSetCompleted,
     removeSet,
+    createPlan,
+    updatePlan,
+    archivePlan,
+    restorePlan,
+    softDeletePlan,
+    addExerciseToPlan,
+    removeExerciseFromPlan,
+    setPlanExerciseOrder,
+    addPlanSet,
+    updatePlanSet,
+    removePlanSet,
   }
 }

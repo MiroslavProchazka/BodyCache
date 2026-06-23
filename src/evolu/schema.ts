@@ -33,6 +33,15 @@ export type ExerciseSetId = typeof ExerciseSetId.Type
 export const ProfileId = Evolu.id('Profile')
 export type ProfileId = typeof ProfileId.Type
 
+export const PlanId = Evolu.id('Plan')
+export type PlanId = typeof PlanId.Type
+
+export const PlanExerciseId = Evolu.id('PlanExercise')
+export type PlanExerciseId = typeof PlanExerciseId.Type
+
+export const PlanSetId = Evolu.id('PlanSet')
+export type PlanSetId = typeof PlanSetId.Type
+
 // --- Enum-like value sets -------------------------------------------------
 
 export const EXERCISE_TYPES = [
@@ -82,6 +91,14 @@ export type SetType = (typeof SET_TYPES)[number]
 
 export const GENDERS = ['male', 'female', 'other'] as const
 export type Gender = (typeof GENDERS)[number]
+
+/**
+ * A saved exercise plan (Hevy-style "routine"): a reusable, named template the
+ * user builds before the gym and instantiates into a live session. `active`
+ * plans show in the picker; `archived` ones are hidden but kept.
+ */
+export const PLAN_STATUSES = ['active', 'archived'] as const
+export type PlanStatus = (typeof PLAN_STATUSES)[number]
 
 // --- Schema ---------------------------------------------------------------
 
@@ -170,5 +187,46 @@ export const Schema = {
     heightCm: Evolu.NonNegativeInt,
     age: Evolu.NonNegativeInt,
     avatarSeed: Evolu.NonEmptyString100,
+  },
+
+  /**
+   * An exercise plan / routine: a reusable template (parent of `planExercise`).
+   * It only holds the recipe — no logged data ever lives here. Starting a
+   * workout from a plan instantiates fresh `workoutExercise` + `exerciseSet`
+   * rows (the sets as incomplete "ghost" targets).
+   */
+  plan: {
+    id: PlanId,
+    name: Evolu.NonEmptyString1000,
+    // Stored as NonEmptyString100; constrained to `PlanStatus` in the app layer.
+    status: Evolu.NonEmptyString100,
+    notes: Evolu.nullOr(Evolu.NonEmptyString1000),
+  },
+
+  /** An exercise within a plan, in order (parent of `planSet`). */
+  planExercise: {
+    id: PlanExerciseId,
+    planId: PlanId,
+    exerciseId: ExerciseId,
+    orderIndex: Evolu.NonNegativeInt,
+    notes: Evolu.nullOr(Evolu.NonEmptyString1000),
+  },
+
+  /**
+   * A target set within a plan exercise. Mirrors the subset of `exerciseSet`
+   * metrics the logger surfaces (see `setFields.ts`) plus the set type — these
+   * are prescribed targets, so there is no `completedAt` here.
+   */
+  planSet: {
+    id: PlanSetId,
+    planExerciseId: PlanExerciseId,
+    orderIndex: Evolu.NonNegativeInt,
+    weightKg: Evolu.nullOr(Evolu.NonNegativeNumber),
+    reps: Evolu.nullOr(Evolu.NonNegativeInt),
+    addedWeightKg: Evolu.nullOr(Evolu.NonNegativeNumber),
+    durationSec: Evolu.nullOr(Evolu.NonNegativeInt),
+    distanceMeters: Evolu.nullOr(Evolu.NonNegativeNumber),
+    // Stored as NonEmptyString100; null = normal set, else narrowed to `SetType`.
+    setType: Evolu.nullOr(Evolu.NonEmptyString100),
   },
 }

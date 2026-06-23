@@ -1,12 +1,15 @@
 import { useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Camera, ChevronLeft, X } from 'lucide-react'
+import { evolu } from '@/evolu/evolu'
+import { planExercises } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
 import {
   BODY_PARTS,
   EQUIPMENT,
   type BodyPart,
   type Equipment,
+  type PlanId,
   type WorkoutSessionId,
 } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
@@ -24,7 +27,11 @@ export function CreateExercisePage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const sessionId = searchParams.get('session') as WorkoutSessionId | null
-  const { createExercise, addExercisePhoto, setPrimaryPhoto } = useBodyCacheMutations()
+  // When launched from a plan's exercise picker, the new exercise is appended
+  // to that plan and we return to its editor.
+  const planId = searchParams.get('plan') as PlanId | null
+  const { createExercise, addExercisePhoto, setPrimaryPhoto, addExerciseToPlan } =
+    useBodyCacheMutations()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [name, setName] = useState('')
@@ -35,7 +42,10 @@ export function CreateExercisePage() {
   const [saving, setSaving] = useState(false)
 
   const canSave = name.trim().length > 0 && !saving
-  const goBack = () => navigate(sessionId ? '/workout/add-exercise' : '/library')
+  const goBack = () =>
+    navigate(
+      planId ? `/plans/${planId}/add-exercise` : sessionId ? '/workout/add-exercise' : '/library',
+    )
 
   const onPickPhoto = (file: File | null) => {
     if (previewUrl) URL.revokeObjectURL(previewUrl)
@@ -68,9 +78,16 @@ export function CreateExercisePage() {
         if (photo.ok) setPrimaryPhoto(exerciseId, photo.value.id)
       }
 
-      // From the picker: jump straight into logging the new exercise; otherwise
-      // land on its detail page. Navigation unmounts this page, so we don't
+      // From a plan: append to the plan and return to its editor. From the
+      // workout picker: jump straight into logging. Otherwise land on the
+      // exercise's detail page. Navigation unmounts this page, so we don't
       // reset `saving` on the happy path.
+      if (planId) {
+        const existing = await evolu.loadQuery(planExercises(planId))
+        addExerciseToPlan(planId, exerciseId, existing.length)
+        navigate(`/plans/${planId}/edit`, { replace: true })
+        return
+      }
       navigate(sessionId ? `/workout/log/${exerciseId}` : `/library/${exerciseId}`, {
         replace: true,
       })

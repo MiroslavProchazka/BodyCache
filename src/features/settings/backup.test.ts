@@ -17,6 +17,9 @@ const emptyTables: BackupTables = {
   workoutSession: [],
   workoutExercise: [],
   exerciseSet: [],
+  plan: [],
+  planExercise: [],
+  planSet: [],
 }
 
 describe('buildBackupFile', () => {
@@ -66,6 +69,30 @@ describe('parseBackupFile', () => {
     const broken = { ...buildBackupFile(emptyTables, []), photos: 'nope' }
     expect(parseBackupFile(JSON.stringify(broken)).ok).toBe(false)
   })
+
+  it('restores a v1 backup (no plan tables) and treats them as empty', () => {
+    const v1 = {
+      format: BACKUP_FORMAT,
+      version: 1,
+      exportedAt: '2026-06-11T00:00:00.000Z',
+      tables: {
+        exercise: [{ id: 'e1', name: 'Squat' }],
+        exercisePhoto: [],
+        workoutSession: [],
+        workoutExercise: [],
+        exerciseSet: [],
+      },
+      photos: [],
+    }
+    const result = parseBackupFile(JSON.stringify(v1))
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.value.tables.exercise).toHaveLength(1)
+      expect(result.value.tables.plan).toEqual([])
+      expect(result.value.tables.planExercise).toEqual([])
+      expect(result.value.tables.planSet).toEqual([])
+    }
+  })
 })
 
 describe('countRows', () => {
@@ -77,6 +104,9 @@ describe('countRows', () => {
         workoutSession: [{}],
         workoutExercise: [],
         exerciseSet: [{}, {}, {}],
+        plan: [],
+        planExercise: [],
+        planSet: [],
       }),
     ).toBe(7)
   })

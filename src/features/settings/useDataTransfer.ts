@@ -6,11 +6,17 @@ import {
   allWorkoutSessions,
   allWorkoutExercises,
   allExerciseSets,
+  allPlans,
+  allPlanExercises,
+  allPlanSets,
 } from '@/evolu/queries'
 import type {
   ExerciseId,
   ExercisePhotoId,
   ExerciseSetId,
+  PlanExerciseId,
+  PlanId,
+  PlanSetId,
   WorkoutSessionId,
   WorkoutExerciseId,
 } from '@/evolu/schema'
@@ -85,6 +91,9 @@ export const useDataTransfer = () => {
       workoutSession: await evolu.loadQuery(allWorkoutSessions),
       workoutExercise: await evolu.loadQuery(allWorkoutExercises),
       exerciseSet: await evolu.loadQuery(allExerciseSets),
+      plan: await evolu.loadQuery(allPlans),
+      planExercise: await evolu.loadQuery(allPlanExercises),
+      planSet: await evolu.loadQuery(allPlanSets),
     }),
     [],
   )
@@ -100,6 +109,9 @@ export const useDataTransfer = () => {
         workoutSession: tables.workoutSession,
         workoutExercise: tables.workoutExercise,
         exerciseSet: tables.exerciseSet,
+        plan: tables.plan,
+        planExercise: tables.planExercise,
+        planSet: tables.planSet,
       },
       photos,
     )
@@ -190,6 +202,39 @@ export const useDataTransfer = () => {
           resistanceLevel: (r.resistanceLevel as number | null) ?? null,
           rpe: (r.rpe as number | null) ?? null,
           notes: (r.notes as string | null) ?? null,
+        })
+      }
+
+      for (const r of tables.plan) {
+        upsert('plan', {
+          id: r.id as PlanId,
+          name: r.name as string,
+          status: r.status as string,
+          notes: (r.notes as string | null) ?? null,
+        })
+      }
+
+      for (const r of tables.planExercise) {
+        upsert('planExercise', {
+          id: r.id as PlanExerciseId,
+          planId: r.planId as PlanId,
+          exerciseId: r.exerciseId as ExerciseId,
+          orderIndex: r.orderIndex as number,
+          notes: (r.notes as string | null) ?? null,
+        })
+      }
+
+      for (const r of tables.planSet) {
+        upsert('planSet', {
+          id: r.id as PlanSetId,
+          planExerciseId: r.planExerciseId as PlanExerciseId,
+          orderIndex: r.orderIndex as number,
+          weightKg: (r.weightKg as number | null) ?? null,
+          reps: (r.reps as number | null) ?? null,
+          addedWeightKg: (r.addedWeightKg as number | null) ?? null,
+          durationSec: (r.durationSec as number | null) ?? null,
+          distanceMeters: (r.distanceMeters as number | null) ?? null,
+          setType: (r.setType as string | null) ?? null,
         })
       }
 

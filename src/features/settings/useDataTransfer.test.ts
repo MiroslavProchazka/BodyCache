@@ -21,6 +21,9 @@ vi.mock('@/evolu/queries', () => ({
   allWorkoutSessions: 'q:workoutSession',
   allWorkoutExercises: 'q:workoutExercise',
   allExerciseSets: 'q:exerciseSet',
+  allPlans: 'q:plan',
+  allPlanExercises: 'q:planExercise',
+  allPlanSets: 'q:planSet',
 }))
 
 import { useDataTransfer } from './useDataTransfer'
