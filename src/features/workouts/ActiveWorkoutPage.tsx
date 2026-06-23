@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { ChevronLeft, Pause, Play, Plus, Dumbbell, Trash2 } from 'lucide-react'
 import { activeWorkoutSession, sessionExercises } from '@/evolu/queries'
@@ -14,8 +14,19 @@ import { MuscleDistributionCard } from './MuscleDistributionCard'
 
 /** The live session: elapsed timer, logged exercises, add, pause, and finish. */
 export function ActiveWorkoutPage() {
+  const navigate = useNavigate()
   const active = useQuery(activeWorkoutSession)[0]
-  if (!active) return <Navigate to="/" replace />
+
+  // Evolu's WASM worker processes INSERTs asynchronously: the reactive query
+  // returns [] on the very first render after navigate('/workout'). Delay the
+  // redirect so the worker has time to propagate the just-written session row.
+  useEffect(() => {
+    if (active) return
+    const id = setTimeout(() => navigate('/', { replace: true }), 500)
+    return () => clearTimeout(id)
+  }, [active, navigate])
+
+  if (!active) return null
   return <ActiveWorkoutInner session={active as WorkoutSessionRow} />
 }
 

@@ -16,6 +16,7 @@ test('create an exercise and find it in the library', async ({ page }) => {
   await expect(page.getByText('Bench Press')).toBeVisible()
 
   // And it shows up back in the library grid.
-  await page.getByRole('link', { name: 'Library' }).click()
+  // The detail page has no bottom nav (not a tab root); use the header Back button.
+  await page.getByRole('button', { name: 'Back' }).click()
   await expect(page.getByText('Bench Press')).toBeVisible()
 })

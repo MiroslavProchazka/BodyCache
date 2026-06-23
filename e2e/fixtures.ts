@@ -9,14 +9,19 @@ import { test as base, expect, type Page } from '@playwright/test'
 export async function completeOnboarding(page: Page): Promise<void> {
   await page.goto('/')
   const name = page.getByPlaceholder('What should we call you?')
-  // Wait for Evolu to boot and the gate to resolve to onboarding (or the app).
-  if (await name.isVisible({ timeout: 30_000 }).catch(() => false)) {
-    await name.fill('Tester')
-    await page.getByRole('button', { name: 'Other', exact: true }).click()
-    await page.getByRole('button', { name: 'Start lifting' }).click()
-    // Onboarding swaps in the app shell once the profile is created.
-    await expect(page.getByPlaceholder('What should we call you?')).toHaveCount(0)
-  }
+  // `isVisible()` snapshots immediately and returns false while the Suspense
+  // fallback ("Loading…") is showing — Evolu/SQLite-WASM hasn't booted yet.
+  // Use `waitFor` to block until the gate resolves to onboarding or the app.
+  const onboardingShown = await name
+    .waitFor({ state: 'visible', timeout: 30_000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!onboardingShown) return
+  await name.fill('Tester')
+  await page.getByRole('button', { name: 'Other', exact: true }).click()
+  await page.getByRole('button', { name: 'Start lifting' }).click()
+  // Onboarding swaps in the app shell once the profile is created.
+  await expect(name).not.toBeVisible({ timeout: 15_000 })
 }
 
 /**
