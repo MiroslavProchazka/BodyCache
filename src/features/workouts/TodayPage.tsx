@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { Dumbbell, Play, ArrowRight, X, Trash2 } from 'lucide-react'
+import { Dumbbell, Play, ArrowRight, X, Trash2, ClipboardList } from 'lucide-react'
 import {
   activeWorkoutSession,
   completedSetsForSession,
@@ -93,6 +93,26 @@ export function TodayPage() {
           <div className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-ink pl-[3px] text-neon">
             <Play size={20} fill="currentColor" stroke="none" />
           </div>
+        </button>
+      )}
+
+      {!active && (
+        <button
+          type="button"
+          onClick={() => navigate('/plans')}
+          className="mb-[26px] flex w-full items-center gap-[11px] rounded-[18px] border border-white/[0.07] bg-surface px-[15px] py-[13px] text-left active:scale-[0.99]"
+        >
+          <div
+            className="flex h-[38px] w-[38px] flex-none items-center justify-center bg-inset text-neon"
+            style={{ borderRadius: '12px 12px 12px 4px' }}
+          >
+            <ClipboardList size={20} strokeWidth={1.75} />
+          </div>
+          <div className="flex-1">
+            <div className="text-[14.5px] font-semibold text-white">Start from a plan</div>
+            <div className="mt-[1px] text-[12.5px] text-muted">Load a saved routine</div>
+          </div>
+          <ArrowRight size={18} strokeWidth={1.9} className="flex-none text-faint" />
         </button>
       )}
 

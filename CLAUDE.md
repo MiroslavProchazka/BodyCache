@@ -11,6 +11,11 @@ The app must make logging a set **faster than a notes app**, and must answer —
 for every exercise — three questions: *what is this, what did I do last time,
 what is my best?*
 
+**Plans (routines)** are self-authored memory aids, not coaching: the user
+writes down the exercises (and optional target sets) they intend to do for a
+given day so it's ready before they walk in. The app never prescribes or
+auto-generates a program — it just remembers the one *you* set up.
+
 ## Architecture
 
 - React + TypeScript + Vite + Tailwind CSS, PWA via `vite-plugin-pwa`.
@@ -72,9 +77,13 @@ what is my best?*
 
 ## Explicitly out of scope (do NOT build)
 
-Social feed/sharing, routine/template builder, nutrition, AI trainer/coach,
-Apple Health / Google Fit, user accounts (login/auth), complex planning, cloud
-image sync, paid tiers, multi-user.
+Social feed/sharing, nutrition, AI trainer/coach, Apple Health / Google Fit,
+user accounts (login/auth), AI-generated programs / periodization, cloud image
+sync, paid tiers, multi-user.
+
+Note: a self-authored **plan/routine builder** is now in scope (see Phase D
+below) — but only as a memory aid. Routine *sharing*, folders/programs, and any
+form of auto-generated or prescribed programming remain out of scope.
 
 The former v2 items are now **built** (Phase C): rest timer (`shared/rest`),
 set-types (warm-up/drop/failure on `exerciseSet.setType`; warm-ups excluded from
@@ -99,8 +108,23 @@ account: there is no login/auth.
 - Install note: a peer-dependency mismatch (`@evolu/react` wants React ≥19,
   project is on React 18) currently requires `npm install --legacy-peer-deps`.
 
+## Plans (Phase D)
+
+A **plan** is a reusable, self-authored routine (Hevy-style): a named, ordered
+list of exercises (`plan` → `planExercise` → `planSet`), each plan set carrying
+prescribed target metrics + set type. Plans hold *only the recipe* — no logged
+data. Starting a workout from a plan instantiates fresh
+`workoutSession`/`workoutExercise`/`exerciseSet` rows, copying the target sets
+as **incomplete "ghost" sets** the user confirms or edits in the normal logger
+(`useStartWorkoutFromPlan` + the pure `planToSession.ts` helper). Plans live in
+`src/features/plans` (`PlanLibraryPage`, `PlanDetailPage`, `PlanEditorPage`,
+`PlanAddExercisePage`) and are reachable from the Plans tab. Plan tables are
+included in backup/restore (backup format bumped to **v2**; v1 backups still
+restore, treating plan tables as empty).
+
 ## Milestones (from the product spec)
 
 1. App shell ✅ &nbsp; 2. Evolu schema ✅ &nbsp; 3. Exercise library ✅ &nbsp;
 4. Workout logging ✅ &nbsp; 5. History & stats ✅ &nbsp; 6. Settings & polish ✅
-&nbsp; 7. Sync (Phase B) ✅ &nbsp; 8. Profile + v2 features (Phase C) ✅.
+&nbsp; 7. Sync (Phase B) ✅ &nbsp; 8. Profile + v2 features (Phase C) ✅ &nbsp;
+9. Plans / routines (Phase D) ✅.

@@ -3,6 +3,9 @@ import { evolu } from './evolu'
 import type {
   ExerciseId,
   ExercisePhotoId,
+  PlanExerciseId,
+  PlanId,
+  PlanStatus,
   WorkoutSessionId,
   WorkoutExerciseId,
   WorkoutStatus,
@@ -14,6 +17,10 @@ import type {
  * `WorkoutStatus` to the branded column type for use in `where(...)`.
  */
 const status = (value: WorkoutStatus): typeof Evolu.NonEmptyString100.Type =>
+  value as typeof Evolu.NonEmptyString100.Type
+
+/** As `status`, but for the plan `status` column. */
+const planStatusValue = (value: PlanStatus): typeof Evolu.NonEmptyString100.Type =>
   value as typeof Evolu.NonEmptyString100.Type
 
 /**
@@ -68,6 +75,18 @@ export const allWorkoutExercises = evolu.createQuery((db) =>
 
 export const allExerciseSets = evolu.createQuery((db) =>
   db.selectFrom('exerciseSet').selectAll().where('isDeleted', 'is', null),
+)
+
+export const allPlans = evolu.createQuery((db) =>
+  db.selectFrom('plan').selectAll().where('isDeleted', 'is', null),
+)
+
+export const allPlanExercises = evolu.createQuery((db) =>
+  db.selectFrom('planExercise').selectAll().where('isDeleted', 'is', null),
+)
+
+export const allPlanSets = evolu.createQuery((db) =>
+  db.selectFrom('planSet').selectAll().where('isDeleted', 'is', null),
 )
 
 /** A single exercise by id (non-deleted). */
@@ -374,3 +393,89 @@ export const performedExercises = evolu.createQuery((db) =>
     ])
     .orderBy('workoutSession.startedAt', 'desc'),
 )
+
+// --- Plans (routines) -----------------------------------------------------
+
+/**
+ * Active plans for the library, newest first. Archived plans are kept (not
+ * deleted) but intentionally excluded here so the picker stays uncluttered.
+ */
+export const activePlans = evolu.createQuery((db) =>
+  db
+    .selectFrom('plan')
+    .selectAll()
+    .where('isDeleted', 'is', null)
+    .where('status', '=', planStatusValue('active'))
+    .orderBy('createdAt', 'desc'),
+)
+
+/** A single plan by id (any status, non-deleted). */
+export const planById = (id: PlanId) =>
+  evolu.createQuery((db) =>
+    db.selectFrom('plan').selectAll().where('id', '=', id).where('isDeleted', 'is', null),
+  )
+
+/**
+ * Exercises within a plan joined to their `exercise` for display (name, type,
+ * body part, primary photo). As with `sessionExercises`, the exercise's own
+ * `isDeleted` is not filtered so a plan keeps rendering if an exercise is
+ * soft-deleted later.
+ */
+export const planExercises = (planId: PlanId) =>
+  evolu.createQuery((db) =>
+    db
+      .selectFrom('planExercise')
+      .innerJoin('exercise', 'exercise.id', 'planExercise.exerciseId')
+      .where('planExercise.isDeleted', 'is', null)
+      .where('planExercise.planId', '=', planId)
+      .select([
+        'planExercise.id as id',
+        'planExercise.exerciseId as exerciseId',
+        'planExercise.orderIndex as orderIndex',
+        'planExercise.notes as notes',
+        'exercise.name as exerciseName',
+        'exercise.type as exerciseType',
+        'exercise.bodyPart as bodyPart',
+        'exercise.equipment as equipment',
+        'exercise.primaryPhotoId as primaryPhotoId',
+      ])
+      .orderBy('planExercise.orderIndex'),
+  )
+
+/** Target sets for a plan exercise, in order. */
+export const planSetsForPlanExercise = (planExerciseId: PlanExerciseId) =>
+  evolu.createQuery((db) =>
+    db
+      .selectFrom('planSet')
+      .selectAll()
+      .where('isDeleted', 'is', null)
+      .where('planExerciseId', '=', planExerciseId)
+      .orderBy('orderIndex'),
+  )
+
+/**
+ * Every target set across all exercises in a plan, with its owning
+ * `planExerciseId`. One query feeds plan instantiation (grouped by exercise in
+ * JS) — avoiding an N+1 query per plan exercise.
+ */
+export const planSetsForPlan = (planId: PlanId) =>
+  evolu.createQuery((db) =>
+    db
+      .selectFrom('planSet')
+      .innerJoin('planExercise', 'planExercise.id', 'planSet.planExerciseId')
+      .where('planSet.isDeleted', 'is', null)
+      .where('planExercise.isDeleted', 'is', null)
+      .where('planExercise.planId', '=', planId)
+      .select([
+        'planSet.id as id',
+        'planSet.planExerciseId as planExerciseId',
+        'planSet.orderIndex as orderIndex',
+        'planSet.weightKg as weightKg',
+        'planSet.reps as reps',
+        'planSet.addedWeightKg as addedWeightKg',
+        'planSet.durationSec as durationSec',
+        'planSet.distanceMeters as distanceMeters',
+        'planSet.setType as setType',
+      ])
+      .orderBy('planSet.orderIndex'),
+  )

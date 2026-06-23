@@ -9,7 +9,9 @@
  */
 
 export const BACKUP_FORMAT = 'bodycache-backup' as const
-export const BACKUP_VERSION = 1 as const
+// v2 adds the plan/planExercise/planSet tables. v1 files (without them) still
+// restore — the missing plan tables are tolerated and treated as empty.
+export const BACKUP_VERSION = 2 as const
 
 /** A serialized table row. Values are JSON primitives (strings/numbers/null). */
 export type SerializedRow = Record<string, unknown>
@@ -21,6 +23,9 @@ export interface BackupTables {
   readonly workoutSession: readonly SerializedRow[]
   readonly workoutExercise: readonly SerializedRow[]
   readonly exerciseSet: readonly SerializedRow[]
+  readonly plan: readonly SerializedRow[]
+  readonly planExercise: readonly SerializedRow[]
+  readonly planSet: readonly SerializedRow[]
 }
 
 /** A photo binary captured in a backup. */
@@ -40,12 +45,25 @@ export interface BackupFile {
   readonly photos: readonly BackupPhoto[]
 }
 
-const TABLE_NAMES = [
+/** Tables present since v1 — a valid backup must include all of these. */
+const REQUIRED_TABLE_NAMES = [
   'exercise',
   'exercisePhoto',
   'workoutSession',
   'workoutExercise',
   'exerciseSet',
+] as const satisfies readonly (keyof BackupTables)[]
+
+/** Tables added in v2 — tolerated as missing when restoring older backups. */
+const OPTIONAL_TABLE_NAMES = [
+  'plan',
+  'planExercise',
+  'planSet',
+] as const satisfies readonly (keyof BackupTables)[]
+
+const TABLE_NAMES = [
+  ...REQUIRED_TABLE_NAMES,
+  ...OPTIONAL_TABLE_NAMES,
 ] as const satisfies readonly (keyof BackupTables)[]
 
 /** Assemble a backup document. `exportedAt` is injectable for testing. */
@@ -93,16 +111,31 @@ export const parseBackupFile = (text: string): ParseResult => {
   if (typeof tables !== 'object' || tables === null) {
     return { ok: false, error: 'Backup is missing its data.' }
   }
-  for (const name of TABLE_NAMES) {
+  for (const name of REQUIRED_TABLE_NAMES) {
     if (!Array.isArray(tables[name])) {
       return { ok: false, error: `Backup is missing the "${name}" table.` }
+    }
+  }
+  // Optional (v2+) tables: if present they must be arrays, but a v1 backup
+  // simply won't have them.
+  for (const name of OPTIONAL_TABLE_NAMES) {
+    if (name in tables && !Array.isArray(tables[name])) {
+      return { ok: false, error: `Backup has an invalid "${name}" table.` }
     }
   }
   if (!Array.isArray(obj.photos)) {
     return { ok: false, error: 'Backup is missing its photos.' }
   }
 
-  return { ok: true, value: parsed as BackupFile }
+  // Normalize so callers can read every table unconditionally, even from v1.
+  const normalizedTables = Object.fromEntries(
+    TABLE_NAMES.map((name) => [name, Array.isArray(tables[name]) ? tables[name] : []]),
+  ) as unknown as BackupTables
+
+  return {
+    ok: true,
+    value: { ...(parsed as BackupFile), tables: normalizedTables },
+  }
 }
 
 /** Total live rows across all tables — for a friendly post-restore summary. */

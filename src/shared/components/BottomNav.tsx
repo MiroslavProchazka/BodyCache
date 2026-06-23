@@ -1,14 +1,15 @@
 import { NavLink } from 'react-router-dom'
-import { Home, LayoutGrid, CalendarDays, Settings } from 'lucide-react'
+import { Home, LayoutGrid, CalendarDays, ClipboardList, Settings } from 'lucide-react'
 
 const tabs = [
   { to: '/', label: 'Today', Icon: Home },
+  { to: '/plans', label: 'Plans', Icon: ClipboardList },
   { to: '/history', label: 'History', Icon: CalendarDays },
   { to: '/library', label: 'Library', Icon: LayoutGrid },
   { to: '/settings', label: 'Settings', Icon: Settings },
 ] as const
 
-/** Bottom tab bar — shown only on the three tab roots (Today/Library/Settings). */
+/** Bottom tab bar — shown on the tab roots (Today/Plans/History/Library/Settings). */
 export function BottomNav() {
   return (
     <nav className="h-[84px] flex-none border-t border-white/[0.07] bg-ink/90 backdrop-blur-md">

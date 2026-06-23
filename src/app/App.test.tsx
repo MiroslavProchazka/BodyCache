@@ -20,6 +20,10 @@ vi.mock('./routes.lazy', () => ({
   ExerciseDetailPage: () => <h1>Exercise Detail</h1>,
   CreateExercisePage: () => <h1>Create Exercise</h1>,
   StarterLibraryPage: () => <h1>Starter Library</h1>,
+  PlanLibraryPage: () => <h1>Plan Library</h1>,
+  PlanDetailPage: () => <h1>Plan Detail</h1>,
+  PlanEditorPage: () => <h1>Plan Editor</h1>,
+  PlanAddExercisePage: () => <h1>Plan Add Exercise</h1>,
   SettingsPage: () => <h1>Settings</h1>,
   ProfilePage: () => <h1>Profile</h1>,
 }))

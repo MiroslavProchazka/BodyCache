@@ -10,6 +10,10 @@ import {
   FinishPage,
   HistoryPage,
   LogExercisePage,
+  PlanAddExercisePage,
+  PlanDetailPage,
+  PlanEditorPage,
+  PlanLibraryPage,
   ProfilePage,
   SessionDetailPage,
   SettingsPage,
@@ -37,6 +41,10 @@ export function App() {
           <Route path="/library/new" element={<CreateExercisePage />} />
           <Route path="/library/starter" element={<StarterLibraryPage />} />
           <Route path="/library/:id" element={<ExerciseDetailPage />} />
+          <Route path="/plans" element={<PlanLibraryPage />} />
+          <Route path="/plans/:id" element={<PlanDetailPage />} />
+          <Route path="/plans/:id/edit" element={<PlanEditorPage />} />
+          <Route path="/plans/:id/add-exercise" element={<PlanAddExercisePage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/profile" element={<ProfilePage />} />
           {/* Unknown routes fall back to Today rather than a blank shell. */}
