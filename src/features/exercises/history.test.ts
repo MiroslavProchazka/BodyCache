@@ -31,6 +31,7 @@ const hist = (over: Partial<HistorySet>): HistorySet => ({
   sessionId: 's1',
   sessionStartedAt: '2026-06-10T09:00:00.000Z',
   setType: null,
+  rpe: null,
   ...over,
 })
 

@@ -244,6 +244,7 @@ export const completedSetsForExercise = (exerciseId: ExerciseId) =>
         'exerciseSet.durationSec as durationSec',
         'exerciseSet.distanceMeters as distanceMeters',
         'exerciseSet.setType as setType',
+        'exerciseSet.rpe as rpe',
         'workoutExercise.workoutSessionId as sessionId',
         'workoutSession.startedAt as sessionStartedAt',
       ])
