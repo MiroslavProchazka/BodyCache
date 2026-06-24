@@ -50,7 +50,7 @@ export function HistoryPage() {
         <div className="mt-6 rounded-[22px] border-[1.5px] border-dashed border-white/[0.14] px-6 py-[42px] text-center">
           <div
             className="mx-auto mb-4 flex h-14 w-14 items-center justify-center bg-inset text-neon"
-            style={{ borderRadius: '18px 18px 18px 5px' }}
+            style={{ borderRadius: '20px' }}
           >
             <CalendarDays size={26} strokeWidth={1.75} />
           </div>

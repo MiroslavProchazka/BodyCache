@@ -84,7 +84,7 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
                   backgroundColor: paused ? '#F5B45A' : undefined,
                   boxShadow: paused
                     ? '0 0 0 4px rgba(245,180,90,.18)'
-                    : '0 0 0 4px rgba(96,225,152,.18)',
+                    : '0 0 0 4px rgba(73,79,223,.22)',
                 }}
               />
               {paused ? 'Paused' : 'Live workout'}
@@ -116,7 +116,7 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
           <div className="mb-4 rounded-[22px] border-[1.5px] border-dashed border-white/[0.14] px-6 py-[38px] text-center">
             <div
               className="mx-auto mb-4 flex h-14 w-14 items-center justify-center bg-inset text-neon"
-              style={{ borderRadius: '18px 18px 18px 5px' }}
+              style={{ borderRadius: '20px' }}
             >
               <Dumbbell size={26} strokeWidth={1.75} />
             </div>
@@ -165,7 +165,7 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
             'w-full rounded-2xl border py-[17px] text-base font-bold',
             empty
               ? 'border-white/[0.08] bg-surface text-faint opacity-60'
-              : 'border-neon bg-neon text-ink',
+              : 'border-white bg-white text-ink',
           ].join(' ')}
         >
           Finish workout

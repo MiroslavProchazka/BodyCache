@@ -25,9 +25,9 @@ export const SET_TYPE_SHORT: Record<SetType, string> = {
 
 /** Tailwind classes for a set-type chip, tuned to the app palette. */
 export const SET_TYPE_CLASS: Record<SetType, string> = {
-  warmup: 'bg-[#72A3FE]/15 text-[#9DBEFF]',
-  drop: 'bg-[#F79D69]/15 text-[#F7B58D]',
-  failure: 'bg-[#F2698E]/15 text-[#F593AC]',
+  warmup: 'bg-[#007bc2]/20 text-[#7db8e6]',
+  drop: 'bg-[#ec7e00]/18 text-[#f2a24e]',
+  failure: 'bg-[#e61e49]/18 text-[#f2718f]',
 }
 
 /** Label for a normal (null) set, used by the cycling selector. */

@@ -24,10 +24,10 @@ export type MuscleKey =
 
 export type BodyView = 'both' | 'front' | 'back'
 
-const NEON = '#60E198' // highlighted muscle
-const BASE = '#345C45' // resting muscle / forearms
-const NEUTRAL = '#284B38' // head, neck, hands, knees, feet (never highlights)
-const GAP = '#0B2417' // gap stroke — matches the recommended container background
+const NEON = '#494fdf' // highlighted muscle (cobalt)
+const BASE = '#2c2f36' // resting muscle / forearms
+const NEUTRAL = '#1f2229' // head, neck, hands, knees, feet (never highlights)
+const GAP = '#16181a' // gap stroke — matches the recommended container background
 
 /** Per-muscle intensity, 0..1. Drives the live-distribution fill. */
 export type MuscleLevels = Partial<Record<Exclude<MuscleKey, ''>, number>>

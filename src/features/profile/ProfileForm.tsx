@@ -113,7 +113,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps
         type="button"
         onClick={submit}
         disabled={!canSave}
-        className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-neon py-[17px] text-base font-bold text-ink transition-transform active:scale-[0.99] disabled:bg-surface disabled:text-faint disabled:opacity-60"
+        className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-[17px] text-base font-bold text-ink transition-transform active:scale-[0.99] disabled:bg-surface disabled:text-faint disabled:opacity-60"
       >
         {submitLabel}
       </button>

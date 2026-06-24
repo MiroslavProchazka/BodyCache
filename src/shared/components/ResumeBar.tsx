@@ -36,7 +36,7 @@ export function ResumeBar() {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-[100px] z-30 mx-auto flex max-w-md items-center gap-[6px] rounded-2xl bg-gradient-to-br from-neon to-brand pl-4 pr-[6px] py-[7px] text-ink shadow-resume"
+      className="fixed inset-x-0 bottom-[100px] z-30 mx-auto flex max-w-md items-center gap-[6px] rounded-2xl bg-gradient-to-br from-neon to-brand pl-4 pr-[6px] py-[7px] text-white shadow-resume"
       style={{ width: 'calc(100% - 28px)' }}
     >
       <button
@@ -58,7 +58,7 @@ export function ResumeBar() {
         type="button"
         onClick={handleDiscard}
         aria-label="Discard workout"
-        className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-ink/[0.16] text-ink"
+        className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-ink/[0.16] text-white"
       >
         <X size={16} strokeWidth={2.2} />
       </button>

@@ -372,7 +372,7 @@ function SyncStatusCard({ online }: { online: boolean }) {
       <span
         aria-hidden
         className={['h-[9px] w-[9px] rounded-full', online ? 'bg-neon' : 'bg-muted'].join(' ')}
-        style={online ? { boxShadow: '0 0 0 4px rgba(96,225,152,.16)' } : undefined}
+        style={online ? { boxShadow: '0 0 0 4px rgba(73,79,223,.22)' } : undefined}
       />
     </div>
   )

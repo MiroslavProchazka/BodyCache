@@ -59,7 +59,7 @@ export function TodayPage() {
         <div className="flex items-center gap-[10px]">
           <div
             className="flex h-[34px] w-[34px] items-center justify-center bg-neon text-ink"
-            style={{ borderRadius: '11px 11px 11px 4px' }}
+            style={{ borderRadius: '12px' }}
           >
             <Dumbbell size={20} strokeWidth={1.75} />
           </div>
@@ -83,7 +83,7 @@ export function TodayPage() {
         <button
           type="button"
           onClick={handleStart}
-          className="mb-[14px] flex w-full items-center justify-between rounded-[24px] bg-gradient-to-br from-neon to-brand px-5 py-[22px] text-left text-ink transition-transform active:scale-[0.985]"
+          className="mb-[14px] flex w-full items-center justify-between rounded-[24px] bg-gradient-to-br from-neon to-brand px-5 py-[22px] text-left text-white transition-transform active:scale-[0.985]"
         >
           <div>
             <div className="font-display text-[24px] font-bold tracking-tight">Start workout</div>
@@ -211,7 +211,7 @@ function ActiveSessionCard({ session }: { session: WorkoutSessionRow }) {
           <button
             type="button"
             onClick={() => navigate('/workout')}
-            className="flex flex-[1.2] items-center justify-center gap-[7px] rounded-[16px] bg-gradient-to-br from-neon to-brand py-[13px] text-[14.5px] font-bold text-ink"
+            className="flex flex-[1.2] items-center justify-center gap-[7px] rounded-[16px] bg-gradient-to-br from-neon to-brand py-[13px] text-[14.5px] font-bold text-white"
           >
             Resume
             <ArrowRight size={17} strokeWidth={2} />
@@ -226,7 +226,7 @@ function ActiveSessionCard({ session }: { session: WorkoutSessionRow }) {
       <button
         type="button"
         onClick={() => navigate('/workout')}
-        className="flex w-full items-center justify-between rounded-[24px] bg-gradient-to-br from-neon to-brand p-5 pr-[58px] text-left text-ink"
+        className="flex w-full items-center justify-between rounded-[24px] bg-gradient-to-br from-neon to-brand p-5 pr-[58px] text-left text-white"
       >
         <div>
           <div className="mb-[6px] text-xs font-semibold uppercase tracking-[0.08em] opacity-[0.65]">
@@ -248,7 +248,7 @@ function ActiveSessionCard({ session }: { session: WorkoutSessionRow }) {
         type="button"
         onClick={handleDiscard}
         aria-label="Discard workout"
-        className="absolute right-[14px] top-[14px] flex h-7 w-7 items-center justify-center rounded-full bg-ink/[0.16] text-ink"
+        className="absolute right-[14px] top-[14px] flex h-7 w-7 items-center justify-center rounded-full bg-ink/[0.16] text-white"
       >
         <X size={16} strokeWidth={2.2} />
       </button>

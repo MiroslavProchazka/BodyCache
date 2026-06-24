@@ -125,7 +125,7 @@ function PlanDetailInner({ planId }: { planId: PlanId }) {
             'flex w-full items-center justify-center gap-2 rounded-2xl py-[17px] text-base font-bold',
             exercises.length === 0
               ? 'border border-white/[0.08] bg-surface text-faint opacity-60'
-              : 'bg-neon text-ink',
+              : 'bg-white text-ink',
           ].join(' ')}
         >
           <Play size={19} strokeWidth={2} fill="currentColor" stroke="none" />
@@ -148,7 +148,7 @@ function PlanExerciseRowView({ entry }: { entry: PlanExerciseRow }) {
         <ExerciseTile
           photoId={entry.primaryPhotoId as ExercisePhotoId | null}
           bodyPart={entry.bodyPart as string | null}
-          radius="14px 14px 14px 4px"
+          radius="14px"
           className="h-[46px] w-[46px] flex-none"
           glyphSize={23}
         />

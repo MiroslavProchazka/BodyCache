@@ -6,20 +6,20 @@
 import type { BodyPart } from '@/evolu/schema'
 
 const TINTS: Record<BodyPart, string> = {
-  chest: '#60E198',
-  back: '#9E8EF1',
-  legs: '#F79D69',
-  shoulders: '#72A3FE',
-  arms: '#4BCE81',
-  core: '#60E198',
-  cardio: '#72A3FE',
-  full_body: '#60E198',
-  other: '#6E927F',
+  chest: '#494fdf',
+  back: '#00a87e',
+  legs: '#ec7e00',
+  shoulders: '#007bc2',
+  arms: '#e61e49',
+  core: '#428619',
+  cardio: '#007bc2',
+  full_body: '#494fdf',
+  other: '#5c5e60',
 }
 
 /** Solid tint for a body part (defaults to neon). */
 export const tintFor = (part?: string | null): string =>
-  (part && TINTS[part as BodyPart]) || '#60E198'
+  (part && TINTS[part as BodyPart]) || '#494fdf'
 
 /** Soft gradient fill used behind the glyph on placeholder tiles. */
 export const tileGradient = (part?: string | null): string => {

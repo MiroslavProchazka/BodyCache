@@ -139,7 +139,7 @@ export function ExerciseDetailPage() {
           <ExerciseTile
             photoId={photoId}
             bodyPart={exercise.bodyPart}
-            radius="24px 24px 24px 6px"
+            radius="20px"
             className="mb-4 h-[150px] w-full"
             glyphSize={56}
             full
@@ -149,7 +149,7 @@ export function ExerciseDetailPage() {
           // Photo-free hero: the full front+back muscle map, primary + secondary.
           <div
             className="mb-4 border border-white/[0.06] px-3 pb-[14px] pt-[18px]"
-            style={{ background: '#0B2417', borderRadius: '24px 24px 24px 6px' }}
+            style={{ background: '#16181a', borderRadius: '20px' }}
           >
             <div className="mx-auto w-fit">
               <BodyMap
@@ -185,7 +185,7 @@ export function ExerciseDetailPage() {
         {/* Progress | How to */}
         <div
           className="mb-4 flex gap-1 rounded-[14px] border border-white/[0.08] p-1"
-          style={{ background: '#0F3322' }}
+          style={{ background: '#16181a' }}
           role="tablist"
           aria-label="Exercise detail tabs"
         >
@@ -342,7 +342,7 @@ function HowTo({ exercise }: { exercise: { name?: string | null } }) {
           <li key={i} className="flex items-start gap-3">
             <span
               className="flex h-[30px] w-[30px] flex-none items-center justify-center font-display text-sm font-semibold text-neon"
-              style={{ background: '#1B5236', borderRadius: '10px 10px 10px 3px' }}
+              style={{ background: '#23262b', borderRadius: '10px' }}
             >
               {i + 1}
             </span>

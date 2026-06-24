@@ -34,7 +34,7 @@ export function ExerciseCard({ exercise }: { exercise: ExerciseRow }) {
       <ExerciseTile
         photoId={exercise.primaryPhotoId as ExercisePhotoId | null}
         bodyPart={exercise.bodyPart}
-        radius="18px 18px 18px 4px"
+        radius="20px"
         className="h-[124px] w-full"
         glyphSize={34}
         map={{ muscle: body.muscle, view: body.view, fw: 50 }}

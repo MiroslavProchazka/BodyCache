@@ -29,7 +29,7 @@ export function WorkoutEntryCard({ entry }: { entry: SessionExerciseRow }) {
         <ExerciseTile
           photoId={entry.primaryPhotoId as ExercisePhotoId | null}
           bodyPart={entry.bodyPart as string | null}
-          radius="14px 14px 14px 4px"
+          radius="14px"
           className="h-[46px] w-[46px] flex-none"
           glyphSize={23}
         />

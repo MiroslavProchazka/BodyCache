@@ -174,7 +174,7 @@ export function StarterLibraryPage() {
           type="button"
           onClick={handleAdd}
           disabled={count === 0 || saving}
-          className="w-full rounded-2xl bg-neon py-[17px] text-base font-bold text-ink transition-transform active:scale-[0.99] disabled:bg-surface disabled:text-faint disabled:opacity-60"
+          className="w-full rounded-2xl bg-white py-[17px] text-base font-bold text-ink transition-transform active:scale-[0.99] disabled:bg-surface disabled:text-faint disabled:opacity-60"
         >
           {saving
             ? 'Adding…'

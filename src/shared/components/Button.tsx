@@ -9,11 +9,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const base =
-  'inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-[17px] text-base font-bold transition-transform active:scale-[0.99] disabled:pointer-events-none'
+  'inline-flex items-center justify-center gap-2 rounded-full px-5 py-[17px] text-base font-bold transition-transform active:scale-[0.99] disabled:pointer-events-none'
 
 const variants: Record<Variant, string> = {
   // Neon CTA — the primary "do it" action (Save, Done, Start).
-  primary: 'bg-neon text-ink disabled:bg-surface disabled:text-faint disabled:opacity-60',
+  primary: 'bg-white text-ink disabled:bg-surface disabled:text-faint disabled:opacity-60',
   // Inset surface — quieter secondary action.
   secondary: 'bg-inset text-soft disabled:opacity-40',
   // Subtle neon-tinted outline — additive actions like "Add exercise".

@@ -38,20 +38,20 @@ export function ProgressChart({
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#60E198" stopOpacity="0.28" />
-            <stop offset="1" stopColor="#60E198" stopOpacity="0" />
+            <stop offset="0" stopColor="#494fdf" stopOpacity="0.28" />
+            <stop offset="1" stopColor="#494fdf" stopOpacity="0" />
           </linearGradient>
         </defs>
         <path d={area} fill={`url(#${gradId})`} />
-        <path d={line} fill="none" stroke="#60E198" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+        <path d={line} fill="none" stroke="#494fdf" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
         {xy.map((p, i) => (
           <circle
             key={points[i].sessionId}
             cx={p.x}
             cy={p.y}
             r={i === xy.length - 1 ? 4.5 : 3}
-            fill={i === xy.length - 1 ? '#60E198' : '#0F3322'}
-            stroke="#60E198"
+            fill={i === xy.length - 1 ? '#494fdf' : '#16181a'}
+            stroke="#494fdf"
             strokeWidth="2"
           />
         ))}
