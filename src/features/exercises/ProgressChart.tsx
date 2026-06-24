@@ -50,7 +50,7 @@ export function ProgressChart({
             cx={p.x}
             cy={p.y}
             r={i === xy.length - 1 ? 4.5 : 3}
-            fill={i === xy.length - 1 ? '#60E198' : '#0E2C1C'}
+            fill={i === xy.length - 1 ? '#60E198' : '#0F3322'}
             stroke="#60E198"
             strokeWidth="2"
           />
