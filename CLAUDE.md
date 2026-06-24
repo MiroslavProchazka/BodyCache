@@ -122,6 +122,24 @@ as **incomplete "ghost" sets** the user confirms or edits in the normal logger
 included in backup/restore (backup format bumped to **v2**; v1 backups still
 restore, treating plan tables as empty).
 
+## Repeat workout (Phase E)
+
+"Do what I did last time" — the purest expression of the *workout memory*
+mantra. From a finished session's detail screen (`SessionDetailPage`), the
+**Repeat workout** action instantiates a fresh `workoutSession`, copying each
+exercise (in order) and its **completed** sets as incomplete "ghost" sets the
+user confirms or edits in the normal logger. It is the history-side mirror of
+starting from a plan: `useRepeatWorkout` + the pure `sessionToSession.ts`
+helper (`repeatSetToSetInput`) parallel `useStartWorkoutFromPlan` +
+`planToSession.ts`, and reuse the same `byOrderIndex` ordering helper. Every
+metric column is copied verbatim (including cardio fields + `rpe`); only
+`completedAt` is reset to `null`. Backed by the `sessionSetsForRepeat` query.
+
+Planned follow-ups for Phase E (not yet built): surface optional **RPE** in the
+logger (column + `setFields` entry already exist), **reorder exercises** within
+an active session, and **supersets** (a nullable exercise group on
+`workoutExercise`/`planExercise`).
+
 ## Milestones (from the product spec)
 
 1. App shell ✅ &nbsp; 2. Evolu schema ✅ &nbsp; 3. Exercise library ✅ &nbsp;

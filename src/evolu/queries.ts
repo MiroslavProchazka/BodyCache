@@ -335,6 +335,43 @@ export const sessionSetsDetailed = (sessionId: WorkoutSessionId) =>
       .orderBy('exerciseSet.orderIndex'),
   )
 
+/**
+ * Completed sets within a session, with every metric column plus the owning
+ * `workoutExerciseId` and exercise order. Feeds "repeat this workout": each
+ * completed set is copied verbatim into a fresh session as an incomplete ghost
+ * the user confirms or edits. Grouped by `workoutExerciseId` in JS. Ordered by
+ * exercise then set so the rebuilt session preserves the original order.
+ */
+export const sessionSetsForRepeat = (sessionId: WorkoutSessionId) =>
+  evolu.createQuery((db) =>
+    db
+      .selectFrom('exerciseSet')
+      .innerJoin('workoutExercise', 'workoutExercise.id', 'exerciseSet.workoutExerciseId')
+      .where('exerciseSet.isDeleted', 'is', null)
+      .where('exerciseSet.completedAt', 'is not', null)
+      .where('workoutExercise.isDeleted', 'is', null)
+      .where('workoutExercise.workoutSessionId', '=', sessionId)
+      .select([
+        'exerciseSet.id as id',
+        'exerciseSet.orderIndex as orderIndex',
+        'exerciseSet.weightKg as weightKg',
+        'exerciseSet.reps as reps',
+        'exerciseSet.addedWeightKg as addedWeightKg',
+        'exerciseSet.assistanceWeightKg as assistanceWeightKg',
+        'exerciseSet.durationSec as durationSec',
+        'exerciseSet.distanceMeters as distanceMeters',
+        'exerciseSet.inclinePercent as inclinePercent',
+        'exerciseSet.speedKmh as speedKmh',
+        'exerciseSet.resistanceLevel as resistanceLevel',
+        'exerciseSet.rpe as rpe',
+        'exerciseSet.setType as setType',
+        'workoutExercise.id as workoutExerciseId',
+        'workoutExercise.orderIndex as exerciseOrder',
+      ])
+      .orderBy('workoutExercise.orderIndex')
+      .orderBy('exerciseSet.orderIndex'),
+  )
+
 /** A single session by id (any status, non-deleted). */
 export const sessionById = (id: WorkoutSessionId) =>
   evolu.createQuery((db) =>

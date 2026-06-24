@@ -1,13 +1,15 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, RotateCcw, Trash2 } from 'lucide-react'
 import { sessionById, sessionSetsDetailed } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { WorkoutSessionRow, SessionDetailSetRow } from '@/evolu/rows'
 import type { ExerciseId, ExercisePhotoId, WorkoutSessionId } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
+import { StickyAction } from '@/shared/components/StickyAction'
 import { Overline } from '@/shared/components/Overline'
 import { StatTile } from '@/shared/components/StatTile'
+import { useRepeatWorkout } from './useRepeatWorkout'
 import { ExerciseTile } from '@/features/exercises/ExerciseTile'
 import { humanize } from '@/shared/utils/bodyParts'
 import { formatRelativeDay } from '@/shared/utils/dates'
@@ -47,6 +49,7 @@ function SessionDetailInner({ session }: { session: WorkoutSessionRow }) {
   const navigate = useNavigate()
   const { unit } = useUnits()
   const { deleteWorkoutSession } = useBodyCacheMutations()
+  const repeatWorkout = useRepeatWorkout()
   const rows = useQuery(sessionSetsDetailed(session.id as WorkoutSessionId)) as readonly SessionDetailSetRow[]
 
   const summary = summarizeSession(rows)
@@ -60,8 +63,14 @@ function SessionDetailInner({ session }: { session: WorkoutSessionRow }) {
     navigate('/history', { replace: true })
   }
 
+  const handleRepeat = async () => {
+    const sessionId = await repeatWorkout(session.id as WorkoutSessionId)
+    if (sessionId) navigate('/workout')
+  }
+
   return (
-    <div className="px-5 pb-[130px] pt-[6px]">
+    <>
+    <div className="px-5 pb-[150px] pt-[6px]">
       <header className="mb-4 flex items-center gap-3">
         <CircleButton onClick={() => navigate('/history')} label="Back">
           <ChevronLeft size={18} strokeWidth={1.75} />
@@ -112,6 +121,20 @@ function SessionDetailInner({ session }: { session: WorkoutSessionRow }) {
         </p>
       )}
     </div>
+
+      {groups.length > 0 && (
+        <StickyAction>
+          <button
+            type="button"
+            onClick={handleRepeat}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-[17px] text-base font-bold text-ink"
+          >
+            <RotateCcw size={18} strokeWidth={2.2} />
+            Repeat workout
+          </button>
+        </StickyAction>
+      )}
+    </>
   )
 }
 
