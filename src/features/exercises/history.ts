@@ -24,6 +24,7 @@ export const toHistorySets = (rows: readonly ExerciseHistorySetRow[]): HistorySe
             sessionId: r.sessionId,
             sessionStartedAt: r.sessionStartedAt,
             setType: r.setType,
+            rpe: r.rpe ?? null,
           },
         ]
       : [],

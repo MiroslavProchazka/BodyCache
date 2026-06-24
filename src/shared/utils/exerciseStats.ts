@@ -28,6 +28,8 @@ export interface HistorySet extends MetricSet {
   readonly sessionStartedAt: string
   /** `null` = normal set; warm-ups are excluded from records (see `workingSets`). */
   readonly setType: string | null
+  /** Optional 1–10 perceived exertion; `null` when not logged. */
+  readonly rpe: number | null
 }
 
 const n = (v: number | null): number => v ?? 0

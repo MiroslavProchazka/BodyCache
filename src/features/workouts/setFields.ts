@@ -23,8 +23,9 @@ export interface SetFieldDef {
 /**
  * Which stepper columns to show per exercise type, in display order. Strength
  * (weight × reps) is the common case; the rest map to their most relevant
- * metric(s). Extra schema columns (RPE, incline, speed, resistance) are not
- * surfaced in the MVP logger.
+ * metric(s). RPE is surfaced separately as an optional per-set chip (not a
+ * stepper — see `rpe.ts`); other extra columns (incline, speed, resistance)
+ * are not surfaced in the MVP logger.
  */
 export const SET_FIELDS: Record<ExerciseType, readonly SetFieldDef[]> = {
   strength: [

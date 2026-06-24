@@ -42,14 +42,16 @@ import { toHistorySets } from '@/features/exercises/history'
 import { SET_FIELDS, DEFAULT_VALUES, type SetFieldDef, type SetFieldKey } from './setFields'
 import { SetTypeTag } from './SetTypeTag'
 import { narrowSetType, nextSetType, setTypeLabel } from './setTypes'
+import { RPE_VALUES, clampRpe, formatRpe } from './rpe'
 
 /** A set being edited: the active values for its type's fields, in kg/native units. */
 type DraftSet = Partial<Record<SetFieldKey, number>>
 
-/** A draft set row: its metric values plus an optional set type. */
+/** A draft set row: its metric values, an optional set type and optional RPE. */
 interface DraftRow {
   fields: DraftSet
   setType: SetType | null
+  rpe: number | null
 }
 
 /** A draft as a `MetricSet` for PR comparison; metrics it doesn't carry are null. */
@@ -110,12 +112,21 @@ function LogInner({
   }
 
   // Seed once: existing sets (editing) → previous top working set → defaults.
+  // RPE is a felt value, not a target, so it's only seeded when editing real
+  // logged sets — never pre-filled from history the way metrics are.
   const [draft, setDraft] = useState<DraftRow[]>(() => {
     if (existing && existingSets.length > 0)
-      return existingSets.map((s) => ({ fields: fieldsOf(s), setType: narrowSetType(s.setType) }))
+      return existingSets.map((s) => ({
+        fields: fieldsOf(s),
+        setType: narrowSetType(s.setType),
+        rpe: clampRpe(s.rpe),
+      }))
     const top = prev ? bestSet(workingSets(prev.sets), type) : null
-    return [{ fields: fieldsOf(top), setType: null }]
+    return [{ fields: fieldsOf(top), setType: null, rpe: null }]
   })
+
+  // Which row's RPE picker is expanded (only one open at a time), or null.
+  const [rpePickerRow, setRpePickerRow] = useState<number | null>(null)
 
   const clampValue = (value: number, f: SetFieldDef) =>
     Math.max(0, f.integer ? Math.round(value) : Math.round(value * 10) / 10)
@@ -141,11 +152,22 @@ function LogInner({
       ds.map((row, j) => (j === index ? { ...row, setType: nextSetType(row.setType) } : row)),
     )
 
-  // New sets clone the last row's values but start as a normal working set.
+  /** Set a row's RPE, or clear it when the current value is tapped again. */
+  const setRpe = (index: number, value: number) => {
+    setDraft((ds) =>
+      ds.map((row, j) =>
+        j === index ? { ...row, rpe: row.rpe === value ? null : value } : row,
+      ),
+    )
+    setRpePickerRow(null)
+  }
+
+  // New sets clone the last row's values but start as a normal working set with
+  // no RPE (perceived exertion is logged fresh per set, not carried forward).
   const addDraftSet = () =>
     setDraft((ds) => [
       ...ds,
-      { fields: { ...(ds[ds.length - 1]?.fields ?? fieldsOf(null)) }, setType: null },
+      { fields: { ...(ds[ds.length - 1]?.fields ?? fieldsOf(null)) }, setType: null, rpe: null },
     ])
 
   const removeDraftSet = (index: number) =>
@@ -153,7 +175,13 @@ function LogInner({
 
   const copyPrevious = () => {
     if (!prev || prev.sets.length === 0) return
-    setDraft(prev.sets.map((s) => ({ fields: fieldsOf(s), setType: narrowSetType(s.setType) })))
+    setDraft(
+      prev.sets.map((s) => ({
+        fields: fieldsOf(s),
+        setType: narrowSetType(s.setType),
+        rpe: clampRpe(s.rpe),
+      })),
+    )
     showToast('Copied last workout')
   }
 
@@ -185,6 +213,7 @@ function LogInner({
         orderIndex: i,
         completedAt: now,
         setType: row.setType,
+        rpe: row.rpe,
         ...row.fields,
       })
     })
@@ -248,8 +277,13 @@ function LogInner({
                     <span className="whitespace-nowrap font-medium text-muted">Set {i + 1}</span>
                     <SetTypeTag value={s.setType} />
                   </span>
-                  <span className="whitespace-nowrap font-semibold tnum text-white">
-                    {formatSetSummary(s, type, unit)}
+                  <span className="flex items-center gap-2 whitespace-nowrap">
+                    {s.rpe != null && (
+                      <span className="text-[12px] font-medium tnum text-faint">@{s.rpe}</span>
+                    )}
+                    <span className="font-semibold tnum text-white">
+                      {formatSetSummary(s, type, unit)}
+                    </span>
                   </span>
                 </div>
               ))}
@@ -292,6 +326,20 @@ function LogInner({
                   >
                     {setTypeLabel(row.setType)}
                   </button>
+                  {/* Optional perceived exertion: tap to open a 1–10 picker. */}
+                  <button
+                    type="button"
+                    onClick={() => setRpePickerRow((r) => (r === i ? null : i))}
+                    aria-label={`Set ${i + 1} RPE: ${row.rpe ?? 'not set'}`}
+                    aria-expanded={rpePickerRow === i}
+                    className={`whitespace-nowrap rounded-lg border px-[10px] py-1 text-[12px] font-semibold active:scale-[0.97] ${
+                      row.rpe != null
+                        ? 'border-neon/40 bg-neon/[0.12] text-neon'
+                        : 'border-white/10 text-muted'
+                    }`}
+                  >
+                    {formatRpe(row.rpe)}
+                  </button>
                   {row.setType !== 'warmup' &&
                     isPersonalRecord(metricOf(row.fields), priorSets, type) && <PrBadge />}
                 </div>
@@ -306,6 +354,29 @@ function LogInner({
                   </button>
                 )}
               </div>
+              {rpePickerRow === i && (
+                <div
+                  role="group"
+                  aria-label={`Set ${i + 1} RPE`}
+                  className="mb-[14px] flex flex-wrap gap-2"
+                >
+                  {RPE_VALUES.map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setRpe(i, v)}
+                      aria-pressed={row.rpe === v}
+                      className={`h-9 min-w-9 flex-1 rounded-lg border text-[14px] font-semibold tnum active:scale-[0.95] ${
+                        row.rpe === v
+                          ? 'border-neon/50 bg-neon/[0.16] text-neon'
+                          : 'border-white/10 bg-inset text-soft'
+                      }`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="flex gap-2">
                 {fields.map((f, idx) => (
                   <Fragment key={f.key}>
