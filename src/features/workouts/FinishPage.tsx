@@ -39,8 +39,8 @@ function FinishInner({ session }: { session: WorkoutSessionRow }) {
   return (
     <div className="flex flex-col items-center px-5 pb-[130px] pt-[30px] text-center">
       <div
-        className="mb-5 flex h-[72px] w-[72px] items-center justify-center bg-gradient-to-br from-neon to-brand text-ink"
-        style={{ borderRadius: '24px 24px 24px 6px' }}
+        className="mb-5 flex h-[72px] w-[72px] items-center justify-center bg-gradient-to-br from-neon to-brand text-white"
+        style={{ borderRadius: '20px' }}
       >
         <Check size={36} strokeWidth={2} />
       </div>

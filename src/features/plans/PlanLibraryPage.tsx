@@ -30,7 +30,7 @@ export function PlanLibraryPage() {
         <button
           type="button"
           onClick={handleCreate}
-          className="flex items-center gap-[6px] rounded-full bg-neon px-[14px] py-[9px] text-[13.5px] font-bold text-ink active:scale-[0.97]"
+          className="flex items-center gap-[6px] rounded-full bg-white px-[14px] py-[9px] text-[13.5px] font-bold text-ink active:scale-[0.97]"
         >
           <Plus size={17} strokeWidth={2.2} />
           New
@@ -41,7 +41,7 @@ export function PlanLibraryPage() {
         <div className="mt-2 rounded-[22px] border-[1.5px] border-dashed border-white/[0.14] px-6 py-[40px] text-center">
           <div
             className="mx-auto mb-4 flex h-14 w-14 items-center justify-center bg-inset text-neon"
-            style={{ borderRadius: '18px 18px 18px 5px' }}
+            style={{ borderRadius: '20px' }}
           >
             <ClipboardList size={26} strokeWidth={1.75} />
           </div>
@@ -52,7 +52,7 @@ export function PlanLibraryPage() {
           <button
             type="button"
             onClick={handleCreate}
-            className="inline-flex items-center gap-2 rounded-2xl bg-neon px-5 py-[13px] text-[14.5px] font-bold text-ink"
+            className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-[13px] text-[14.5px] font-bold text-ink"
           >
             <Plus size={18} strokeWidth={2.2} />
             Create a plan
@@ -101,7 +101,7 @@ function PlanCard({ plan }: { plan: PlanRow }) {
       >
         <div
           className="flex h-[46px] w-[46px] flex-none items-center justify-center bg-inset text-neon"
-          style={{ borderRadius: '14px 14px 14px 4px' }}
+          style={{ borderRadius: '14px' }}
         >
           <ClipboardList size={23} strokeWidth={1.75} />
         </div>

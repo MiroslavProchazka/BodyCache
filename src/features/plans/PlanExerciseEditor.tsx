@@ -66,7 +66,7 @@ export function PlanExerciseEditor({
         <ExerciseTile
           photoId={entry.primaryPhotoId as ExercisePhotoId | null}
           bodyPart={entry.bodyPart as string | null}
-          radius="13px 13px 13px 4px"
+          radius="14px"
           className="h-[42px] w-[42px] flex-none"
           glyphSize={21}
         />

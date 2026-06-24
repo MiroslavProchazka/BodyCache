@@ -225,7 +225,7 @@ function LogInner({
           <ExerciseTile
             photoId={exercise.primaryPhotoId as ExercisePhotoId | null}
             bodyPart={exercise.bodyPart}
-            radius="14px 14px 14px 4px"
+            radius="14px"
             className="h-[44px] w-[44px] flex-none"
           />
         </header>
@@ -363,7 +363,7 @@ function LogInner({
         <button
           type="button"
           onClick={handleSave}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-neon py-[17px] text-base font-bold text-ink transition-transform active:scale-[0.99]"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-[17px] text-base font-bold text-ink transition-transform active:scale-[0.99]"
         >
           <Check size={20} strokeWidth={2} />
           Save {validCount} {validCount === 1 ? 'set' : 'sets'}

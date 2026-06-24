@@ -38,7 +38,7 @@ export function RecentExerciseCard({
       <ExerciseTile
         photoId={primaryPhotoId}
         bodyPart={bodyPart}
-        radius="13px 13px 13px 4px"
+        radius="14px"
         className="mb-3 h-[42px] w-[42px]"
       />
       <div className="mb-[3px] truncate text-[14.5px] font-semibold leading-tight tracking-tight text-white">

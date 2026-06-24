@@ -5,24 +5,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Trezor dark theme — see design handoff "Design Tokens" (redesign).
-        ink: '#04160C', // app background (deep canvas) / text-on-neon
-        surface: '#0F3322', // card surface (lifted)
-        inset: '#1B5236', // inset / input / stepper / chip-rest
-        neon: '#60E198', // primary accent / CTAs / highlights
-        brand: '#4BCE81', // gradient end
-        pr: '#F2A065', // personal-record accent (orange)
-        down: '#F79D69', // trend down (orange)
-        soft: '#C9E4D5', // text soft
-        muted: '#9FC8B2', // text muted
-        faint: '#6E927F', // text faint / overlines
+        // Revolut-inspired theme — true-black canvas + cobalt-violet accent.
+        ink: '#000000', // app background (true black) / text on light & accent surfaces
+        surface: '#16181a', // card surface (elevated off black)
+        inset: '#23262b', // inset / input / stepper / chip-rest
+        neon: '#494fdf', // brand accent (cobalt violet) — accents, selected, fills
+        brand: '#7c82f5', // gradient end (lighter cobalt)
+        pr: '#eaa44a', // personal-record accent (amber)
+        down: '#ff9a4d', // trend down (orange)
+        soft: 'rgba(255,255,255,0.80)', // text soft
+        muted: 'rgba(255,255,255,0.60)', // text muted
+        faint: 'rgba(255,255,255,0.42)', // text faint / overlines
       },
       fontFamily: {
-        display: ['"TT Satoshi"', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['"Inter Tight"', 'Inter', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        resume: '0 12px 30px -10px rgba(96,225,152,.6)',
+        resume: '0 12px 30px -10px rgba(73,79,223,.5)',
         toast: '0 12px 30px -8px rgba(0,0,0,.4)',
       },
     },

@@ -83,8 +83,8 @@ function PlanAddExerciseInner({ planId }: { planId: PlanId }) {
         className="mb-[18px] flex w-full items-center gap-[13px] rounded-2xl border border-neon/30 bg-gradient-to-br from-neon/[0.16] to-neon/[0.05] p-[15px] text-left"
       >
         <div
-          className="flex h-[42px] w-[42px] flex-none items-center justify-center bg-neon text-ink"
-          style={{ borderRadius: '13px 13px 13px 4px' }}
+          className="flex h-[42px] w-[42px] flex-none items-center justify-center bg-neon text-white"
+          style={{ borderRadius: '14px' }}
         >
           <Plus size={22} strokeWidth={2} />
         </div>
@@ -127,7 +127,7 @@ function PickerRow({
       <ExerciseTile
         photoId={exercise.primaryPhotoId as ExercisePhotoId | null}
         bodyPart={exercise.bodyPart}
-        radius="14px 14px 14px 4px"
+        radius="14px"
         className="h-[46px] w-[46px] flex-none"
         glyphSize={23}
       />

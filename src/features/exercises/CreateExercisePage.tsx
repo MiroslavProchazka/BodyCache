@@ -119,7 +119,7 @@ export function CreateExercisePage() {
         {previewUrl ? (
           <div
             className="relative mb-[18px] h-[150px] w-full overflow-hidden"
-            style={{ borderRadius: '24px 24px 24px 6px' }}
+            style={{ borderRadius: '20px' }}
           >
             <img src={previewUrl} alt="" className="h-full w-full object-cover" />
             <button
@@ -136,7 +136,7 @@ export function CreateExercisePage() {
             type="button"
             onClick={() => fileRef.current?.click()}
             className="mb-[18px] flex h-[150px] w-full flex-col items-center justify-center gap-[10px] border-[1.5px] border-dashed border-white/[0.18] bg-surface"
-            style={{ borderRadius: '24px 24px 24px 6px' }}
+            style={{ borderRadius: '20px' }}
           >
             <div className="flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-inset text-neon">
               <Camera size={26} strokeWidth={1.75} />
@@ -180,7 +180,7 @@ export function CreateExercisePage() {
           type="button"
           onClick={handleSubmit}
           disabled={!canSave}
-          className="w-full rounded-2xl bg-neon py-[17px] text-base font-bold text-ink transition-transform active:scale-[0.99] disabled:bg-surface disabled:text-faint disabled:opacity-60"
+          className="w-full rounded-2xl bg-white py-[17px] text-base font-bold text-ink transition-transform active:scale-[0.99] disabled:bg-surface disabled:text-faint disabled:opacity-60"
         >
           {saving ? 'Saving…' : 'Save exercise'}
         </button>

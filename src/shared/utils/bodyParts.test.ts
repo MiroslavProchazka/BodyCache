@@ -3,14 +3,14 @@ import { tintFor, tileGradient, humanize, metaLine } from './bodyParts'
 
 describe('tintFor', () => {
   it('returns the body part tint', () => {
-    expect(tintFor('legs')).toBe('#F79D69')
-    expect(tintFor('back')).toBe('#9E8EF1')
+    expect(tintFor('legs')).toBe('#ec7e00')
+    expect(tintFor('back')).toBe('#00a87e')
   })
 
   it('falls back to neon for unknown or missing parts', () => {
-    expect(tintFor(null)).toBe('#60E198')
-    expect(tintFor(undefined)).toBe('#60E198')
-    expect(tintFor('nonsense')).toBe('#60E198')
+    expect(tintFor(null)).toBe('#494fdf')
+    expect(tintFor(undefined)).toBe('#494fdf')
+    expect(tintFor('nonsense')).toBe('#494fdf')
   })
 })
 
@@ -18,7 +18,7 @@ describe('tileGradient', () => {
   it('builds a linear gradient from the part tint', () => {
     const g = tileGradient('legs')
     expect(g).toContain('linear-gradient')
-    expect(g).toContain('#F79D69')
+    expect(g).toContain('#ec7e00')
   })
 })
 

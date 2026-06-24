@@ -2,32 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* TT Satoshi — display / numerals (shipped in /public/fonts). Inter is loaded
-   from Google Fonts in index.html for UI text. */
-@font-face {
-  font-family: 'TT Satoshi';
-  src: url('/fonts/TT_Satoshi_Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'TT Satoshi';
-  src: url('/fonts/TT_Satoshi_Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'TT Satoshi';
-  src: url('/fonts/TT_Satoshi_DemiBold.woff2') format('woff2');
-  font-weight: 600;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'TT Satoshi';
-  src: url('/fonts/TT_Satoshi_Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-display: swap;
-}
+/* Inter Tight (display) + Inter (UI) load from Google Fonts in index.html.
+   Revolut substitute for Aeonik Pro — tight, geometric, weight 500+. */
 
 @layer base {
   :root {
@@ -65,7 +41,7 @@
   }
   /* Fade so scroll content slides under the sticky bottom action. */
   .action-fade {
-    background: linear-gradient(to top, #04160c 62%, rgba(4, 22, 12, 0));
+    background: linear-gradient(to top, #000000 62%, rgba(0, 0, 0, 0));
   }
 }
 

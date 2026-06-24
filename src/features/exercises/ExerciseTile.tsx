@@ -128,7 +128,7 @@ function Placeholder({
       // The map background matches the gap strokes so muscle separations read.
       <div
         className={['flex items-center justify-center overflow-hidden', className].join(' ')}
-        style={{ borderRadius: radius, background: '#0B2417' }}
+        style={{ borderRadius: radius, background: '#16181a' }}
       >
         <BodyMap view={map.view} active={map.muscle} fw={map.fw} captions={map.captions} />
       </div>

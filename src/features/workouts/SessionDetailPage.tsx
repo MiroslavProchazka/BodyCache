@@ -134,7 +134,7 @@ function ExerciseBreakdown({
         <ExerciseTile
           photoId={group.primaryPhotoId as ExercisePhotoId | null}
           bodyPart={group.bodyPart}
-          radius="14px 14px 14px 4px"
+          radius="14px"
           className="h-[46px] w-[46px] flex-none"
           glyphSize={23}
         />

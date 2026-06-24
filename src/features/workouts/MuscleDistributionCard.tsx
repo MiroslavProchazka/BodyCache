@@ -38,7 +38,7 @@ export function MuscleDistributionCard({ sessionId }: { sessionId: WorkoutSessio
   return (
     <div
       className="mb-4 px-4 pb-4 pt-[18px]"
-      style={{ background: '#0B2417', borderRadius: '24px 24px 24px 6px' }}
+      style={{ background: '#16181a', borderRadius: '20px' }}
     >
       <div className="mb-3 flex items-start justify-between">
         <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-faint">
@@ -74,7 +74,7 @@ export function MuscleDistributionCard({ sessionId }: { sessionId: WorkoutSessio
               <span
                 className="h-2 w-2 rounded-full"
                 style={{
-                  backgroundColor: `rgba(96,225,152,${(0.35 + 0.65 * item.intensity).toFixed(2)})`,
+                  backgroundColor: `rgba(73,79,223,${(0.35 + 0.65 * item.intensity).toFixed(2)})`,
                 }}
               />
               {item.label}
