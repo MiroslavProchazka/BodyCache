@@ -65,7 +65,7 @@
   }
   /* Fade so scroll content slides under the sticky bottom action. */
   .action-fade {
-    background: linear-gradient(to top, #062016 62%, rgba(6, 32, 22, 0));
+    background: linear-gradient(to top, #04160c 62%, rgba(4, 22, 12, 0));
   }
 }
 

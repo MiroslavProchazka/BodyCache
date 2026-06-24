@@ -185,7 +185,7 @@ export function ExerciseDetailPage() {
         {/* Progress | How to */}
         <div
           className="mb-4 flex gap-1 rounded-[14px] border border-white/[0.08] p-1"
-          style={{ background: '#0E2C1C' }}
+          style={{ background: '#0F3322' }}
           role="tablist"
           aria-label="Exercise detail tabs"
         >
@@ -342,7 +342,7 @@ function HowTo({ exercise }: { exercise: { name?: string | null } }) {
           <li key={i} className="flex items-start gap-3">
             <span
               className="flex h-[30px] w-[30px] flex-none items-center justify-center font-display text-sm font-semibold text-neon"
-              style={{ background: '#15402A', borderRadius: '10px 10px 10px 3px' }}
+              style={{ background: '#1B5236', borderRadius: '10px 10px 10px 3px' }}
             >
               {i + 1}
             </span>

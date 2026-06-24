@@ -19,6 +19,7 @@ import {
 } from '@/shared/utils/workoutStats'
 import { RecentExerciseCard } from '@/features/exercises/RecentExerciseCard'
 import { LastWorkoutCard } from './LastWorkoutCard'
+import { WeeklyMomentumCard } from './WeeklyMomentumCard'
 
 /**
  * Home / Today — the launch point. Start or resume a workout, recall the last
@@ -121,6 +122,8 @@ export function TodayPage() {
           <LastWorkoutCard session={finished[0] as WorkoutSessionRow} />
         </div>
       )}
+
+      {finished[0] && <WeeklyMomentumCard />}
 
       {recent.length > 0 && (
         <>

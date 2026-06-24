@@ -5,12 +5,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Trezor dark theme — see design handoff "Design Tokens".
-        ink: '#062016', // app background (deep green) / text-on-neon
-        surface: '#0E2C1C', // card surface
-        inset: '#15402A', // inset / input / stepper / chip-rest
+        // Trezor dark theme — see design handoff "Design Tokens" (redesign).
+        ink: '#04160C', // app background (deep canvas) / text-on-neon
+        surface: '#0F3322', // card surface (lifted)
+        inset: '#1B5236', // inset / input / stepper / chip-rest
         neon: '#60E198', // primary accent / CTAs / highlights
         brand: '#4BCE81', // gradient end
+        pr: '#F2A065', // personal-record accent (orange)
         down: '#F79D69', // trend down (orange)
         soft: '#C9E4D5', // text soft
         muted: '#9FC8B2', // text muted
