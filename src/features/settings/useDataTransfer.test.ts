@@ -125,6 +125,11 @@ describe('importBackup', () => {
       'workoutExercise',
       expect.objectContaining({ id: 'we1', workoutSessionId: 's1', exerciseId: 'ex1', orderIndex: 0 }),
     )
+    // A pre-supersets (v2) backup omits `supersetGroup` → restored as null (standalone).
+    expect(upsertMock).toHaveBeenCalledWith(
+      'workoutExercise',
+      expect.objectContaining({ supersetGroup: null }),
+    )
     expect(upsertMock).toHaveBeenCalledWith(
       'exerciseSet',
       expect.objectContaining({ id: 'set1', workoutExerciseId: 'we1', weightKg: 100, reps: 5, rpe: 8 }),

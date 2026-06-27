@@ -35,6 +35,7 @@ export const useRepeatWorkout = () => {
           sessionId,
           ex.exerciseId as ExerciseId,
           ex.orderIndex as number,
+          (ex.supersetGroup as string | null) ?? null,
         )
         if (!we.ok) continue
         const exSets = byOrderIndex(

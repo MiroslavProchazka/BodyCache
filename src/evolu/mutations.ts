@@ -235,12 +235,22 @@ export const useBodyCacheMutations = () => {
     sessionId: WorkoutSessionId,
     exerciseId: ExerciseId,
     orderIndex: number,
+    supersetGroup: string | null = null,
   ) =>
     insert('workoutExercise', {
       workoutSessionId: sessionId,
       exerciseId,
       orderIndex,
+      supersetGroup,
     })
+
+  /** Move a workout exercise within its session (reorder, mirrors plans). */
+  const setWorkoutExerciseOrder = (id: WorkoutExerciseId, orderIndex: number) =>
+    update('workoutExercise', { id, orderIndex })
+
+  /** Assign or clear a workout exercise's opaque superset key. */
+  const setWorkoutExerciseSuperset = (id: WorkoutExerciseId, supersetGroup: string | null) =>
+    update('workoutExercise', { id, supersetGroup })
 
   const addSet = (workoutExerciseId: WorkoutExerciseId, setData: AddSetInput) =>
     insert('exerciseSet', {
@@ -310,6 +320,10 @@ export const useBodyCacheMutations = () => {
   const setPlanExerciseOrder = (id: PlanExerciseId, orderIndex: number) =>
     update('planExercise', { id, orderIndex })
 
+  /** Assign or clear a plan exercise's opaque superset key. */
+  const setPlanExerciseSuperset = (id: PlanExerciseId, supersetGroup: string | null) =>
+    update('planExercise', { id, supersetGroup })
+
   const addPlanSet = (planExerciseId: PlanExerciseId, setData: AddPlanSetInput) =>
     insert('planSet', {
       planExerciseId,
@@ -350,6 +364,8 @@ export const useBodyCacheMutations = () => {
     discardWorkoutSession,
     deleteWorkoutSession,
     addExerciseToWorkout,
+    setWorkoutExerciseOrder,
+    setWorkoutExerciseSuperset,
     removeExerciseFromWorkout,
     addSet,
     updateSet,
@@ -363,6 +379,7 @@ export const useBodyCacheMutations = () => {
     addExerciseToPlan,
     removeExerciseFromPlan,
     setPlanExerciseOrder,
+    setPlanExerciseSuperset,
     addPlanSet,
     updatePlanSet,
     removePlanSet,

@@ -30,8 +30,8 @@ export default defineConfig({
         name: 'BodyCache',
         short_name: 'BodyCache',
         description: 'Your workout memory',
-        theme_color: '#062016',
-        background_color: '#062016',
+        theme_color: '#494fdf',
+        background_color: '#000000',
         display: 'standalone',
         orientation: 'portrait',
         icons: [

@@ -146,6 +146,10 @@ export const Schema = {
     exerciseId: ExerciseId,
     orderIndex: Evolu.NonNegativeInt,
     notes: Evolu.nullOr(Evolu.NonEmptyString1000),
+    // Opaque, app-generated superset key. `null` = standalone. A superset block
+    // is a maximal run of consecutive exercises (by `orderIndex`) sharing one
+    // non-null key; A1/A2 labels are derived from position, never stored.
+    supersetGroup: Evolu.nullOr(Evolu.NonEmptyString100),
   },
 
   exerciseSet: {
@@ -210,6 +214,9 @@ export const Schema = {
     exerciseId: ExerciseId,
     orderIndex: Evolu.NonNegativeInt,
     notes: Evolu.nullOr(Evolu.NonEmptyString1000),
+    // Mirrors `workoutExercise.supersetGroup` so a plan's grouping survives
+    // instantiation into a live session. Opaque key; `null` = standalone.
+    supersetGroup: Evolu.nullOr(Evolu.NonEmptyString100),
   },
 
   /**

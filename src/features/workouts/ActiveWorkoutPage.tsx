@@ -4,12 +4,14 @@ import { useQuery } from '@evolu/react'
 import { ChevronLeft, Pause, Play, Plus, Dumbbell, Trash2 } from 'lucide-react'
 import { activeWorkoutSession, sessionExercises } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
-import type { WorkoutSessionRow } from '@/evolu/rows'
-import type { WorkoutSessionId } from '@/evolu/schema'
+import type { SessionExerciseRow, WorkoutSessionRow } from '@/evolu/rows'
+import type { WorkoutExerciseId, WorkoutSessionId } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
 import { StickyAction } from '@/shared/components/StickyAction'
 import { activeElapsedSec, formatDurationSec } from '@/shared/utils/workoutStats'
 import { WorkoutEntryCard } from './WorkoutEntryCard'
+import { SupersetGroup } from './SupersetGroup'
+import { groupExercises, newSupersetKey, supersetLabel } from './supersets'
 import { MuscleDistributionCard } from './MuscleDistributionCard'
 
 /** The live session: elapsed timer, logged exercises, add, pause, and finish. */
@@ -32,9 +34,16 @@ export function ActiveWorkoutPage() {
 
 function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
   const navigate = useNavigate()
-  const { finishWorkoutSession, discardWorkoutSession, pauseWorkoutSession, resumeWorkoutSession } =
-    useBodyCacheMutations()
-  const entries = useQuery(sessionExercises(session.id as WorkoutSessionId))
+  const {
+    finishWorkoutSession,
+    discardWorkoutSession,
+    pauseWorkoutSession,
+    resumeWorkoutSession,
+    setWorkoutExerciseOrder,
+    setWorkoutExerciseSuperset,
+  } = useBodyCacheMutations()
+  // Already ordered by `orderIndex` (the query sorts), so grouping folds live.
+  const entries = useQuery(sessionExercises(session.id as WorkoutSessionId)) as SessionExerciseRow[]
 
   const [now, setNow] = useState(() => new Date().toISOString())
   useEffect(() => {
@@ -45,6 +54,33 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
   const empty = entries.length === 0
   const paused = session.status === 'paused'
   const elapsedSec = activeElapsedSec(session, now)
+
+  const blocks = groupExercises(entries)
+  const indexOf = (entry: SessionExerciseRow) =>
+    entries.findIndex((e) => String(e.id) === String(entry.id))
+
+  // Reorder by swapping the two rows' stored orderIndex values (mirrors plans).
+  const move = (entry: SessionExerciseRow, dir: -1 | 1) => {
+    const i = indexOf(entry)
+    const other = entries[i + dir]
+    if (!other) return
+    setWorkoutExerciseOrder(entry.id as WorkoutExerciseId, other.orderIndex as number)
+    setWorkoutExerciseOrder(other.id as WorkoutExerciseId, entry.orderIndex as number)
+  }
+
+  // Link a standalone exercise with the next one: reuse a neighbour's key if it
+  // has one, else mint a fresh key, then assign both rows. Adjacency makes them
+  // a superset block on the next render.
+  const linkNext = (entry: SessionExerciseRow) => {
+    const next = entries[indexOf(entry) + 1]
+    if (!next) return
+    const key = next.supersetGroup ?? entry.supersetGroup ?? newSupersetKey()
+    setWorkoutExerciseSuperset(entry.id as WorkoutExerciseId, key)
+    setWorkoutExerciseSuperset(next.id as WorkoutExerciseId, key)
+  }
+
+  const ungroup = (items: readonly SessionExerciseRow[]) =>
+    items.forEach((it) => setWorkoutExerciseSuperset(it.id as WorkoutExerciseId, null))
 
   const handleFinish = () => {
     if (empty) return
@@ -131,9 +167,38 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {entries.map((entry) => (
-              <WorkoutEntryCard key={entry.id} entry={entry} />
-            ))}
+            {(() => {
+              let supersetIndex = 0
+              return blocks.map((block) => {
+                const card = (entry: SessionExerciseRow, badge: string | null, linkable: boolean) => (
+                  <WorkoutEntryCard
+                    key={entry.id}
+                    entry={entry}
+                    index={indexOf(entry)}
+                    total={entries.length}
+                    onMoveUp={() => move(entry, -1)}
+                    onMoveDown={() => move(entry, 1)}
+                    badge={badge}
+                    onLinkNext={linkable ? () => linkNext(entry) : undefined}
+                  />
+                )
+                if (block.group === null) {
+                  const entry = block.items[0]
+                  const hasNext = indexOf(entry) < entries.length - 1
+                  return card(entry, null, hasNext)
+                }
+                const sIdx = supersetIndex++
+                return (
+                  <SupersetGroup
+                    key={block.items[0].id}
+                    label={String.fromCharCode(65 + sIdx)}
+                    onUngroup={() => ungroup(block.items)}
+                  >
+                    {block.items.map((entry, mi) => card(entry, supersetLabel(sIdx, mi), false))}
+                  </SupersetGroup>
+                )
+              })
+            })()}
           </div>
         )}
 
