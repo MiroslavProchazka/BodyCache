@@ -15,11 +15,13 @@ import {
   type SetFieldKey,
 } from '@/features/workouts/setFields'
 import { nextSetType, setTypeLabel, narrowSetType } from '@/features/workouts/setTypes'
+import { LinkNextButton, SupersetBadge } from '@/features/workouts/SupersetGroup'
 
 /**
  * Edit one exercise within a plan: its target sets (stepper inputs + set type),
  * plus reorder/remove controls. Mutations write straight to Evolu so the plan
- * stays the single source of truth — no local draft to keep in sync.
+ * stays the single source of truth — no local draft to keep in sync. Optionally
+ * wears an A1/A2 superset badge and a "Superset with next" link (standalone only).
  */
 export function PlanExerciseEditor({
   entry,
@@ -28,6 +30,8 @@ export function PlanExerciseEditor({
   onMoveUp,
   onMoveDown,
   onRemove,
+  badge = null,
+  onLinkNext,
 }: {
   entry: PlanExerciseRow
   index: number
@@ -35,6 +39,8 @@ export function PlanExerciseEditor({
   onMoveUp: () => void
   onMoveDown: () => void
   onRemove: () => void
+  badge?: string | null
+  onLinkNext?: () => void
 }) {
   const { unit } = useUnits()
   const { addPlanSet, updatePlanSet, removePlanSet } = useBodyCacheMutations()
@@ -63,6 +69,7 @@ export function PlanExerciseEditor({
   return (
     <div className="rounded-[20px] border border-white/[0.07] bg-surface p-4">
       <div className="mb-[14px] flex items-center gap-[12px]">
+        {badge && <SupersetBadge label={badge} />}
         <ExerciseTile
           photoId={entry.primaryPhotoId as ExercisePhotoId | null}
           bodyPart={entry.bodyPart as string | null}
@@ -158,6 +165,8 @@ export function PlanExerciseEditor({
         <Plus size={16} strokeWidth={2} />
         Add set
       </button>
+
+      {onLinkNext && <LinkNextButton onClick={onLinkNext} />}
     </div>
   )
 }

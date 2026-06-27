@@ -8,6 +8,8 @@ import type { PlanExerciseRow } from '@/evolu/rows'
 import type { PlanExerciseId, PlanId } from '@/evolu/schema'
 import { StickyAction } from '@/shared/components/StickyAction'
 import { Overline } from '@/shared/components/Overline'
+import { SupersetGroup } from '@/features/workouts/SupersetGroup'
+import { groupExercises, newSupersetKey, supersetLabel } from '@/features/workouts/supersets'
 import { PlanExerciseEditor } from './PlanExerciseEditor'
 
 /** Build / edit a plan: name, notes, ordered exercises and their target sets. */
@@ -19,9 +21,11 @@ export function PlanEditorPage() {
 
 function PlanEditorInner({ planId }: { planId: PlanId }) {
   const navigate = useNavigate()
-  const { updatePlan, removeExerciseFromPlan, setPlanExerciseOrder } = useBodyCacheMutations()
+  const { updatePlan, removeExerciseFromPlan, setPlanExerciseOrder, setPlanExerciseSuperset } =
+    useBodyCacheMutations()
   const plan = useQuery(planById(planId))[0]
-  const exercises = useQuery(planExercises(planId))
+  // Ordered by `orderIndex` (the query sorts), so grouping folds live.
+  const exercises = useQuery(planExercises(planId)) as PlanExerciseRow[]
 
   // Name/notes are edited locally and committed on blur (avoids a write per
   // keystroke). Seeded once the plan row resolves.
@@ -60,11 +64,30 @@ function PlanEditorInner({ planId }: { planId: PlanId }) {
     }
   }
 
+  const blocks = groupExercises(exercises)
+  const indexOf = (entry: PlanExerciseRow) =>
+    exercises.findIndex((e) => String(e.id) === String(entry.id))
+
   // Reorder by swapping the two rows' stored orderIndex values.
-  const swap = (a: PlanExerciseRow, b: PlanExerciseRow) => {
-    setPlanExerciseOrder(a.id as PlanExerciseId, b.orderIndex as number)
-    setPlanExerciseOrder(b.id as PlanExerciseId, a.orderIndex as number)
+  const move = (entry: PlanExerciseRow, dir: -1 | 1) => {
+    const i = indexOf(entry)
+    const other = exercises[i + dir]
+    if (!other) return
+    setPlanExerciseOrder(entry.id as PlanExerciseId, other.orderIndex as number)
+    setPlanExerciseOrder(other.id as PlanExerciseId, entry.orderIndex as number)
   }
+
+  // Link a standalone exercise with the next one (see ActiveWorkoutPage).
+  const linkNext = (entry: PlanExerciseRow) => {
+    const next = exercises[indexOf(entry) + 1]
+    if (!next) return
+    const key = next.supersetGroup ?? entry.supersetGroup ?? newSupersetKey()
+    setPlanExerciseSuperset(entry.id as PlanExerciseId, key)
+    setPlanExerciseSuperset(next.id as PlanExerciseId, key)
+  }
+
+  const ungroup = (items: readonly PlanExerciseRow[]) =>
+    items.forEach((it) => setPlanExerciseSuperset(it.id as PlanExerciseId, null))
 
   const handleRemove = (entry: PlanExerciseRow) => {
     if (!window.confirm(`Remove ${entry.exerciseName} from this plan?`)) return
@@ -104,20 +127,39 @@ function PlanEditorInner({ planId }: { planId: PlanId }) {
           </p>
         ) : (
           <div className="mb-3 flex flex-col gap-3">
-            {exercises.map((entry, i) => (
-              <PlanExerciseEditor
-                key={entry.id}
-                entry={entry as PlanExerciseRow}
-                index={i}
-                total={exercises.length}
-                onMoveUp={() => i > 0 && swap(entry as PlanExerciseRow, exercises[i - 1] as PlanExerciseRow)}
-                onMoveDown={() =>
-                  i < exercises.length - 1 &&
-                  swap(entry as PlanExerciseRow, exercises[i + 1] as PlanExerciseRow)
+            {(() => {
+              let supersetIndex = 0
+              return blocks.map((block) => {
+                const editor = (entry: PlanExerciseRow, badge: string | null, linkable: boolean) => (
+                  <PlanExerciseEditor
+                    key={entry.id}
+                    entry={entry}
+                    index={indexOf(entry)}
+                    total={exercises.length}
+                    onMoveUp={() => move(entry, -1)}
+                    onMoveDown={() => move(entry, 1)}
+                    onRemove={() => handleRemove(entry)}
+                    badge={badge}
+                    onLinkNext={linkable ? () => linkNext(entry) : undefined}
+                  />
+                )
+                if (block.group === null) {
+                  const entry = block.items[0]
+                  const hasNext = indexOf(entry) < exercises.length - 1
+                  return editor(entry, null, hasNext)
                 }
-                onRemove={() => handleRemove(entry as PlanExerciseRow)}
-              />
-            ))}
+                const sIdx = supersetIndex++
+                return (
+                  <SupersetGroup
+                    key={block.items[0].id}
+                    label={String.fromCharCode(65 + sIdx)}
+                    onUngroup={() => ungroup(block.items)}
+                  >
+                    {block.items.map((entry, mi) => editor(entry, supersetLabel(sIdx, mi), false))}
+                  </SupersetGroup>
+                )
+              })
+            })()}
           </div>
         )}
 

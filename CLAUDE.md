@@ -135,10 +135,24 @@ helper (`repeatSetToSetInput`) parallel `useStartWorkoutFromPlan` +
 metric column is copied verbatim (including cardio fields + `rpe`); only
 `completedAt` is reset to `null`. Backed by the `sessionSetsForRepeat` query.
 
-Planned follow-ups for Phase E (not yet built): surface optional **RPE** in the
-logger (column + `setFields` entry already exist), **reorder exercises** within
-an active session, and **supersets** (a nullable exercise group on
-`workoutExercise`/`planExercise`).
+The Phase E follow-ups are now **built** (design in `docs/phase-e-design.md`):
+
+- **RPE** — optional 1–10 per set in the logger (`rpe.ts`; chip + inline picker).
+- **Reorder mid-session** — plain `orderIndex` swap via always-visible up/down
+  chevrons (`setWorkoutExerciseOrder`); `WorkoutEntryCard` restructured into a
+  tappable body + trailing control cluster, mirroring `PlanExerciseEditor`.
+- **Supersets** — a nullable opaque `supersetGroup` key on `workoutExercise` /
+  `planExercise`. A superset block is a maximal run of consecutive exercises
+  sharing a key; A1/A2 labels are derived from position, never stored. Grouping
+  is computed every render by the pure `groupExercises()` (`supersets.ts`), so
+  reorder auto-regroups by adjacency. Edited mid-session (`ActiveWorkoutPage`)
+  and in the plan editor (`PlanEditorPage`) via `setWorkoutExerciseSuperset` /
+  `setPlanExerciseSuperset`; the key is copied through plan→session and repeat
+  instantiation so grouping survives. Backup stays **v2** (column add, not a new
+  table); a pre-supersets backup restores with `supersetGroup` null (standalone).
+
+The app icon (`public/icon-*.png`) and PWA `theme_color` are recolored to brand
+cobalt `#494fdf`.
 
 ## Milestones (from the product spec)
 

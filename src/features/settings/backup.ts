@@ -11,6 +11,9 @@
 export const BACKUP_FORMAT = 'bodycache-backup' as const
 // v2 adds the plan/planExercise/planSet tables. v1 files (without them) still
 // restore — the missing plan tables are tolerated and treated as empty.
+// Supersets added the nullable `supersetGroup` *column* (not a new table) to
+// workoutExercise/planExercise, which does NOT bump the version: a pre-supersets
+// v2 backup simply lacks the field and imports it as null (→ standalone).
 export const BACKUP_VERSION = 2 as const
 
 /** A serialized table row. Values are JSON primitives (strings/numbers/null). */

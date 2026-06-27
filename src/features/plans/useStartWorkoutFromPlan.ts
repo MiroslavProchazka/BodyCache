@@ -33,6 +33,7 @@ export const useStartWorkoutFromPlan = () => {
           sessionId,
           pe.exerciseId as ExerciseId,
           pe.orderIndex as number,
+          (pe.supersetGroup as string | null) ?? null,
         )
         if (!we.ok) continue
         const peSets = byOrderIndex(

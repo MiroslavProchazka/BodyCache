@@ -172,6 +172,8 @@ export const useDataTransfer = () => {
           exerciseId: r.exerciseId as ExerciseId,
           orderIndex: r.orderIndex as number,
           notes: (r.notes as string | null) ?? null,
+          // Absent in pre-supersets (v2) backups → null → standalone.
+          supersetGroup: (r.supersetGroup as string | null) ?? null,
         })
       }
 
@@ -221,6 +223,8 @@ export const useDataTransfer = () => {
           exerciseId: r.exerciseId as ExerciseId,
           orderIndex: r.orderIndex as number,
           notes: (r.notes as string | null) ?? null,
+          // Absent in pre-supersets (v2) backups → null → standalone.
+          supersetGroup: (r.supersetGroup as string | null) ?? null,
         })
       }
 
