@@ -95,22 +95,27 @@ account: there is no login/auth.
 
 ## Starter catalog (imported dataset)
 
-The starter library is curated from **hasaneyldrm/exercises-dataset** (ExerciseDB
--style; **educational / non-commercial use only** — do not ship the bundled
-media in a paid build). `scripts/import-exercises.mjs` is a one-off generator
-(not a runtime dep): it fetches the dataset, walks a hand-curated id allowlist
-(machine / TechnoGym focused), downloads each exercise's demo **GIF** into
-`public/exercise-media/<id>.gif`, and emits `starterCatalog.generated.ts`
-(re-exported by `starterCatalog.ts`). Each entry carries optional `animation`
-(bundled GIF path) + `cues` (form text). Regenerate with
-`node scripts/import-exercises.mjs`.
+The starter library is imported from **hasaneyldrm/exercises-dataset** (ExerciseDB
+-style; **educational / non-commercial use only**). `scripts/import-exercises.mjs`
+is a one-off generator (not a runtime dep): it fetches the whole dataset, keeps a
+**gym-focused subset** (drops resistance bands, foam rollers, stability/bosu/
+medicine balls, tyres, sledgehammers, mobility *stretches*, neck work, and
+gendered/versioned duplicate renders), maps each survivor's `body_part` /
+`equipment` onto BodyCache's enums + derives a logging `type`, and emits
+`starterCatalog.generated.ts` (re-exported by `starterCatalog.ts`) — ~1,088
+exercises. Each entry carries `animation` (the dataset's **raw GIF URL on
+GitHub**) + `cues` (form text). Regenerate with `node scripts/import-exercises.mjs`.
 
-Adding a starter exercise stores `cues` as the exercise's `notes` and copies the
-GIF into IndexedDB via the existing `storePhoto` pipeline (its first frame
-becomes the still thumbnail), then sets it as the primary photo — so the
-photo-first cards work offline without breaking the "no image binaries in Evolu"
-rule. Media is intentionally **excluded from the PWA precache** (Workbox glob has
-no gif/jpg), so it is fetched on-add rather than bloating first load.
+Media is **not bundled** (1,000+ GIFs would be ~120 MB). Each `animation` points
+straight at the dataset's GIF on `raw.githubusercontent.com` (which serves
+`access-control-allow-origin: *`, so it passes the app's COEP). Adding a starter
+exercise stores `cues` as the exercise's `notes` and **streams** the GIF into
+IndexedDB via the existing `storePhoto` pipeline (its first frame becomes the
+still thumbnail), then sets it as the primary photo — so the photo-first cards
+work offline after add, without breaking the "no image binaries in Evolu" rule.
+The fetch is best-effort: offline/failed adds just leave the exercise photo-less.
+Because the catalog is large, `StarterLibraryPage` has a search box and starts
+with an empty selection (no accidental bulk-add of the whole catalog).
 
 ## Code quality
 

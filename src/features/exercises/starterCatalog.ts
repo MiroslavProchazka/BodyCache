@@ -6,12 +6,12 @@ import { STARTER_CATALOG } from './starterCatalog.generated'
  * schema's user-facing fields (name + the three "what is this" facets) so an
  * entry can be inserted verbatim via `createExercise`.
  *
- * Entries may also carry a bundled `animation` (a demo GIF under
- * `public/exercise-media/`) and short form `cues`, both sourced from
- * hasaneyldrm/exercises-dataset. When present, adding the exercise copies the
- * animation into IndexedDB via the normal photo pipeline (its first frame
- * becomes the still thumbnail) and stores the cues as the exercise's notes —
- * the user can still replace it with a photo of their own machine.
+ * Entries may also carry an `animation` (the dataset's demo GIF on GitHub) and
+ * short form `cues`, both sourced from hasaneyldrm/exercises-dataset. When
+ * present, adding the exercise streams the animation into IndexedDB via the
+ * normal photo pipeline (its first frame becomes the still thumbnail) and
+ * stores the cues as the exercise's notes — the user can still replace it with
+ * a photo of their own machine.
  */
 export interface StarterExercise {
   readonly name: string
@@ -20,18 +20,21 @@ export interface StarterExercise {
   readonly equipment: Equipment
   /** Source dataset id (provenance only; not stored on the exercise). */
   readonly datasetId?: string
-  /** Public path to a bundled demo GIF, e.g. `/exercise-media/0577.gif`. */
+  /**
+   * URL of the demo GIF (the dataset's raw GIF on GitHub). Streamed into
+   * IndexedDB via the photo pipeline on add; never bundled.
+   */
   readonly animation?: string | null
   /** Short form cues, stored as the exercise's notes on add. */
   readonly cues?: string | null
 }
 
 /**
- * The curated starter catalog is generated from the exercises-dataset by
+ * The starter catalog is generated from the exercises-dataset by
  * `scripts/import-exercises.mjs` and lives in `./starterCatalog.generated.ts`
- * (machine / TechnoGym focused, with bundled demo animations + form cues). It
- * is re-exported here so the rest of the app keeps importing it from one place.
- * Regenerate with `node scripts/import-exercises.mjs`.
+ * (the whole gym-focused dataset, with demo animations streamed from the repo +
+ * form cues). It is re-exported here so the rest of the app keeps importing it
+ * from one place. Regenerate with `node scripts/import-exercises.mjs`.
  */
 export { STARTER_CATALOG }
 
