@@ -140,9 +140,10 @@ export function ExerciseDetailPage() {
             photoId={photoId}
             bodyPart={exercise.bodyPart}
             radius="20px"
-            className="mb-4 h-[150px] w-full"
+            className="mb-4 aspect-square w-full"
             glyphSize={56}
             full
+            fit="contain"
             map={{ muscle: body.muscle, view: body.view, fw: 60 }}
           />
         ) : (

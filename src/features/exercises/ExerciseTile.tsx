@@ -28,6 +28,13 @@ interface ExerciseTileProps {
   /** Prefer the full image over the thumbnail (detail hero). */
   full?: boolean
   /**
+   * How the image fills its box. `cover` (default) crops to fill — right for
+   * square list tiles. `contain` shows the whole image (letterboxed on a
+   * matching backdrop) — right for the detail hero, where the full
+   * demo/photo matters.
+   */
+  fit?: 'cover' | 'contain'
+  /**
    * When set, the no-photo placeholder shows the muscle BodyMap (on the map
    * background) instead of the dumbbell glyph. Dense lists omit this.
    */
@@ -46,6 +53,7 @@ export function ExerciseTile({
   className = '',
   glyphSize = 22,
   full = false,
+  fit = 'cover',
   map,
 }: ExerciseTileProps) {
   if (photoId)
@@ -57,6 +65,7 @@ export function ExerciseTile({
         className={className}
         glyphSize={glyphSize}
         full={full}
+        fit={fit}
         map={map}
       />
     )
@@ -78,6 +87,7 @@ function ResolvedTile({
   className,
   glyphSize,
   full,
+  fit,
   map,
 }: {
   photoId: ExercisePhotoId
@@ -86,6 +96,7 @@ function ResolvedTile({
   className: string
   glyphSize: number
   full: boolean
+  fit: 'cover' | 'contain'
   map?: TileMap
 }) {
   const rows = useQuery(photoById(photoId))
@@ -104,8 +115,18 @@ function ResolvedTile({
       />
     )
   return (
-    <div className={['overflow-hidden', className].join(' ')} style={{ borderRadius: radius }}>
-      <img src={url} alt="" className="h-full w-full object-cover" />
+    <div
+      className={['overflow-hidden', className].join(' ')}
+      // A backdrop matching the card fills the letterbox area when contained.
+      style={{ borderRadius: radius, background: fit === 'contain' ? '#16181a' : undefined }}
+    >
+      <img
+        src={url}
+        alt=""
+        className={['h-full w-full', fit === 'contain' ? 'object-contain' : 'object-cover'].join(
+          ' ',
+        )}
+      />
     </div>
   )
 }
