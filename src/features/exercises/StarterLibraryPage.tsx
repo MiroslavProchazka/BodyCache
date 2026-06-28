@@ -4,10 +4,12 @@ import { useQuery } from '@evolu/react'
 import { Check, ChevronLeft } from 'lucide-react'
 import { allExercises } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
+import type { ExerciseId } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
 import { Overline } from '@/shared/components/Overline'
 import { StickyAction } from '@/shared/components/StickyAction'
 import { humanize, metaLine } from '@/shared/utils/bodyParts'
+import { storePhoto } from '@/shared/utils/photos'
 import {
   groupStarterCatalog,
   normalizeExerciseName,
@@ -24,7 +26,7 @@ import {
 export function StarterLibraryPage() {
   const navigate = useNavigate()
   const existing = useQuery(allExercises)
-  const { createExercise } = useBodyCacheMutations()
+  const { createExercise, addExercisePhoto, setPrimaryPhoto } = useBodyCacheMutations()
   const [saving, setSaving] = useState(false)
 
   const groups = useMemo(() => groupStarterCatalog(), [])
@@ -66,18 +68,40 @@ export function StarterLibraryPage() {
 
   const count = selectedSet.size
 
-  const handleAdd = () => {
+  /**
+   * Fetch a bundled demo GIF and copy it into IndexedDB via the normal photo
+   * pipeline, then attach it as the exercise's primary photo. Best-effort: any
+   * failure (offline, missing asset) leaves the exercise without a photo rather
+   * than blocking the add — the user can still snap their own machine photo.
+   */
+  const attachAnimation = async (exerciseId: ExerciseId, animation: string) => {
+    try {
+      const res = await fetch(animation)
+      if (!res.ok) return
+      const stored = await storePhoto(await res.blob())
+      const photo = addExercisePhoto(exerciseId, {
+        localUri: stored.ref,
+        thumbnailUri: stored.thumbnailRef,
+      })
+      if (photo.ok) setPrimaryPhoto(exerciseId, photo.value.id)
+    } catch {
+      // Ignore — the exercise is already created; media is a nice-to-have.
+    }
+  }
+
+  const handleAdd = async () => {
     if (count === 0 || saving) return
     setSaving(true)
     for (const e of addable) {
-      if (selectedSet.has(normalizeExerciseName(e.name))) {
-        createExercise({
-          name: e.name,
-          type: e.type,
-          bodyPart: e.bodyPart,
-          equipment: e.equipment,
-        })
-      }
+      if (!selectedSet.has(normalizeExerciseName(e.name))) continue
+      const result = createExercise({
+        name: e.name,
+        type: e.type,
+        bodyPart: e.bodyPart,
+        equipment: e.equipment,
+        notes: e.cues ?? null,
+      })
+      if (result.ok && e.animation) await attachAnimation(result.value.id, e.animation)
     }
     navigate('/library', { replace: true })
   }
@@ -95,8 +119,9 @@ export function StarterLibraryPage() {
         </header>
 
         <p className="mb-4 text-sm text-muted">
-          Common gym exercises, ready to add — so you don&apos;t start from scratch. Pick what
-          you&apos;ll use; add a machine photo and tweak details later.
+          Common gym exercises, machine-first — ready to add so you don&apos;t start from scratch.
+          Most come with a demo animation and form cues; pick what you&apos;ll use and swap in your
+          own machine photo later.
         </p>
 
         {addable.length > 0 ? (
