@@ -93,6 +93,25 @@ synced) with a generated avatar and a **required first-run onboarding** gate
 (`RootGate`) also ship here — note this is personal metadata, not a user
 account: there is no login/auth.
 
+## Starter catalog (imported dataset)
+
+The starter library is curated from **hasaneyldrm/exercises-dataset** (ExerciseDB
+-style; **educational / non-commercial use only** — do not ship the bundled
+media in a paid build). `scripts/import-exercises.mjs` is a one-off generator
+(not a runtime dep): it fetches the dataset, walks a hand-curated id allowlist
+(machine / TechnoGym focused), downloads each exercise's demo **GIF** into
+`public/exercise-media/<id>.gif`, and emits `starterCatalog.generated.ts`
+(re-exported by `starterCatalog.ts`). Each entry carries optional `animation`
+(bundled GIF path) + `cues` (form text). Regenerate with
+`node scripts/import-exercises.mjs`.
+
+Adding a starter exercise stores `cues` as the exercise's `notes` and copies the
+GIF into IndexedDB via the existing `storePhoto` pipeline (its first frame
+becomes the still thumbnail), then sets it as the primary photo — so the
+photo-first cards work offline without breaking the "no image binaries in Evolu"
+rule. Media is intentionally **excluded from the PWA precache** (Workbox glob has
+no gif/jpg), so it is fetched on-add rather than bloating first load.
+
 ## Code quality
 
 - Strict TypeScript. Small components. No unrelated refactors.
