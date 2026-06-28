@@ -37,6 +37,7 @@ export function ExerciseCard({ exercise }: { exercise: ExerciseRow }) {
         radius="20px"
         className="h-[124px] w-full"
         glyphSize={34}
+        fit="contain"
         map={{ muscle: body.muscle, view: body.view, fw: 50 }}
       />
       <div className="p-3">
