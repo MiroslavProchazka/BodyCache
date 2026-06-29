@@ -17,6 +17,13 @@ describe('stepsFromNotes', () => {
     expect(stepsFromNotes('')).toEqual([])
     expect(stepsFromNotes('   ')).toEqual([])
   })
+
+  it('only breaks on punctuation followed by whitespace, so decimals stay intact', () => {
+    expect(stepsFromNotes('Load 2.5kg plates. Then press.')).toEqual([
+      'Load 2.5kg plates.',
+      'Then press.',
+    ])
+  })
 })
 
 describe('cuesFor', () => {

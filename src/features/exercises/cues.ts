@@ -90,10 +90,16 @@ export const GENERIC_CUES: readonly string[] = [
  * Split a free-text instruction blob (the imported dataset cues, stored as an
  * exercise's `notes`) into sentence-sized steps for the numbered "How to" list.
  * Returns `[]` for empty/whitespace-only input.
+ *
+ * Splits on whitespace that follows sentence punctuation. We mark those
+ * boundaries with a newline and split on it rather than using a lookbehind
+ * (`(?<=…)`) — iOS Safari / WKWebView before 16.4 don't support regex
+ * lookbehind and would throw a SyntaxError, and this app is mobile-first.
  */
 export function stepsFromNotes(notes: string): string[] {
   return notes
-    .split(/(?<=[.!?])\s+/)
+    .replace(/([.!?])\s+/g, '$1\n')
+    .split('\n')
     .map((s) => s.trim())
     .filter(Boolean)
 }
