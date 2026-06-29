@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import {
@@ -7,12 +7,16 @@ import {
   Download,
   Upload,
   Copy,
+  Eraser,
   ChevronRight,
   Loader2,
   type LucideIcon,
 } from 'lucide-react'
 import { useEvolu } from '@/evolu/evolu'
-import { userProfile } from '@/evolu/queries'
+import { allExercises, userProfile } from '@/evolu/queries'
+import { useBodyCacheMutations } from '@/evolu/mutations'
+import type { ExerciseId } from '@/evolu/schema'
+import { legacyExercises } from '@/features/exercises/legacyExercises'
 import { Overline } from '@/shared/components/Overline'
 import { useToast } from '@/shared/components/Toast'
 import { useUnits } from '@/shared/units/UnitsContext'
@@ -34,9 +38,17 @@ export function SettingsPage() {
   const profile = useQuery(userProfile)[0]
   const { showToast } = useToast()
   const { exportBackup, exportCsv, importBackup } = useDataTransfer()
+  const { softDeleteExercise } = useBodyCacheMutations()
   const fileInput = useRef<HTMLInputElement>(null)
   // Which data action is in flight, so we can disable the rows + show a spinner.
   const [busy, setBusy] = useState<null | 'backup' | 'restore' | 'csv'>(null)
+  const [cleaning, setCleaning] = useState(false)
+
+  // "Legacy" exercises are the old-design ones that render the purple muscle-map
+  // placeholder because they have no demo photo/GIF. Removing them leaves only
+  // the GIF-style entries.
+  const exercises = useQuery(allExercises)
+  const legacy = useMemo(() => legacyExercises(exercises), [exercises])
   const [currentMnemonic, setCurrentMnemonic] = useState('')
   const [ownerReady, setOwnerReady] = useState(false)
   const [showMnemonic, setShowMnemonic] = useState(false)
@@ -165,6 +177,36 @@ export function SettingsPage() {
     } catch {
       setMnemonicBusy(null)
       showToast('Could not generate a new phrase')
+    }
+  }
+
+  /**
+   * Soft-delete the legacy (no-photo, purple-placeholder) exercises, keeping
+   * only the GIF-style ones. Past workouts still render — the history queries
+   * join on the exercise regardless of its `isDeleted` flag — and any of these
+   * can be re-added with its animation from the starter library.
+   */
+  const removeLegacy = () => {
+    if (cleaning || legacy.length === 0) return
+    const n = legacy.length
+    if (
+      !window.confirm(
+        `Remove ${n} exercise${n === 1 ? '' : 's'} with no demo image? ` +
+          'Your logged workouts stay intact, and you can re-add any of them with their ' +
+          'animation from the starter library.',
+      )
+    ) {
+      return
+    }
+
+    setCleaning(true)
+    try {
+      for (const e of legacy) softDeleteExercise(e.id as ExerciseId)
+      showToast(`Removed ${n} exercise${n === 1 ? '' : 's'}`)
+    } catch {
+      showToast('Something went wrong')
+    } finally {
+      setCleaning(false)
     }
   }
 
@@ -322,6 +364,27 @@ export function SettingsPage() {
       <p className="mt-[10px] px-1 text-[12px] leading-relaxed text-faint">
         A backup is a single file with all your exercises, workouts and photos. Keep it somewhere
         safe — it's the only copy off this device.
+      </p>
+
+      <Overline className="mb-[10px] mt-[22px]">Library cleanup</Overline>
+      <div className="overflow-hidden rounded-[18px] border border-white/[0.07] bg-surface">
+        <DataRow
+          Icon={Eraser}
+          label={
+            legacy.length > 0
+              ? `Remove ${legacy.length} legacy exercise${legacy.length === 1 ? '' : 's'}`
+              : 'No legacy exercises'
+          }
+          loading={cleaning}
+          disabled={cleaning || legacy.length === 0}
+          onClick={removeLegacy}
+          last
+        />
+      </div>
+      <p className="mt-[10px] px-1 text-[12px] leading-relaxed text-faint">
+        Older exercises with no demo image show a purple muscle-map placeholder instead of an
+        animation. This removes them so only the animated, GIF-style exercises remain — your logged
+        workouts are kept, and you can re-add any from the starter library.
       </p>
 
       <input
