@@ -93,6 +93,26 @@ describe('parseBackupFile', () => {
       expect(result.value.tables.planSet).toEqual([])
     }
   })
+
+  it('rejects a v2 backup that is missing a plan table', () => {
+    // A current-version backup must carry plan tables; tolerating their absence
+    // would silently drop saved routines while reporting a clean restore. Build
+    // a fresh, self-contained tables object (don't share `emptyTables`, which
+    // other tests mutate) and drop just the plan-set table.
+    const tables: Record<string, unknown> = {
+      exercise: [],
+      exercisePhoto: [],
+      workoutSession: [],
+      workoutExercise: [],
+      exerciseSet: [],
+      plan: [],
+      planExercise: [],
+    }
+    const v2 = { format: BACKUP_FORMAT, version: 2, exportedAt: '2026-06-11T00:00:00.000Z', tables, photos: [] }
+    const result = parseBackupFile(JSON.stringify(v2))
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error).toMatch(/planSet/)
+  })
 })
 
 describe('countRows', () => {

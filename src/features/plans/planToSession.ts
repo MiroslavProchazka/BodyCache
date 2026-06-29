@@ -39,3 +39,12 @@ export const planSetToSetInput = (s: PlanSetSource, orderIndex: number): AddSetI
 export const byOrderIndex = <T extends { readonly orderIndex: number | null }>(
   rows: readonly T[],
 ): T[] => [...rows].sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+
+/**
+ * The next free `orderIndex` to append at: one past the current maximum, or 0
+ * when empty. Using the max (not the row count) keeps appends unique even after
+ * a middle row was removed — row count could otherwise collide with an existing
+ * index and break the editor's swap-based reorder.
+ */
+export const nextOrderIndex = (rows: readonly { readonly orderIndex: number | null }[]): number =>
+  rows.reduce((max, r) => Math.max(max, (r.orderIndex ?? 0) + 1), 0)

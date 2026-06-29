@@ -101,6 +101,10 @@ describe('importBackup', () => {
         workoutSession: sampleTables['q:workoutSession'],
         workoutExercise: sampleTables['q:workoutExercise'],
         exerciseSet: sampleTables['q:exerciseSet'],
+        // v2 backups carry the plan tables; this sample simply has no routines.
+        plan: [],
+        planExercise: [],
+        planSet: [],
       },
       photos: [{ ref: 'idb://p1', mime: 'image/png', base64: btoa('imagedata') }],
     })

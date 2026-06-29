@@ -36,7 +36,10 @@ export function WorkoutEntryCard({
   const navigate = useNavigate()
   const { unit } = useUnits()
   const type = entry.exerciseType as ExerciseType
-  const sets = useQuery(setsForWorkoutExercise(entry.id))
+  // A plan instantiates its target sets as incomplete "ghost" rows; show only
+  // confirmed (completed) sets here so prescribed targets don't read as logged.
+  // The targets still pre-fill the logger when the user taps in.
+  const sets = useQuery(setsForWorkoutExercise(entry.id)).filter((s) => s.completedAt != null)
 
   return (
     <div className="rounded-[20px] border border-white/[0.07] bg-surface p-4">

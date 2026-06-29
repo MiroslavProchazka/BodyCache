@@ -119,10 +119,16 @@ export const parseBackupFile = (text: string): ParseResult => {
       return { ok: false, error: `Backup is missing the "${name}" table.` }
     }
   }
-  // Optional (v2+) tables: if present they must be arrays, but a v1 backup
-  // simply won't have them.
+  // Plan tables arrived in v2. A v2+ backup must include them — accepting a
+  // v2 file that's missing them would silently drop every saved routine while
+  // reporting a successful restore. A v1 file legitimately won't have them, so
+  // there they're tolerated and normalized to empty below.
   for (const name of OPTIONAL_TABLE_NAMES) {
-    if (name in tables && !Array.isArray(tables[name])) {
+    if (obj.version >= 2) {
+      if (!Array.isArray(tables[name])) {
+        return { ok: false, error: `Backup is missing the "${name}" table.` }
+      }
+    } else if (name in tables && !Array.isArray(tables[name])) {
       return { ok: false, error: `Backup has an invalid "${name}" table.` }
     }
   }

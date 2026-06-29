@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { byOrderIndex, planSetToSetInput, type PlanSetSource } from './planToSession'
+import { byOrderIndex, nextOrderIndex, planSetToSetInput, type PlanSetSource } from './planToSession'
 
 const planSet = (over: Partial<PlanSetSource> = {}): PlanSetSource => ({
   orderIndex: 0,
@@ -48,5 +48,21 @@ describe('byOrderIndex', () => {
     expect(sorted.map((r) => r.orderIndex)).toEqual([null, 1, 2])
     // original array untouched
     expect(rows.map((r) => r.orderIndex)).toEqual([2, null, 1])
+  })
+})
+
+describe('nextOrderIndex', () => {
+  it('is 0 for an empty list', () => {
+    expect(nextOrderIndex([])).toBe(0)
+  })
+
+  it('is one past the max, not the row count (survives a removed middle row)', () => {
+    // Rows 0 and 2 remain after index 1 was removed; count (2) would collide
+    // with the existing 2, so we must use max+1 = 3.
+    expect(nextOrderIndex([{ orderIndex: 0 }, { orderIndex: 2 }])).toBe(3)
+  })
+
+  it('treats null order as 0', () => {
+    expect(nextOrderIndex([{ orderIndex: null }])).toBe(1)
   })
 })
