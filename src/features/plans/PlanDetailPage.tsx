@@ -1,10 +1,10 @@
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { ChevronLeft, Pencil, Play, Archive, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Pencil, Play, Archive, Trash2 } from 'lucide-react'
 import { planById, planExercises, planSetsForPlanExercise } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { PlanExerciseRow } from '@/evolu/rows'
-import type { ExerciseType, ExercisePhotoId, PlanExerciseId, PlanId } from '@/evolu/schema'
+import type { ExerciseId, ExerciseType, ExercisePhotoId, PlanExerciseId, PlanId } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
 import { StickyAction } from '@/shared/components/StickyAction'
 import { Overline } from '@/shared/components/Overline'
@@ -91,7 +91,14 @@ function PlanDetailInner({ planId }: { planId: PlanId }) {
         ) : (
           <div className="flex flex-col gap-3">
             {exercises.map((entry) => (
-              <PlanExerciseRowView key={entry.id} entry={entry as PlanExerciseRow} />
+              <PlanExerciseRowView
+                key={entry.id}
+                entry={entry as PlanExerciseRow}
+                onOpen={() =>
+                  entry.exerciseId &&
+                  navigate(`/library/${entry.exerciseId as ExerciseId}`)
+                }
+              />
             ))}
           </div>
         )}
@@ -136,15 +143,20 @@ function PlanDetailInner({ planId }: { planId: PlanId }) {
   )
 }
 
-/** One exercise in the read-only plan view, with its target sets listed. */
-function PlanExerciseRowView({ entry }: { entry: PlanExerciseRow }) {
+/** One exercise in the read-only plan view, with its target sets listed. Tapping
+ *  the header opens the exercise's detail screen. */
+function PlanExerciseRowView({ entry, onOpen }: { entry: PlanExerciseRow; onOpen: () => void }) {
   const { unit } = useUnits()
   const type = entry.exerciseType as ExerciseType
   const sets = useQuery(planSetsForPlanExercise(entry.id as PlanExerciseId))
 
   return (
     <div className="rounded-[20px] border border-white/[0.07] bg-surface p-4">
-      <div className="mb-3 flex items-center gap-[13px]">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="mb-3 flex w-full items-center gap-[13px] text-left"
+      >
         <ExerciseTile
           photoId={entry.primaryPhotoId as ExercisePhotoId | null}
           bodyPart={entry.bodyPart as string | null}
@@ -161,7 +173,8 @@ function PlanExerciseRowView({ entry }: { entry: PlanExerciseRow }) {
               `${sets.length} ${sets.length === 1 ? 'set' : 'sets'}`}
           </div>
         </div>
-      </div>
+        <ChevronRight size={18} strokeWidth={1.75} className="flex-none text-faint" />
+      </button>
       {sets.length === 0 ? (
         <Overline>No target sets</Overline>
       ) : (
