@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { Plus, Dumbbell, ListPlus } from 'lucide-react'
 import { allExercises } from '@/evolu/queries'
 import { BODY_PARTS } from '@/evolu/schema'
@@ -8,12 +9,20 @@ import { SearchField } from '@/shared/components/SearchField'
 import { FilterChips } from '@/shared/components/FilterChips'
 import { Button } from '@/shared/components/Button'
 import { humanize } from '@/shared/utils/bodyParts'
+import { chunk } from '@/shared/utils/chunk'
+import { useDebouncedValue } from '@/shared/utils/useDebouncedValue'
+import { useScrollParent } from '@/shared/utils/useScrollParent'
+import { useListScrollMargin } from './useListScrollMargin'
 import { ExerciseCard } from './ExerciseCard'
 
 const CHIP_OPTIONS = [
   { value: 'all', label: 'All' },
   ...BODY_PARTS.map((p) => ({ value: p, label: humanize(p) })),
 ]
+
+/** Two cards per grid row; each row slot reserves card height + the 12px gap. */
+const COLS = 2
+const ROW_ESTIMATE = 212
 
 /** Browse / search all exercises; entry to detail and create. */
 export function ExerciseLibraryPage() {
@@ -22,8 +31,11 @@ export function ExerciseLibraryPage() {
   const [search, setSearch] = useState('')
   const [part, setPart] = useState<string | null>(null)
 
+  // Debounce so filtering 1,000+ exercises doesn't run on every keystroke.
+  const debouncedSearch = useDebouncedValue(search)
+
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
+    const q = debouncedSearch.trim().toLowerCase()
     return exercises.filter((e) => {
       if (part && e.bodyPart !== part) return false
       if (!q) return true
@@ -31,7 +43,24 @@ export function ExerciseLibraryPage() {
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(q))
     })
-  }, [exercises, search, part])
+  }, [exercises, debouncedSearch, part])
+
+  const rows = useMemo(() => chunk(filtered, COLS), [filtered])
+
+  // Virtualize the grid so only the cards on screen mount — each card runs its
+  // own history query + IndexedDB photo read, so without this a 1,000-exercise
+  // library would fire thousands of queries at once. The page scrolls in the
+  // AppShell `<main>` column, so the virtualizer watches that ancestor.
+  const listRef = useRef<HTMLDivElement>(null)
+  const scrollParent = useScrollParent(listRef)
+  const scrollMargin = useListScrollMargin(listRef, scrollParent, filtered.length > 0)
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollParent,
+    estimateSize: () => ROW_ESTIMATE,
+    overscan: 4,
+    scrollMargin,
+  })
 
   const hasAny = exercises.length > 0
 
@@ -98,10 +127,28 @@ export function ExerciseLibraryPage() {
       ) : filtered.length === 0 ? (
         <p className="py-10 text-center text-sm text-faint">No exercises match.</p>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
-          {filtered.map((exercise) => (
-            <ExerciseCard key={exercise.id} exercise={exercise} />
-          ))}
+        <div ref={listRef}>
+          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+            {virtualizer.getVirtualItems().map((row) => (
+              <div
+                key={row.key}
+                data-index={row.index}
+                ref={virtualizer.measureElement}
+                className="grid grid-cols-2 gap-3 pb-3"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  transform: `translateY(${row.start - virtualizer.options.scrollMargin}px)`,
+                }}
+              >
+                {rows[row.index].map((exercise) => (
+                  <ExerciseCard key={exercise.id} exercise={exercise} />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

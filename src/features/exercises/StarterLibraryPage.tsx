@@ -1,16 +1,22 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { Check, ChevronLeft, Search } from 'lucide-react'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { ChevronLeft, Search } from 'lucide-react'
 import { allExercises } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { ExerciseId } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
 import { Overline } from '@/shared/components/Overline'
 import { StickyAction } from '@/shared/components/StickyAction'
-import { humanize, metaLine } from '@/shared/utils/bodyParts'
+import { humanize } from '@/shared/utils/bodyParts'
 import { storePhoto } from '@/shared/utils/photos'
+import { useDebouncedValue } from '@/shared/utils/useDebouncedValue'
+import { useScrollParent } from '@/shared/utils/useScrollParent'
+import { useListScrollMargin } from './useListScrollMargin'
+import { StarterRow } from './StarterRow'
 import {
+  flattenStarterGroups,
   groupStarterCatalog,
   normalizeExerciseName,
   STARTER_CATALOG,
@@ -41,7 +47,8 @@ export function StarterLibraryPage() {
 
   // The catalog is large, so a search box keeps it usable.
   const [query, setQuery] = useState('')
-  const q = normalizeExerciseName(query)
+  // Debounce so filtering 1,000+ entries doesn't run on every keystroke.
+  const q = normalizeExerciseName(useDebouncedValue(query))
 
   /** Body-part groups narrowed to the search query. */
   const visibleGroups = useMemo(() => {
@@ -53,6 +60,9 @@ export function StarterLibraryPage() {
       }))
       .filter((g) => g.items.length > 0)
   }, [groups, q])
+
+  /** One flat, ordered list (headers + items) for the virtualizer. */
+  const flatRows = useMemo(() => flattenStarterGroups(visibleGroups), [visibleGroups])
 
   /** Currently-visible entries not yet in the library — what "Select all" acts on. */
   const visibleAddable = useMemo(
@@ -67,14 +77,18 @@ export function StarterLibraryPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const isSelected = (e: StarterExercise) => selected.has(normalizeExerciseName(e.name))
 
-  const toggle = (e: StarterExercise) => {
-    if (isAdded(e)) return
+  // Stable across renders (functional update, no closure over `selected`) so the
+  // memoized rows don't all re-render when one selection changes. Added entries
+  // can't reach here — their row is disabled.
+  const toggle = useCallback((e: StarterExercise) => {
     const key = normalizeExerciseName(e.name)
-    const next = new Set(selected)
-    if (next.has(key)) next.delete(key)
-    else next.add(key)
-    setSelected(next)
-  }
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }, [])
 
   const allVisibleSelected =
     visibleAddable.length > 0 &&
@@ -90,6 +104,21 @@ export function StarterLibraryPage() {
   }
 
   const count = selected.size
+
+  // Virtualize the flat header/item list: only the rows on screen mount, so the
+  // full 1,000+ entry catalog renders instantly and scrolls smoothly. Headers
+  // (~34px) and rows (~64px) differ in height, so estimate per kind and let
+  // measureElement correct. The page scrolls in the AppShell `<main>` column.
+  const listRef = useRef<HTMLDivElement>(null)
+  const scrollParent = useScrollParent(listRef)
+  const scrollMargin = useListScrollMargin(listRef, scrollParent, flatRows.length > 0)
+  const virtualizer = useVirtualizer({
+    count: flatRows.length,
+    getScrollElement: () => scrollParent,
+    estimateSize: (i) => (flatRows[i].kind === 'header' ? 34 : 64),
+    overscan: 6,
+    scrollMargin,
+  })
 
   /**
    * Fetch a bundled demo GIF and copy it into IndexedDB via the normal photo
@@ -182,59 +211,39 @@ export function StarterLibraryPage() {
           </p>
         )}
 
-        <div className="flex flex-col gap-5">
-          {visibleGroups.map((group) => (
-            <section key={group.bodyPart}>
-              <Overline className="mb-[10px]">{humanize(group.bodyPart)}</Overline>
-              <div className="flex flex-col gap-2">
-                {group.items.map((e) => {
-                  const added = isAdded(e)
-                  const checked = isSelected(e)
-                  return (
-                    <button
-                      key={e.name}
-                      type="button"
-                      onClick={() => toggle(e)}
-                      disabled={added}
-                      aria-pressed={!added && checked}
-                      className={[
-                        'flex items-center gap-3 rounded-2xl border p-3 text-left transition-colors',
-                        added
-                          ? 'border-white/[0.06] bg-surface/50 opacity-55'
-                          : checked
-                            ? 'border-neon/40 bg-neon/[0.08]'
-                            : 'border-white/10 bg-surface',
-                      ].join(' ')}
-                    >
-                      <span
-                        className={[
-                          'flex h-6 w-6 flex-none items-center justify-center rounded-md border',
-                          added || checked
-                            ? 'border-neon bg-neon text-ink'
-                            : 'border-white/20 text-transparent',
-                        ].join(' ')}
-                      >
-                        <Check size={15} strokeWidth={2.5} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[14.5px] font-semibold text-white">
-                          {e.name}
-                        </span>
-                        <span className="block truncate text-[11.5px] text-faint">
-                          {metaLine(e.bodyPart, e.equipment)}
-                        </span>
-                      </span>
-                      {added && (
-                        <span className="flex-none text-[11px] font-semibold uppercase tracking-wide text-faint">
-                          Added
-                        </span>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            </section>
-          ))}
+        <div ref={listRef}>
+          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+            {virtualizer.getVirtualItems().map((v) => {
+              const item = flatRows[v.index]
+              return (
+                <div
+                  key={v.key}
+                  data-index={v.index}
+                  ref={virtualizer.measureElement}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${v.start - virtualizer.options.scrollMargin}px)`,
+                  }}
+                >
+                  {item.kind === 'header' ? (
+                    <Overline className="pb-[10px] pt-5">{humanize(item.bodyPart)}</Overline>
+                  ) : (
+                    <div className="pb-2">
+                      <StarterRow
+                        exercise={item.exercise}
+                        added={isAdded(item.exercise)}
+                        checked={isSelected(item.exercise)}
+                        onToggle={toggle}
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
 
