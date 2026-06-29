@@ -62,6 +62,8 @@ export interface AddSetInput {
 
 /** Patch for updating a logged set (all fields optional). */
 export interface UpdateSetPatch {
+  /** ISO timestamp; stamp an incomplete "ghost" set complete when it's edited. */
+  readonly completedAt?: string | null
   readonly weightKg?: number | null
   readonly reps?: number | null
   readonly addedWeightKg?: number | null
@@ -74,6 +76,16 @@ export interface UpdateSetPatch {
   readonly rpe?: number | null
   readonly setType?: SetType | null
   readonly notes?: string | null
+}
+
+/**
+ * Patch for editing a finished session's timestamps (all fields optional).
+ * Timestamps are passed as ISO strings, which Evolu's `DateIso` accepts.
+ */
+export interface UpdateWorkoutSessionPatch {
+  readonly startedAt?: string
+  readonly finishedAt?: string | null
+  readonly date?: string
 }
 
 /** Input for creating the user's profile. */
@@ -349,6 +361,14 @@ export const useBodyCacheMutations = () => {
   const deleteWorkoutSession = (id: WorkoutSessionId) =>
     update('workoutSession', { id, isDeleted: 1 })
 
+  /**
+   * Edit a finished session's timestamps (used by the history editor to change
+   * a workout's date). The caller shifts `startedAt`/`finishedAt`/`date`
+   * together so the recorded duration is preserved.
+   */
+  const updateWorkoutSession = (id: WorkoutSessionId, patch: UpdateWorkoutSessionPatch) =>
+    update('workoutSession', { id, ...patch })
+
   return {
     createProfile,
     updateProfile,
@@ -363,6 +383,7 @@ export const useBodyCacheMutations = () => {
     finishWorkoutSession,
     discardWorkoutSession,
     deleteWorkoutSession,
+    updateWorkoutSession,
     addExerciseToWorkout,
     setWorkoutExerciseOrder,
     setWorkoutExerciseSuperset,

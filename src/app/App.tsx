@@ -5,6 +5,8 @@ import {
   ActiveWorkoutPage,
   AddExercisePage,
   CreateExercisePage,
+  EditSessionAddExercisePage,
+  EditSessionPage,
   ExerciseDetailPage,
   ExerciseLibraryPage,
   FinishPage,
@@ -37,6 +39,8 @@ export function App() {
           <Route path="/workout/finish" element={<FinishPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/history/:id" element={<SessionDetailPage />} />
+          <Route path="/history/:id/edit" element={<EditSessionPage />} />
+          <Route path="/history/:id/add-exercise" element={<EditSessionAddExercisePage />} />
           <Route path="/library" element={<ExerciseLibraryPage />} />
           <Route path="/library/new" element={<CreateExercisePage />} />
           <Route path="/library/starter" element={<StarterLibraryPage />} />

@@ -30,6 +30,14 @@ export const SessionDetailPage = lazyNamed(
   () => import('@/features/workouts/SessionDetailPage'),
   'SessionDetailPage',
 )
+export const EditSessionPage = lazyNamed(
+  () => import('@/features/workouts/EditSessionPage'),
+  'EditSessionPage',
+)
+export const EditSessionAddExercisePage = lazyNamed(
+  () => import('@/features/workouts/EditSessionAddExercisePage'),
+  'EditSessionAddExercisePage',
+)
 
 export const ExerciseLibraryPage = lazyNamed(
   () => import('@/features/exercises/ExerciseLibraryPage'),

@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { ChevronLeft, ChevronRight, RotateCcw, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Pencil, RotateCcw, Trash2 } from 'lucide-react'
 import { sessionById, sessionSetsDetailed } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { WorkoutSessionRow, SessionDetailSetRow } from '@/evolu/rows'
@@ -83,6 +83,14 @@ function SessionDetailInner({ session }: { session: WorkoutSessionRow }) {
             {session.startedAt ? formatRelativeDay(session.startedAt) : '—'}
           </div>
         </div>
+        <button
+          type="button"
+          onClick={() => navigate(`/history/${session.id as WorkoutSessionId}/edit`)}
+          aria-label="Edit workout"
+          className="flex h-10 w-10 flex-none items-center justify-center rounded-full border border-white/10 bg-surface text-faint"
+        >
+          <Pencil size={17} strokeWidth={1.75} />
+        </button>
         <button
           type="button"
           onClick={handleDelete}
