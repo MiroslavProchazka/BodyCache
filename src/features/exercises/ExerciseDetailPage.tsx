@@ -334,7 +334,7 @@ export function ExerciseDetailPage() {
 }
 
 /** Numbered form cues for the exercise, with a "not coaching advice" note. */
-function HowTo({ exercise }: { exercise: { name?: string | null } }) {
+function HowTo({ exercise }: { exercise: { name?: string | null; notes?: string | null } }) {
   const steps = cuesFor(exercise)
   return (
     <div className="rounded-[18px] border border-white/[0.07] bg-surface p-[15px]">
