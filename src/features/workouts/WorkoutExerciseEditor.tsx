@@ -57,8 +57,27 @@ export function WorkoutExerciseEditor({
   const clamp = (value: number, f: SetFieldDef) =>
     Math.max(0, f.integer ? Math.round(value) : Math.round(value * 10) / 10)
 
-  const step = (setId: ExerciseSetId, current: number, f: SetFieldDef, dir: 1 | -1) =>
-    updateSet(setId, { [f.key]: clamp(current + dir * f.step, f) })
+  // Next order index = one past the current max, not `sets.length` — removing a
+  // middle set leaves the indices sparse, and the detail/repeat queries order by
+  // this column alone, so reusing the length would collide and shuffle order.
+  const nextOrderIndex = sets.length
+    ? Math.max(...sets.map((s) => s.orderIndex as number)) + 1
+    : 0
+
+  // A finished session can still hold incomplete "ghost" sets (e.g. targets from
+  // a plan the user never confirmed); the recap/stat queries filter on
+  // `completedAt is not null`, so editing one must stamp it complete or the
+  // change silently vanishes after Done.
+  const stampIfGhost = (s: (typeof sets)[number]) =>
+    s.completedAt == null ? { completedAt } : {}
+
+  const step = (s: (typeof sets)[number], f: SetFieldDef, dir: 1 | -1) => {
+    const current = (s[f.key] as number | null) ?? 0
+    updateSet(s.id as ExerciseSetId, {
+      [f.key]: clamp(current + dir * f.step, f),
+      ...stampIfGhost(s),
+    })
+  }
 
   const handleAddSet = () => {
     // Seed a new set from the last one's values (or type defaults), but only the
@@ -69,7 +88,7 @@ export function WorkoutExerciseEditor({
     for (const f of fields) {
       seeded[f.key] = (last?.[f.key] as number | null) ?? DEFAULT_VALUES[f.key]
     }
-    addSet(entry.id as WorkoutExerciseId, { orderIndex: sets.length, completedAt, ...seeded })
+    addSet(entry.id as WorkoutExerciseId, { orderIndex: nextOrderIndex, completedAt, ...seeded })
   }
 
   return (
@@ -117,6 +136,7 @@ export function WorkoutExerciseEditor({
                   onClick={() =>
                     updateSet(s.id as ExerciseSetId, {
                       setType: nextSetType(narrowSetType(s.setType)),
+                      ...stampIfGhost(s),
                     })
                   }
                   className="rounded-lg border border-white/10 px-[9px] py-[3px] text-[11.5px] font-semibold text-muted active:scale-[0.97]"
@@ -144,13 +164,13 @@ export function WorkoutExerciseEditor({
                         {f.isWeight ? `${f.label} (${unit})` : f.label}
                       </div>
                       <div className="flex items-center justify-between gap-1">
-                        <StepButton onClick={() => step(s.id as ExerciseSetId, value, f, -1)} label={`Decrease ${f.label}`}>
+                        <StepButton onClick={() => step(s, f, -1)} label={`Decrease ${f.label}`}>
                           <Minus size={17} strokeWidth={2} />
                         </StepButton>
                         <span className="font-display text-[22px] font-semibold tnum text-white">
                           {f.isWeight ? toDisplayWeight(value, unit) : value}
                         </span>
-                        <StepButton onClick={() => step(s.id as ExerciseSetId, value, f, 1)} label={`Increase ${f.label}`}>
+                        <StepButton onClick={() => step(s, f, 1)} label={`Increase ${f.label}`}>
                           <Plus size={17} strokeWidth={2} />
                         </StepButton>
                       </div>

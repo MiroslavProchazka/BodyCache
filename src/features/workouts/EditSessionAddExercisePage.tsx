@@ -50,7 +50,13 @@ function EditSessionAddExerciseInner({ sessionId }: { sessionId: WorkoutSessionI
   const backToEdit = `/history/${sessionId}/edit`
 
   const add = (exerciseId: ExerciseId) => {
-    addExerciseToWorkout(sessionId, exerciseId, inSession.length)
+    // Append past the current max order index, not `inSession.length` — a prior
+    // mid-list removal leaves indices sparse, and `sessionExercises` orders by
+    // this column alone, so reusing the count could collide and shuffle order.
+    const nextOrder = inSession.length
+      ? Math.max(...inSession.map((e) => e.orderIndex as number)) + 1
+      : 0
+    addExerciseToWorkout(sessionId, exerciseId, nextOrder)
     navigate(backToEdit)
   }
 
