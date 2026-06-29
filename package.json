@@ -26,6 +26,7 @@
     "@evolu/react": "^10.4.0",
     "@evolu/react-web": "^2.4.0",
     "@evolu/web": "^2.4.0",
+    "@tanstack/react-virtual": "^3.14.4",
     "lucide-react": "^0.511.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

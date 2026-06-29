@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { BODY_PARTS, EQUIPMENT, EXERCISE_TYPES } from '@/evolu/schema'
 import {
+  flattenStarterGroups,
   groupStarterCatalog,
   normalizeExerciseName,
   STARTER_CATALOG,
@@ -53,5 +54,25 @@ describe('groupStarterCatalog', () => {
     const order = groups.map((g) => g.bodyPart)
     const expected = BODY_PARTS.filter((p) => order.includes(p))
     expect(order).toEqual(expected)
+  })
+})
+
+describe('flattenStarterGroups', () => {
+  it('emits a header before each group followed by its items, in order', () => {
+    const groups = [
+      { bodyPart: 'chest' as const, items: [{ name: 'Bench' }, { name: 'Fly' }] },
+      { bodyPart: 'legs' as const, items: [{ name: 'Squat' }] },
+    ]
+    // The helper only reads bodyPart/items, so partial fixtures are enough here.
+    const flat = flattenStarterGroups(groups as never)
+    expect(flat.map((r) => r.kind)).toEqual(['header', 'item', 'item', 'header', 'item'])
+    expect(flat[0]).toEqual({ kind: 'header', bodyPart: 'chest' })
+    expect(flat[3]).toEqual({ kind: 'header', bodyPart: 'legs' })
+  })
+
+  it('preserves the total exercise count from the real catalog', () => {
+    const flat = flattenStarterGroups(groupStarterCatalog())
+    const items = flat.filter((r) => r.kind === 'item')
+    expect(items.length).toBe(STARTER_CATALOG.length)
   })
 })

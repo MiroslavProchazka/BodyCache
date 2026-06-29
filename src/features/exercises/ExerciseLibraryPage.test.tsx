@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ExerciseRow } from '@/evolu/rows'
 import { ExerciseLibraryPage } from './ExerciseLibraryPage'
@@ -9,6 +9,18 @@ const useQueryMock = vi.fn()
 
 vi.mock('@/evolu/queries', () => ({
   allExercises: {},
+}))
+
+// happy-dom has no layout, so a real virtualizer would render nothing. Render
+// every row instead — the assertions here are about filtering, not windowing.
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: ({ count }: { count: number }) => ({
+    getTotalSize: () => count * 212,
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({ key: index, index, start: index * 212 })),
+    measureElement: () => {},
+    options: { scrollMargin: 0 },
+  }),
 }))
 
 vi.mock('@/evolu/schema', () => ({
@@ -67,7 +79,7 @@ describe('ExerciseLibraryPage', () => {
     expect(navigateMock).toHaveBeenLastCalledWith('/library/new')
   })
 
-  it('filters exercises by search query', () => {
+  it('filters exercises by search query', async () => {
     useQueryMock.mockReturnValue([
       makeExercise({ id: '1', name: 'Bench Press', bodyPart: 'chest' }),
       makeExercise({ id: '2', name: 'Leg Press', bodyPart: 'legs' }),
@@ -82,8 +94,9 @@ describe('ExerciseLibraryPage', () => {
       target: { value: 'bench' },
     })
 
+    // Search is debounced — wait for the filtered result to settle.
+    await waitFor(() => expect(screen.queryByText('Leg Press')).toBeNull())
     expect(screen.getByText('Bench Press')).toBeTruthy()
-    expect(screen.queryByText('Leg Press')).toBeNull()
   })
 
   it('filters exercises by selected body-part chip', () => {
@@ -100,7 +113,7 @@ describe('ExerciseLibraryPage', () => {
     expect(screen.getByText('Leg Press')).toBeTruthy()
   })
 
-  it('shows no-match message when search/filter result is empty', () => {
+  it('shows no-match message when search/filter result is empty', async () => {
     useQueryMock.mockReturnValue([
       makeExercise({ id: '1', name: 'Bench Press', bodyPart: 'chest' }),
     ])
@@ -111,6 +124,6 @@ describe('ExerciseLibraryPage', () => {
       target: { value: 'xyz' },
     })
 
-    expect(screen.getByText('No exercises match.')).toBeTruthy()
+    await waitFor(() => expect(screen.getByText('No exercises match.')).toBeTruthy())
   })
 })

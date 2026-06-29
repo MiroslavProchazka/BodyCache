@@ -73,3 +73,23 @@ export function groupStarterCatalog(
     }))
     .filter((g) => g.items.length > 0)
 }
+
+/**
+ * A single rendered line in the (virtualized) starter picker: either a
+ * body-part section header or one exercise. Flattening the grouped catalog into
+ * one ordered list lets a single virtualizer window the whole 1,000+ entry
+ * picker, headers included.
+ */
+export type StarterRowItem =
+  | { readonly kind: 'header'; readonly bodyPart: BodyPart }
+  | { readonly kind: 'item'; readonly exercise: StarterExercise }
+
+/** Flatten ordered groups into a header-then-items row list for virtualization. */
+export function flattenStarterGroups(groups: readonly StarterGroup[]): StarterRowItem[] {
+  const rows: StarterRowItem[] = []
+  for (const g of groups) {
+    rows.push({ kind: 'header', bodyPart: g.bodyPart })
+    for (const exercise of g.items) rows.push({ kind: 'item', exercise })
+  }
+  return rows
+}

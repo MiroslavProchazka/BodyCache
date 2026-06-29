@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { completedSetsForExercise } from '@/evolu/queries'
@@ -16,8 +17,12 @@ import { toHistorySets, lastSummaryLabel } from './history'
  * a photographed shape-mask block leads — or, with no photo, a muscle BodyMap
  * highlighting what the exercise works — then name, meta, and the last
  * performance with a trend arrow. Tap → detail.
+ *
+ * Memoized: each card runs its own history query + photo lookup, so in a large
+ * virtualized grid we don't want a parent re-render (e.g. typing in search) to
+ * re-run that work for cards whose `exercise` row hasn't changed.
  */
-export function ExerciseCard({ exercise }: { exercise: ExerciseRow }) {
+export const ExerciseCard = memo(function ExerciseCard({ exercise }: { exercise: ExerciseRow }) {
   const navigate = useNavigate()
   const { unit } = useUnits()
   const type = exercise.type as ExerciseType
@@ -56,4 +61,4 @@ export function ExerciseCard({ exercise }: { exercise: ExerciseRow }) {
       </div>
     </button>
   )
-}
+})
