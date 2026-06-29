@@ -3,10 +3,15 @@
  * general movement reminders — BodyCache is a memory aid, not a coach, so the
  * UI pairs them with a disclaimer and keeps the list to a few plain steps.
  *
- * The design prototype keyed cues by its own short ids (`bench`, `latpd`, …).
- * The app uses generated Evolu ids instead, so we key by the *normalized
- * exercise name* (see `normalizeExerciseName`) and match the seeded starter
- * library. User-created exercises fall back to a generic 5-step list.
+ * Resolution order, most-specific first:
+ *   1. The exercise's own `notes`. Starter-library adds store the dataset's
+ *      detailed, exercise-specific instructions here (see `StarterLibraryPage`),
+ *      so for seeded exercises this is the richest, truest "how to" we have.
+ *      Split into one step per sentence.
+ *   2. A hand-curated cue list keyed by the *normalized exercise name* (see
+ *      `normalizeExerciseName`) — kept from the design prototype for a few
+ *      common lifts.
+ *   3. A generic 5-step fallback for anything else.
  *
  * Pure data + lookup — kept UI-free so it can be tested.
  */
@@ -81,8 +86,37 @@ export const GENERIC_CUES: readonly string[] = [
   'Reset your position between reps if needed.',
 ]
 
-/** Form cues for an exercise — its specific list, or the generic fallback. */
-export function cuesFor(ex: { name?: string | null }): readonly string[] {
+/**
+ * Split a free-text instruction blob (the imported dataset cues, stored as an
+ * exercise's `notes`) into sentence-sized steps for the numbered "How to" list.
+ * Returns `[]` for empty/whitespace-only input.
+ *
+ * Splits on whitespace that follows sentence punctuation. We mark those
+ * boundaries with a newline and split on it rather than using a lookbehind
+ * (`(?<=…)`) — iOS Safari / WKWebView before 16.4 don't support regex
+ * lookbehind and would throw a SyntaxError, and this app is mobile-first.
+ */
+export function stepsFromNotes(notes: string): string[] {
+  return notes
+    .replace(/([.!?])\s+/g, '$1\n')
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+/**
+ * Form cues for an exercise: its own `notes` split into steps, else a curated
+ * list matched by name, else the generic fallback.
+ */
+export function cuesFor(ex: {
+  name?: string | null
+  notes?: string | null
+}): readonly string[] {
+  const notes = ex.notes?.trim()
+  if (notes) {
+    const steps = stepsFromNotes(notes)
+    if (steps.length > 0) return steps
+  }
   const key = normalizeExerciseName(ex.name ?? '')
   return CUES[key] ?? GENERIC_CUES
 }
