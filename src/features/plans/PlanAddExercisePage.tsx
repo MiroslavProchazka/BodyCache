@@ -12,6 +12,7 @@ import { SearchField } from '@/shared/components/SearchField'
 import { FilterChips } from '@/shared/components/FilterChips'
 import { humanize, metaLine } from '@/shared/utils/bodyParts'
 import { ExerciseTile } from '@/features/exercises/ExerciseTile'
+import { nextOrderIndex } from './planToSession'
 
 const CHIP_OPTIONS = [
   { value: 'all', label: 'All' },
@@ -48,7 +49,7 @@ function PlanAddExerciseInner({ planId }: { planId: PlanId }) {
   if (!plan) return <Navigate to="/plans" replace />
 
   const add = (exerciseId: ExerciseId) => {
-    addExerciseToPlan(planId, exerciseId, inPlan.length)
+    addExerciseToPlan(planId, exerciseId, nextOrderIndex(inPlan))
     navigate(`/plans/${planId}/edit`)
   }
 

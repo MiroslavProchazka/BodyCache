@@ -16,6 +16,7 @@ import { CircleButton } from '@/shared/components/CircleButton'
 import { Overline } from '@/shared/components/Overline'
 import { StickyAction } from '@/shared/components/StickyAction'
 import { humanize } from '@/shared/utils/bodyParts'
+import { nextOrderIndex } from '@/features/plans/planToSession'
 import { storePhoto } from '@/shared/utils/photos'
 
 /**
@@ -84,7 +85,7 @@ export function CreateExercisePage() {
       // reset `saving` on the happy path.
       if (planId) {
         const existing = await evolu.loadQuery(planExercises(planId))
-        addExerciseToPlan(planId, exerciseId, existing.length)
+        addExerciseToPlan(planId, exerciseId, nextOrderIndex(existing))
         navigate(`/plans/${planId}/edit`, { replace: true })
         return
       }

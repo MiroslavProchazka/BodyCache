@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { ChevronLeft, Pause, Play, Plus, Dumbbell, Trash2 } from 'lucide-react'
-import { activeWorkoutSession, sessionExercises } from '@/evolu/queries'
+import { activeWorkoutSession, completedSetsForSession, sessionExercises } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { SessionExerciseRow, WorkoutSessionRow } from '@/evolu/rows'
 import type { WorkoutExerciseId, WorkoutSessionId } from '@/evolu/schema'
@@ -44,6 +44,7 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
   } = useBodyCacheMutations()
   // Already ordered by `orderIndex` (the query sorts), so grouping folds live.
   const entries = useQuery(sessionExercises(session.id as WorkoutSessionId)) as SessionExerciseRow[]
+  const completedSets = useQuery(completedSetsForSession(session.id as WorkoutSessionId))
 
   const [now, setNow] = useState(() => new Date().toISOString())
   useEffect(() => {
@@ -52,6 +53,10 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
   }, [])
 
   const empty = entries.length === 0
+  // Finishing requires at least one confirmed set — starting a plan adds
+  // exercises (and ghost target sets) but nothing is logged until the user
+  // confirms a set, so exercise count alone mustn't unlock Finish.
+  const canFinish = completedSets.length > 0
   const paused = session.status === 'paused'
   const elapsedSec = activeElapsedSec(session, now)
 
@@ -83,7 +88,7 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
     items.forEach((it) => setWorkoutExerciseSuperset(it.id as WorkoutExerciseId, null))
 
   const handleFinish = () => {
-    if (empty) return
+    if (!canFinish) return
     finishWorkoutSession(session.id, elapsedSec)
     navigate('/workout/finish', { state: { sessionId: session.id } })
   }
@@ -225,10 +230,10 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
         <button
           type="button"
           onClick={handleFinish}
-          disabled={empty}
+          disabled={!canFinish}
           className={[
             'w-full rounded-2xl border py-[17px] text-base font-bold',
-            empty
+            !canFinish
               ? 'border-white/[0.08] bg-surface text-faint opacity-60'
               : 'border-white bg-white text-ink',
           ].join(' ')}

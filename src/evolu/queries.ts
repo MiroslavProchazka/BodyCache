@@ -175,10 +175,11 @@ export const sessionExercises = (sessionId: WorkoutSessionId) =>
   )
 
 /**
- * All logged sets in a session, joined to their exercise's name and body part,
- * with weight/reps for volume. Unlike `completedSetsForExercise`, this does not
- * require `completedAt` — the live muscle-distribution map counts every set the
- * user has logged in the in-progress workout. Soft-deleted rows are excluded.
+ * Completed sets in a session, joined to their exercise's name and body part,
+ * with weight/reps for volume — feeds the live muscle-distribution map. Requires
+ * `completedAt` so prescribed-but-unconfirmed sets (e.g. a plan's ghost targets)
+ * don't inflate the map before the user actually logs them. Soft-deleted rows
+ * are excluded.
  */
 export const sessionSetsForDistribution = (sessionId: WorkoutSessionId) =>
   evolu.createQuery((db) =>
@@ -187,6 +188,7 @@ export const sessionSetsForDistribution = (sessionId: WorkoutSessionId) =>
       .innerJoin('workoutExercise', 'workoutExercise.id', 'exerciseSet.workoutExerciseId')
       .innerJoin('exercise', 'exercise.id', 'workoutExercise.exerciseId')
       .where('exerciseSet.isDeleted', 'is', null)
+      .where('exerciseSet.completedAt', 'is not', null)
       .where('workoutExercise.isDeleted', 'is', null)
       .where('workoutExercise.workoutSessionId', '=', sessionId)
       .select([
