@@ -62,6 +62,8 @@ export interface AddSetInput {
 
 /** Patch for updating a logged set (all fields optional). */
 export interface UpdateSetPatch {
+  /** ISO timestamp; stamp an incomplete "ghost" set complete when it's edited. */
+  readonly completedAt?: string | null
   readonly weightKg?: number | null
   readonly reps?: number | null
   readonly addedWeightKg?: number | null
