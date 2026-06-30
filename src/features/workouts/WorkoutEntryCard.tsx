@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { ChevronUp, ChevronDown } from 'lucide-react'
+import { ChevronUp, ChevronDown, Trash2 } from 'lucide-react'
 import { setsForWorkoutExercise } from '@/evolu/queries'
 import type { SessionExerciseRow } from '@/evolu/rows'
 import type { ExerciseId, ExercisePhotoId, ExerciseType } from '@/evolu/schema'
@@ -13,8 +13,9 @@ import { LinkNextButton, SupersetBadge } from './SupersetGroup'
 /**
  * One exercise inside the active workout: photo, name, set count, and a wrap of
  * set chips. The body taps through to the Log screen; a trailing cluster of
- * up/down chevrons reorders the exercise in place (no drag). Optionally wears an
- * A1/A2 superset badge and a "Superset with next" link (standalone only).
+ * up/down chevrons reorders the exercise in place (no drag) and a trash button
+ * removes it from the workout. Optionally wears an A1/A2 superset badge and a
+ * "Superset with next" link (standalone only).
  */
 export function WorkoutEntryCard({
   entry,
@@ -22,6 +23,7 @@ export function WorkoutEntryCard({
   total,
   onMoveUp,
   onMoveDown,
+  onRemove,
   badge = null,
   onLinkNext,
 }: {
@@ -30,6 +32,7 @@ export function WorkoutEntryCard({
   total: number
   onMoveUp: () => void
   onMoveDown: () => void
+  onRemove: () => void
   badge?: string | null
   onLinkNext?: () => void
 }) {
@@ -73,6 +76,9 @@ export function WorkoutEntryCard({
           </MoveBtn>
           <MoveBtn onClick={onMoveDown} disabled={index === total - 1} label="Move down">
             <ChevronDown size={18} strokeWidth={2} />
+          </MoveBtn>
+          <MoveBtn onClick={onRemove} disabled={false} label="Remove exercise">
+            <Trash2 size={16} strokeWidth={1.85} />
           </MoveBtn>
         </div>
       </div>
