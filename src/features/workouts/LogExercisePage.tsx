@@ -39,6 +39,7 @@ import { ExerciseTile } from '@/features/exercises/ExerciseTile'
 import { TrendBadge } from '@/features/exercises/TrendBadge'
 import { PrBadge } from '@/features/exercises/PrBadge'
 import { toHistorySets } from '@/features/exercises/history'
+import { nextOrderIndex } from '@/features/plans/planToSession'
 import { SET_FIELDS, DEFAULT_VALUES, type SetFieldDef, type SetFieldKey } from './setFields'
 import { SetTypeTag } from './SetTypeTag'
 import { narrowSetType, nextSetType, setTypeLabel } from './setTypes'
@@ -200,7 +201,12 @@ function LogInner({
     }
     let workoutExerciseId = existing?.id
     if (!workoutExerciseId) {
-      const created = addExerciseToWorkout(sessionId, exerciseId, entries.length)
+      // Append one past the current max index — not `entries.length`, which
+      // collides with an existing index whenever the list has gaps (a plan
+      // whose exercises aren't contiguously indexed, or after a removal). A
+      // collision gives two exercises the same `orderIndex`, and the
+      // swap-based reorder can't move them apart. Mirrors the edit-session add.
+      const created = addExerciseToWorkout(sessionId, exerciseId, nextOrderIndex(entries))
       if (!created.ok) return
       workoutExerciseId = created.value.id
     } else {

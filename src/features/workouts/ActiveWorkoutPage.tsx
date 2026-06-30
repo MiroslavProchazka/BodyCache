@@ -41,6 +41,7 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
     resumeWorkoutSession,
     setWorkoutExerciseOrder,
     setWorkoutExerciseSuperset,
+    removeExerciseFromWorkout,
   } = useBodyCacheMutations()
   // Already ordered by `orderIndex` (the query sorts), so grouping folds live.
   const entries = useQuery(sessionExercises(session.id as WorkoutSessionId)) as SessionExerciseRow[]
@@ -64,13 +65,22 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
   const indexOf = (entry: SessionExerciseRow) =>
     entries.findIndex((e) => String(e.id) === String(entry.id))
 
-  // Reorder by swapping the two rows' stored orderIndex values (mirrors plans).
+  // Reorder by swapping two adjacent rows in the displayed order, then renumber
+  // the whole list 0..n-1. Renumbering (vs swapping the two stored values) is
+  // resilient: if older data left two rows sharing an `orderIndex`, a plain
+  // swap of equal values is a no-op and the move silently fails — this always
+  // moves and self-heals any duplicate indices on the way.
   const move = (entry: SessionExerciseRow, dir: -1 | 1) => {
     const i = indexOf(entry)
-    const other = entries[i + dir]
-    if (!other) return
-    setWorkoutExerciseOrder(entry.id as WorkoutExerciseId, other.orderIndex as number)
-    setWorkoutExerciseOrder(other.id as WorkoutExerciseId, entry.orderIndex as number)
+    const j = i + dir
+    if (j < 0 || j >= entries.length) return
+    const reordered = [...entries]
+    ;[reordered[i], reordered[j]] = [reordered[j], reordered[i]]
+    reordered.forEach((e, idx) => {
+      if ((e.orderIndex as number) !== idx) {
+        setWorkoutExerciseOrder(e.id as WorkoutExerciseId, idx)
+      }
+    })
   }
 
   // Link a standalone exercise with the next one: reuse a neighbour's key if it
@@ -86,6 +96,14 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
 
   const ungroup = (items: readonly SessionExerciseRow[]) =>
     items.forEach((it) => setWorkoutExerciseSuperset(it.id as WorkoutExerciseId, null))
+
+  // Drop an exercise the user decided to skip. Soft delete cascades nothing —
+  // any sets logged under it are filtered out by the session's queries since
+  // they join on a live `workoutExercise`.
+  const handleRemove = (entry: SessionExerciseRow) => {
+    if (!window.confirm(`Remove ${entry.exerciseName} from this workout?`)) return
+    removeExerciseFromWorkout(entry.id as WorkoutExerciseId)
+  }
 
   const handleFinish = () => {
     if (!canFinish) return
@@ -183,6 +201,7 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
                     total={entries.length}
                     onMoveUp={() => move(entry, -1)}
                     onMoveDown={() => move(entry, 1)}
+                    onRemove={() => handleRemove(entry)}
                     badge={badge}
                     onLinkNext={linkable ? () => linkNext(entry) : undefined}
                   />
