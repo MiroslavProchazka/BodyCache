@@ -15,7 +15,14 @@ hundreds to ~1,088 exercises):
 1. The Exercise library takes a long time to load.
 2. Tapping **Add exercise** (during a workout) sometimes appears to do nothing —
    the user taps 2–3 times and waits up to ~20 s before the picker appears.
-3. General sluggishness both online and offline.
+3. **The mid-workout loop is the worst case and the primary scenario to fix**:
+   start workout → Add exercise (~20 s wait) → log sets on the machine → return
+   to the app → Add exercise again (~20–30 s wait *again*) — repeated for every
+   exercise in the session. Each re-entry pays the full cost: leaving the picker
+   unmounts it (all query subscriptions drop), and every set logged in between
+   invalidates the per-exercise history results, so nothing is reused across
+   visits. A 6-exercise workout can spend 2+ minutes staring at a blank screen.
+4. General sluggishness both online and offline.
 
 These are not one bug. The investigation below found **six independent causes**
 that compound. Each is fixable in isolation; they are grouped into phased
@@ -59,6 +66,10 @@ main-thread work.
   IndexedDB reads fired on mount**, all inside the **single app-root
   `<Suspense>` boundary** (`App.tsx`), so *nothing* paints until every query
   resolves. This is the observed 20 s freeze; taps during it appear ignored.
+- **The cost repeats on every visit.** Navigating away unmounts the page and
+  drops all ~1,000 query subscriptions; Evolu's cached results for them are
+  invalidated by the sets logged in between anyway. So the canonical mid-workout
+  loop — picker → log sets → back → picker — pays the full price each round.
 - The search box is **not debounced** here and `PickerRow` is not memoized, so
   every keystroke re-renders (and re-creates query objects for) all rows.
 
@@ -139,6 +150,7 @@ with **1,000 exercises / 30 finished sessions / ~2,000 completed sets**:
 |---|------|--------|
 | B1 | `/library` cold navigation → first cards visible | ≤ 1.5 s |
 | B2 | `/workout/add-exercise` tap → search field + first rows visible | ≤ 1.0 s |
+| B2r | **Mid-workout loop (primary scenario):** re-entering the picker after logging sets, for each of 6 consecutive add→log→back rounds in one active session | ≤ 1.0 s every round — not just the first |
 | B3 | Typing in any library/picker search → filtered results | ≤ 250 ms after debounce settle |
 | B4 | Starter add: tap **Add N exercises** (any N) → back on `/library`, rows present | ≤ 1.5 s (media continues in background) |
 | B5 | `/library/:id` detail route JS (beyond shared chunks) | ≤ 25 kB gzip; **must not** include the catalog chunk |
@@ -308,7 +320,7 @@ Rework `handleAdd` so the user-blocking part is **only the Evolu inserts**
 > `npm run lint` green. Behavior-parity tasks must keep existing unit tests
 > passing unmodified unless the test itself encoded the defect.
 
-### Phase 1 — kill the 20 s picker freeze *(highest impact)*
+### Phase 1 — kill the 20 s picker freeze *(highest impact — this alone fixes the mid-workout loop, symptom #3)*
 
 | Task | Description | Files (indicative) | Done when |
 |---|---|---|---|
@@ -349,7 +361,7 @@ Rework `handleAdd` so the user-blocking part is **only the Evolu inserts**
 | Task | Description | Done when |
 |---|---|---|
 | 5.1 | Test seeding hook: `window.__bodycacheTest = { seed }` exposed **only** when `import.meta.env.VITE_TEST_HOOKS === '1'`; the e2e webServer build command sets it. `seed({ exercises, sessions, setsPerSession })` batch-inserts via the existing mutations | Hook is absent from a normal prod build (asserted by the 2.3 chunk-guard script); fixture helper `seedLibrary(page, opts)` in `e2e/fixtures.ts` |
-| 5.2 | `e2e/perf.spec.ts`: budgets B1–B5, B7 with 4× CPU throttle via CDP (`Emulation.setCPUThrottlingRate`); timings via `performance.now()` around navigation → `expect.poll` on first visible row | Suite green in CI at the §3 budgets (start 2× loose, ratchet down after Phases 1–2 land) |
+| 5.2 | `e2e/perf.spec.ts`: budgets B1–B5, B7 with 4× CPU throttle via CDP (`Emulation.setCPUThrottlingRate`); timings via `performance.now()` around navigation → `expect.poll` on first visible row. **Must include the B2r mid-workout loop test**: seeded library, start a workout, then 6× (open picker → assert budget → pick exercise → log a completed set → back), asserting the budget on *every* iteration | Suite green in CI at the §3 budgets (start 2× loose, ratchet down after Phases 1–2 land) |
 | 5.3 | `e2e/offline.spec.ts`: budgets B6 — load app once (SW installs), `context.setOffline(true)`, reload → library, picker, starter add (media skipped), set logging all work | Suite green; explicitly asserts starter add completes offline with photo-less exercises |
 | 5.4 | Document how to profile (section in `e2e/README.md` + this doc): preview build, CPU throttle, what to look for | Doc merged |
 
