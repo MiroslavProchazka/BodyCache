@@ -74,6 +74,12 @@ auto-generates a program — it just remembers the one *you* set up.
 - Inline **PR badge** when a logged set beats the stored best (cheap, motivating).
 - **Photo-first** is our differentiator vs Hevy: machine photos lead the
   library cards and the exercise detail. Recognize the thing visually first.
+- **Favourites first in the library**: exercises the user has actually logged
+  (in a finished session) surface in a "Favourites" section above the full
+  catalog in `ExerciseLibraryPage`, recency-ordered via the existing
+  `performedExercises` query — the everyday handful without scrolling
+  hundreds. Search + body-part filters apply to both sections; the section
+  hides when empty. Purely derived from history, not a stored flag.
 
 ## Explicitly out of scope (do NOT build)
 

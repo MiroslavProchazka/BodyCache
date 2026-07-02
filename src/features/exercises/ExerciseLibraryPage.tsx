@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { Plus, Dumbbell, ListPlus } from 'lucide-react'
-import { allExercises } from '@/evolu/queries'
+import { allExercises, performedExercises } from '@/evolu/queries'
+import type { ExerciseRow } from '@/evolu/rows'
 import { BODY_PARTS } from '@/evolu/schema'
 import { SearchField } from '@/shared/components/SearchField'
 import { FilterChips } from '@/shared/components/FilterChips'
@@ -24,26 +25,54 @@ const CHIP_OPTIONS = [
 const COLS = 2
 const ROW_ESTIMATE = 212
 
-/** Browse / search all exercises; entry to detail and create. */
+/**
+ * Browse / search all exercises; entry to detail and create. Exercises the
+ * user has logged before surface in a Favourites section above the full
+ * catalog, so the everyday handful is reachable without scrolling hundreds.
+ */
 export function ExerciseLibraryPage() {
   const navigate = useNavigate()
   const exercises = useQuery(allExercises)
+  const performed = useQuery(performedExercises)
   const [search, setSearch] = useState('')
   const [part, setPart] = useState<string | null>(null)
 
   // Debounce so filtering 1,000+ exercises doesn't run on every keystroke.
   const debouncedSearch = useDebouncedValue(search)
 
-  const filtered = useMemo(() => {
+  // Favourites = exercises the user has actually logged in a finished workout,
+  // most recently performed first — the handful they use, surfaced above the
+  // full catalog. `performedExercises` repeats rows per completed set, so
+  // de-duplicate by id and resolve each to its live library row.
+  const favourites = useMemo(() => {
+    const byId = new Map(exercises.map((e) => [e.id, e]))
+    const seen = new Set<string>()
+    const result: ExerciseRow[] = []
+    for (const row of performed) {
+      if (seen.has(row.id)) continue
+      seen.add(row.id)
+      const exercise = byId.get(row.id)
+      if (exercise) result.push(exercise)
+    }
+    return result
+  }, [exercises, performed])
+
+  const matchesFilter = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase()
-    return exercises.filter((e) => {
+    return (e: ExerciseRow) => {
       if (part && e.bodyPart !== part) return false
       if (!q) return true
       return [e.name, e.bodyPart, e.equipment]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(q))
-    })
-  }, [exercises, debouncedSearch, part])
+    }
+  }, [debouncedSearch, part])
+
+  const filtered = useMemo(() => exercises.filter(matchesFilter), [exercises, matchesFilter])
+  const favouritesFiltered = useMemo(
+    () => favourites.filter(matchesFilter),
+    [favourites, matchesFilter],
+  )
 
   const rows = useMemo(() => chunk(filtered, COLS), [filtered])
 
@@ -53,7 +82,14 @@ export function ExerciseLibraryPage() {
   // AppShell `<main>` column, so the virtualizer watches that ancestor.
   const listRef = useRef<HTMLDivElement>(null)
   const scrollParent = useScrollParent(listRef)
-  const scrollMargin = useListScrollMargin(listRef, scrollParent, filtered.length > 0)
+  // The Favourites section sits above the virtualized grid and resizes as the
+  // filter changes, so its row count doubles as the re-measure revision.
+  const scrollMargin = useListScrollMargin(
+    listRef,
+    scrollParent,
+    filtered.length > 0,
+    favouritesFiltered.length,
+  )
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollParent,
@@ -127,29 +163,48 @@ export function ExerciseLibraryPage() {
       ) : filtered.length === 0 ? (
         <p className="py-10 text-center text-sm text-faint">No exercises match.</p>
       ) : (
-        <div ref={listRef}>
-          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-            {virtualizer.getVirtualItems().map((row) => (
-              <div
-                key={row.key}
-                data-index={row.index}
-                ref={virtualizer.measureElement}
-                className="grid grid-cols-2 gap-3 pb-3"
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  transform: `translateY(${row.start - virtualizer.options.scrollMargin}px)`,
-                }}
-              >
-                {rows[row.index].map((exercise) => (
+        <>
+          {favouritesFiltered.length > 0 && (
+            <section aria-label="Favourites" className="mb-[18px]">
+              <h2 className="mb-[14px] font-display text-[17px] font-semibold tracking-tight text-white">
+                Favourites
+              </h2>
+              <div className="grid grid-cols-2 gap-3">
+                {favouritesFiltered.map((exercise) => (
                   <ExerciseCard key={exercise.id} exercise={exercise} />
                 ))}
               </div>
-            ))}
+            </section>
+          )}
+          {favouritesFiltered.length > 0 && (
+            <h2 className="mb-[14px] font-display text-[17px] font-semibold tracking-tight text-white">
+              All exercises
+            </h2>
+          )}
+          <div ref={listRef}>
+            <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+              {virtualizer.getVirtualItems().map((row) => (
+                <div
+                  key={row.key}
+                  data-index={row.index}
+                  ref={virtualizer.measureElement}
+                  className="grid grid-cols-2 gap-3 pb-3"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${row.start - virtualizer.options.scrollMargin}px)`,
+                  }}
+                >
+                  {rows[row.index].map((exercise) => (
+                    <ExerciseCard key={exercise.id} exercise={exercise} />
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )
