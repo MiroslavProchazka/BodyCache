@@ -18,6 +18,7 @@ import {
   isStaleAbandonedSession,
 } from '@/shared/utils/workoutStats'
 import { RecentExerciseCard } from '@/features/exercises/RecentExerciseCard'
+import { useLastPerformanceIndex } from '@/features/exercises/useLastPerformanceIndex'
 import { LastWorkoutCard } from './LastWorkoutCard'
 import { WeeklyMomentumCard } from './WeeklyMomentumCard'
 
@@ -31,6 +32,7 @@ export function TodayPage() {
   const active = useQuery(activeWorkoutSession)[0]
   const finished = useQuery(finishedWorkoutSessions)
   const performed = useQuery(performedExercises)
+  const performanceIndex = useLastPerformanceIndex()
 
   const handleStart = () => {
     const started = startWorkoutSession()
@@ -148,6 +150,7 @@ export function TodayPage() {
                 type={ex.type as ExerciseType}
                 bodyPart={ex.bodyPart as string | null}
                 primaryPhotoId={ex.primaryPhotoId as ExercisePhotoId | null}
+                summary={performanceIndex.get(ex.id as ExerciseId)}
               />
             ))}
           </div>

@@ -2,6 +2,7 @@ import { createEvolu, SimpleName, type OwnerTransport } from '@evolu/common'
 import { createUseEvolu } from '@evolu/react'
 import { evoluReactWebDeps } from '@evolu/react-web'
 import { Schema } from './schema'
+import { buildIndexes } from './indexes'
 
 /**
  * Relay endpoint for sync.
@@ -32,6 +33,9 @@ const transports: ReadonlyArray<OwnerTransport> = RELAY_URL
 export const evolu = createEvolu(evoluReactWebDeps)(Schema, {
   name: SimpleName.orThrow('bodycache'),
   transports,
+  // SQLite indexes for the set/session/plan joins and library ordering. Evolu
+  // creates any missing index on init (additive; no migration). See `indexes.ts`.
+  indexes: (create) => buildIndexes(create),
 })
 
 /** Typed `useEvolu` hook bound to the BodyCache schema. */

@@ -15,6 +15,7 @@ import { useDebouncedValue } from '@/shared/utils/useDebouncedValue'
 import { useScrollParent } from '@/shared/utils/useScrollParent'
 import { useListScrollMargin } from './useListScrollMargin'
 import { ExerciseCard } from './ExerciseCard'
+import { useLastPerformanceIndex } from './useLastPerformanceIndex'
 
 const CHIP_OPTIONS = [
   { value: 'all', label: 'All' },
@@ -34,6 +35,9 @@ export function ExerciseLibraryPage() {
   const navigate = useNavigate()
   const exercises = useQuery(allExercises)
   const performed = useQuery(performedExercises)
+  // One aggregate query for every card's "last time" label + trend, replacing
+  // the per-card history join that used to fire once per rendered card.
+  const performanceIndex = useLastPerformanceIndex()
   const [search, setSearch] = useState('')
   const [part, setPart] = useState<string | null>(null)
 
@@ -171,7 +175,11 @@ export function ExerciseLibraryPage() {
               </h2>
               <div className="grid grid-cols-2 gap-3">
                 {favouritesFiltered.map((exercise) => (
-                  <ExerciseCard key={exercise.id} exercise={exercise} />
+                  <ExerciseCard
+                    key={exercise.id}
+                    exercise={exercise}
+                    summary={performanceIndex.get(exercise.id)}
+                  />
                 ))}
               </div>
             </section>
@@ -198,7 +206,11 @@ export function ExerciseLibraryPage() {
                   }}
                 >
                   {rows[row.index].map((exercise) => (
-                    <ExerciseCard key={exercise.id} exercise={exercise} />
+                    <ExerciseCard
+                      key={exercise.id}
+                      exercise={exercise}
+                      summary={performanceIndex.get(exercise.id)}
+                    />
                   ))}
                 </div>
               ))}

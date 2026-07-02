@@ -255,6 +255,47 @@ export const completedSetsForExercise = (exerciseId: ExerciseId) =>
       .orderBy('exerciseSet.orderIndex'),
   )
 
+/**
+ * One row per completed, non-deleted set across the *whole* library, carrying
+ * its exercise id, owning session id/start time and every metric column. This
+ * is the aggregate that replaces the N per-row `completedSetsForExercise`
+ * queries the library grid and workout picker used to fire (one per card): the
+ * page runs this once and `buildLastPerformanceIndex` reduces it in JS to a
+ * per-exercise "last performance" summary.
+ *
+ * Semantics deliberately match `completedSetsForExercise` (any session status,
+ * `completedAt is not null`) — *not* `finishedSessionSets` — so card labels
+ * behave exactly as before, including sets from an in-progress session. Newest
+ * session first, then set order.
+ */
+export const completedSetsIndex = evolu.createQuery((db) =>
+  db
+    .selectFrom('exerciseSet')
+    .innerJoin('workoutExercise', 'workoutExercise.id', 'exerciseSet.workoutExerciseId')
+    .innerJoin('workoutSession', 'workoutSession.id', 'workoutExercise.workoutSessionId')
+    .where('exerciseSet.isDeleted', 'is', null)
+    .where('exerciseSet.completedAt', 'is not', null)
+    .where('workoutExercise.isDeleted', 'is', null)
+    .where('workoutSession.isDeleted', 'is', null)
+    .select([
+      'exerciseSet.id as id',
+      'exerciseSet.orderIndex as orderIndex',
+      'exerciseSet.weightKg as weightKg',
+      'exerciseSet.reps as reps',
+      'exerciseSet.addedWeightKg as addedWeightKg',
+      'exerciseSet.assistanceWeightKg as assistanceWeightKg',
+      'exerciseSet.durationSec as durationSec',
+      'exerciseSet.distanceMeters as distanceMeters',
+      'exerciseSet.setType as setType',
+      'exerciseSet.rpe as rpe',
+      'workoutExercise.exerciseId as exerciseId',
+      'workoutExercise.workoutSessionId as sessionId',
+      'workoutSession.startedAt as sessionStartedAt',
+    ])
+    .orderBy('workoutSession.startedAt', 'desc')
+    .orderBy('exerciseSet.orderIndex'),
+)
+
 /** Finished sessions, newest first (workout history). */
 export const finishedWorkoutSessions = evolu.createQuery((db) =>
   db
