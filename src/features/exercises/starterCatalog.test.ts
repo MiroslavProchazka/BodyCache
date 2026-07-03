@@ -4,8 +4,10 @@ import {
   flattenStarterGroups,
   groupStarterCatalog,
   normalizeExerciseName,
-  STARTER_CATALOG,
 } from './starterCatalog'
+// The catalog is loaded lazily at runtime (`loadStarterCatalog`); the test
+// imports the generated array directly to assert its shape and grouping.
+import { STARTER_CATALOG } from './starterCatalog.generated'
 
 describe('STARTER_CATALOG', () => {
   it('only uses valid enum values for every facet', () => {
@@ -40,7 +42,7 @@ describe('normalizeExerciseName', () => {
 
 describe('groupStarterCatalog', () => {
   it('partitions the catalog without dropping or duplicating entries', () => {
-    const groups = groupStarterCatalog()
+    const groups = groupStarterCatalog(STARTER_CATALOG)
     const total = groups.reduce((n, g) => n + g.items.length, 0)
     expect(total).toBe(STARTER_CATALOG.length)
     for (const g of groups) {
@@ -50,7 +52,7 @@ describe('groupStarterCatalog', () => {
   })
 
   it('orders groups by the BODY_PARTS enum', () => {
-    const groups = groupStarterCatalog()
+    const groups = groupStarterCatalog(STARTER_CATALOG)
     const order = groups.map((g) => g.bodyPart)
     const expected = BODY_PARTS.filter((p) => order.includes(p))
     expect(order).toEqual(expected)
@@ -71,7 +73,7 @@ describe('flattenStarterGroups', () => {
   })
 
   it('preserves the total exercise count from the real catalog', () => {
-    const flat = flattenStarterGroups(groupStarterCatalog())
+    const flat = flattenStarterGroups(groupStarterCatalog(STARTER_CATALOG))
     const items = flat.filter((r) => r.kind === 'item')
     expect(items.length).toBe(STARTER_CATALOG.length)
   })

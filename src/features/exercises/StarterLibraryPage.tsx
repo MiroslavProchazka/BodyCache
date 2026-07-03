@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { useVirtualizer } from '@tanstack/react-virtual'
@@ -18,8 +18,8 @@ import { StarterRow } from './StarterRow'
 import {
   flattenStarterGroups,
   groupStarterCatalog,
+  loadStarterCatalog,
   normalizeExerciseName,
-  STARTER_CATALOG,
   type StarterExercise,
 } from './starterCatalog'
 
@@ -35,7 +35,22 @@ export function StarterLibraryPage() {
   const { createExercise, addExercisePhoto, setPrimaryPhoto } = useBodyCacheMutations()
   const [saving, setSaving] = useState(false)
 
-  const groups = useMemo(() => groupStarterCatalog(), [])
+  // The catalog is a ~739 kB generated module, so load it lazily in its own
+  // async chunk when this page mounts — it never touches any other route's
+  // parse path. `null` until it resolves (offline: the SW serves the precached
+  // chunk; a first-ever offline visit simply shows the loading state).
+  const [catalog, setCatalog] = useState<readonly StarterExercise[] | null>(null)
+  useEffect(() => {
+    let active = true
+    void loadStarterCatalog().then((c) => {
+      if (active) setCatalog(c)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const groups = useMemo(() => (catalog ? groupStarterCatalog(catalog) : []), [catalog])
 
   /** Names already in the library, normalised for matching. */
   const existingNames = useMemo(
@@ -142,9 +157,9 @@ export function StarterLibraryPage() {
   }
 
   const handleAdd = async () => {
-    if (count === 0 || saving) return
+    if (count === 0 || saving || !catalog) return
     setSaving(true)
-    for (const e of STARTER_CATALOG) {
+    for (const e of catalog) {
       if (!selected.has(normalizeExerciseName(e.name)) || isAdded(e)) continue
       const result = createExercise({
         name: e.name,
@@ -205,7 +220,13 @@ export function StarterLibraryPage() {
           </button>
         )}
 
-        {visibleGroups.length === 0 && (
+        {!catalog && (
+          <p className="mb-4 rounded-2xl bg-surface p-3 text-[13px] text-faint">
+            Loading exercises…
+          </p>
+        )}
+
+        {catalog && visibleGroups.length === 0 && (
           <p className="mb-4 rounded-2xl bg-surface p-3 text-[13px] text-faint">
             {q ? 'No exercises match your search.' : 'Every exercise is already in your library.'}
           </p>
