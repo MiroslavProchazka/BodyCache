@@ -20,10 +20,13 @@ const CHIP_OPTIONS = [
 
 /** A single row: photo tile + name + a caller-supplied subtitle + pick affordance. */
 const ROW_ESTIMATE = 72
+const MAX_FAVORITES = 12
 
 interface ExercisePickerListProps {
   /** The full candidate list (already query-filtered, e.g. non-deleted). */
   exercises: readonly ExerciseRow[]
+  /** Recent/favorite exercises to pin above the full list. */
+  favorites?: readonly ExerciseRow[]
   /** Called with the picked exercise's id when a row is tapped. Keep stable. */
   onPick: (id: ExerciseId) => void
   /**
@@ -45,6 +48,7 @@ interface ExercisePickerListProps {
  */
 export function ExercisePickerList({
   exercises,
+  favorites = [],
   onPick,
   subtitleFor,
   header,
@@ -60,24 +64,17 @@ export function ExercisePickerList({
     () => exercises.filter((e) => matchesExerciseFilter(e, debouncedSearch, part)),
     [exercises, debouncedSearch, part],
   )
+  const visibleFavorites = useMemo(
+    () =>
+      favorites
+        .filter((e) => matchesExerciseFilter(e, debouncedSearch, part))
+        .slice(0, MAX_FAVORITES),
+    [favorites, debouncedSearch, part],
+  )
 
   // Chip changes re-filter the whole list; defer that work so the chip itself
   // stays responsive. Typing is already deferred by the debounce above.
   const changePart = (next: string | null) => startTransition(() => setPart(next))
-
-  // Virtualize the flat row list: only on-screen rows mount. The page scrolls in
-  // the AppShell `<main>` column, so the virtualizer watches that ancestor and
-  // offsets by the header/search/chips height above the list.
-  const listRef = useRef<HTMLDivElement>(null)
-  const scrollParent = useScrollParent(listRef)
-  const scrollMargin = useListScrollMargin(listRef, scrollParent, filtered.length > 0)
-  const virtualizer = useVirtualizer({
-    count: filtered.length,
-    getScrollElement: () => scrollParent,
-    estimateSize: () => ROW_ESTIMATE,
-    overscan: 6,
-    scrollMargin,
-  })
 
   return (
     <>
@@ -97,6 +94,24 @@ export function ExercisePickerList({
 
       {header}
 
+      {visibleFavorites.length > 0 && (
+        <section aria-label="Favorites" className="mb-[18px]">
+          <h2 className="mb-[10px] font-display text-[17px] font-semibold tracking-tight text-white">
+            Favorites
+          </h2>
+          <div className="flex flex-col gap-[10px]">
+            {visibleFavorites.map((exercise) => (
+              <PickerRow
+                key={exercise.id}
+                exercise={exercise}
+                subtitle={subtitleFor(exercise)}
+                onPick={onPick}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       {filtered.length === 0 ? (
         <p className="py-10 text-center text-sm text-faint">
           {exercises.length === 0
@@ -104,39 +119,74 @@ export function ExercisePickerList({
             : 'No exercises match.'}
         </p>
       ) : (
-        <div ref={listRef}>
-          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-            {virtualizer.getVirtualItems().map((v) => {
-              const exercise = filtered[v.index]
-              return (
-                <div
-                  key={v.key}
-                  data-index={v.index}
-                  ref={virtualizer.measureElement}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${v.start - virtualizer.options.scrollMargin}px)`,
-                  }}
-                >
-                  <div className="pb-[10px]">
-                    <PickerRow
-                      exercise={exercise}
-                      subtitle={subtitleFor(exercise)}
-                      onPick={onPick}
-                    />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+        <>
+          {visibleFavorites.length > 0 && (
+            <h2 className="mb-[10px] font-display text-[17px] font-semibold tracking-tight text-white">
+              All exercises
+            </h2>
+          )}
+          <VirtualizedPickerRows
+            exercises={filtered}
+            onPick={onPick}
+            subtitleFor={subtitleFor}
+            revision={visibleFavorites.length}
+          />
+        </>
       )}
     </>
   )
 }
+
+const VirtualizedPickerRows = memo(function VirtualizedPickerRows({
+  exercises,
+  onPick,
+  subtitleFor,
+  revision,
+}: {
+  exercises: readonly ExerciseRow[]
+  onPick: (id: ExerciseId) => void
+  subtitleFor: (exercise: ExerciseRow) => string
+  revision: number
+}) {
+  const listRef = useRef<HTMLDivElement>(null)
+  const scrollParent = useScrollParent(listRef)
+  const scrollMargin = useListScrollMargin(listRef, scrollParent, exercises.length > 0, revision)
+  const virtualizer = useVirtualizer({
+    count: exercises.length,
+    getScrollElement: () => scrollParent,
+    estimateSize: () => ROW_ESTIMATE,
+    overscan: 6,
+    scrollMargin,
+  })
+
+  return (
+    <div ref={listRef}>
+      <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+        {virtualizer.getVirtualItems().map((v) => {
+          const exercise = exercises[v.index]
+          return (
+            <div
+              key={v.key}
+              data-index={v.index}
+              ref={virtualizer.measureElement}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                transform: `translateY(${v.start - virtualizer.options.scrollMargin}px)`,
+              }}
+            >
+              <div className="pb-[10px]">
+                <PickerRow exercise={exercise} subtitle={subtitleFor(exercise)} onPick={onPick} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+})
 
 /**
  * A picker row. Memoized so a parent re-render (typing, a sibling selection)

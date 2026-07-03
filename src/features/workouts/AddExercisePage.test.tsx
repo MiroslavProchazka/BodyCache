@@ -13,6 +13,7 @@ vi.mock('@/evolu/queries', () => ({
   activeWorkoutSession: 'active-session-query',
   allExercises: 'all-exercises-query',
   completedSetsIndex: 'completed-sets-index-query',
+  performedExercises: 'performed-exercises-query',
 }))
 
 vi.mock('react-router-dom', () => ({
@@ -91,6 +92,7 @@ describe('AddExercisePage', () => {
       if (q === 'active-session-query') return [{ id: 'sess-1' }]
       if (q === 'all-exercises-query') return [exercise({})]
       if (q === 'completed-sets-index-query') return [indexRow({})]
+      if (q === 'performed-exercises-query') return []
       return []
     })
 
@@ -105,6 +107,7 @@ describe('AddExercisePage', () => {
       if (q === 'active-session-query') return [{ id: 'sess-1' }]
       if (q === 'all-exercises-query') return [exercise({ id: 'ex-2', name: 'Squat' })]
       if (q === 'completed-sets-index-query') return []
+      if (q === 'performed-exercises-query') return []
       return []
     })
 
