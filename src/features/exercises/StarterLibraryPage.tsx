@@ -5,16 +5,16 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { ChevronLeft, Search } from 'lucide-react'
 import { allExercises } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
-import type { ExerciseId } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
 import { Overline } from '@/shared/components/Overline'
 import { StickyAction } from '@/shared/components/StickyAction'
+import { useToast } from '@/shared/components/Toast'
 import { humanize } from '@/shared/utils/bodyParts'
-import { storePhoto } from '@/shared/utils/photos'
 import { useDebouncedValue } from '@/shared/utils/useDebouncedValue'
 import { useScrollParent } from '@/shared/utils/useScrollParent'
 import { useListScrollMargin } from './useListScrollMargin'
 import { StarterRow } from './StarterRow'
+import { enqueueStarterMedia, type StarterMediaJob } from './starterMedia'
 import {
   flattenStarterGroups,
   groupStarterCatalog,
@@ -33,6 +33,7 @@ export function StarterLibraryPage() {
   const navigate = useNavigate()
   const existing = useQuery(allExercises)
   const { createExercise, addExercisePhoto, setPrimaryPhoto } = useBodyCacheMutations()
+  const { showToast } = useToast()
   const [saving, setSaving] = useState(false)
 
   // The catalog is a ~739 kB generated module, so load it lazily in its own
@@ -136,29 +137,18 @@ export function StarterLibraryPage() {
   })
 
   /**
-   * Fetch a bundled demo GIF and copy it into IndexedDB via the normal photo
-   * pipeline, then attach it as the exercise's primary photo. Best-effort: any
-   * failure (offline, missing asset) leaves the exercise without a photo rather
-   * than blocking the add — the user can still snap their own machine photo.
+   * The user-blocking part is only the (synchronous, local-first) Evolu inserts:
+   * we create every selected exercise, then navigate straight to the library.
+   * The demo GIFs download in the background via `enqueueStarterMedia` and
+   * appear on the already-rendered cards reactively as each is stored — so
+   * adding N exercises is instant regardless of network, and a stalled fetch on
+   * gym Wi-Fi never blocks the "Adding…" state (see `starterMedia.ts`).
    */
-  const attachAnimation = async (exerciseId: ExerciseId, animation: string) => {
-    try {
-      const res = await fetch(animation)
-      if (!res.ok) return
-      const stored = await storePhoto(await res.blob())
-      const photo = addExercisePhoto(exerciseId, {
-        localUri: stored.ref,
-        thumbnailUri: stored.thumbnailRef,
-      })
-      if (photo.ok) setPrimaryPhoto(exerciseId, photo.value.id)
-    } catch {
-      // Ignore — the exercise is already created; media is a nice-to-have.
-    }
-  }
-
-  const handleAdd = async () => {
+  const handleAdd = () => {
     if (count === 0 || saving || !catalog) return
     setSaving(true)
+
+    const jobs: StarterMediaJob[] = []
     for (const e of catalog) {
       if (!selected.has(normalizeExerciseName(e.name)) || isAdded(e)) continue
       const result = createExercise({
@@ -168,9 +158,33 @@ export function StarterLibraryPage() {
         equipment: e.equipment,
         notes: e.cues ?? null,
       })
-      if (result.ok && e.animation) await attachAnimation(result.value.id, e.animation)
+      if (result.ok && e.animation) {
+        jobs.push({ exerciseId: result.value.id, animationUrl: e.animation })
+      }
     }
+
     navigate('/library', { replace: true })
+
+    if (jobs.length === 0) return
+    showToast(`Adding demo animations… 0/${jobs.length}`)
+    enqueueStarterMedia(jobs, {
+      attachPrimaryPhoto: (exerciseId, stored) => {
+        const photo = addExercisePhoto(exerciseId, {
+          localUri: stored.ref,
+          thumbnailUri: stored.thumbnailRef,
+        })
+        if (photo.ok) setPrimaryPhoto(exerciseId, photo.value.id)
+      },
+      onProgress: ({ done, total, failed, skippedOffline }) => {
+        if (done < total) {
+          showToast(`Adding demo animations… ${done}/${total}`)
+        } else if (failed + skippedOffline === 0) {
+          showToast('Demo animations added')
+        } else {
+          showToast('Some animations couldn’t be downloaded — exercises were added')
+        }
+      },
+    })
   }
 
   return (
