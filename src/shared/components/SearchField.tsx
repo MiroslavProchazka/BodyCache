@@ -6,10 +6,10 @@ interface SearchFieldProps {
   placeholder?: string
 }
 
-/** 50px search input with leading icon, on a surface card. */
+/** 50px pill search input with a leading icon, on an inset fill (SPEC §5.8). */
 export function SearchField({ value, onChange, placeholder = 'Search exercises' }: SearchFieldProps) {
   return (
-    <div className="flex h-[50px] items-center gap-[10px] rounded-2xl border border-white/[0.09] bg-surface px-[14px]">
+    <div className="flex h-[50px] items-center gap-[10px] rounded-full bg-inset px-[16px]">
       <Search size={19} strokeWidth={1.75} className="flex-none text-faint" />
       <input
         type="search"

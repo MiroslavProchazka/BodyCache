@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { ArrowRight, X } from 'lucide-react'
 import { activeWorkoutSession } from '@/evolu/queries'
@@ -14,6 +14,7 @@ import { activeElapsedSec, formatDurationSec } from '@/shared/utils/workoutStats
  */
 export function ResumeBar() {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const { discardWorkoutSession } = useBodyCacheMutations()
   const sessions = useQuery(activeWorkoutSession)
   const session = sessions[0]
@@ -25,7 +26,8 @@ export function ResumeBar() {
     return () => clearInterval(t)
   }, [session])
 
-  if (!session) return null
+  // Today owns its own "Continue lifting" floating pill; don't stack a second.
+  if (!session || pathname === '/') return null
 
   const paused = session.status === 'paused'
 
@@ -36,7 +38,7 @@ export function ResumeBar() {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-[100px] z-30 mx-auto flex max-w-md items-center gap-[6px] rounded-2xl bg-gradient-to-br from-neon to-brand pl-4 pr-[6px] py-[7px] text-white shadow-resume"
+      className="fixed inset-x-0 bottom-[100px] z-30 mx-auto flex max-w-md items-center gap-[6px] rounded-full bg-gradient-to-br from-neon to-brand pl-5 pr-[6px] py-[7px] text-white shadow-pill"
       style={{ width: 'calc(100% - 28px)' }}
     >
       <button

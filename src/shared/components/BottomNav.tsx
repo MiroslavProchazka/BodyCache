@@ -22,7 +22,7 @@ export function BottomNav() {
             className={({ isActive }) =>
               [
                 'flex flex-1 flex-col items-center gap-[5px]',
-                isActive ? 'text-neon' : 'text-faint',
+                isActive ? 'text-[#8b90f7]' : 'text-faint',
               ].join(' ')
             }
           >

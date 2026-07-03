@@ -1,49 +1,49 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { Clock } from 'lucide-react'
+import { Dumbbell } from 'lucide-react'
 import { completedSetsForSession } from '@/evolu/queries'
 import type { WorkoutSessionRow } from '@/evolu/rows'
 import type { WorkoutSessionId } from '@/evolu/schema'
-import { Overline } from '@/shared/components/Overline'
-import { StatTile } from '@/shared/components/StatTile'
-import { formatRelativeDay } from '@/shared/utils/dates'
+import { IconTile } from '@/shared/components/IconTile'
+import { ListRow } from '@/shared/components/ListRow'
 import { finishedDurationSec, formatDurationSec } from '@/shared/utils/workoutStats'
 import { formatVolume } from '@/shared/utils/units'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { summarizeSession } from './sessionSummary'
 
-/** Home recap of the most recent finished workout: name + three stat tiles. */
+/**
+ * Home recap of the most recent finished workout (mock 1b): a flat row —
+ * dumbbell tile, session name, and a `·`-separated recall of duration,
+ * exercise/set counts and volume. Tap → session detail. The "Last workout ·
+ * <day>" overline is the section header rendered by `TodayPage`.
+ */
 export function LastWorkoutCard({ session }: { session: WorkoutSessionRow }) {
   const navigate = useNavigate()
   const { unit } = useUnits()
   const rows = useQuery(completedSetsForSession(session.id as WorkoutSessionId))
   const summary = summarizeSession(rows)
   const durationSec = finishedDurationSec(session)
-  const duration = durationSec != null ? formatDurationSec(durationSec) : '—'
+
+  const meta = [
+    durationSec != null ? formatDurationSec(durationSec) : null,
+    `${summary.exerciseCount} ${summary.exerciseCount === 1 ? 'exercise' : 'exercises'}`,
+    `${summary.setCount} ${summary.setCount === 1 ? 'set' : 'sets'}`,
+    `${formatVolume(summary.volumeKg, unit)} ${unit}`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
-    <button
-      type="button"
+    <ListRow
       onClick={() => navigate(`/history/${session.id as WorkoutSessionId}`)}
-      className="block w-full rounded-[22px] border border-white/[0.07] bg-surface p-[18px] text-left"
-    >
-      <div className="mb-[14px] flex items-center justify-between">
-        <Overline className="whitespace-nowrap">
-          Last workout · {session.startedAt ? formatRelativeDay(session.startedAt) : '—'}
-        </Overline>
-        <div className="flex items-center gap-[5px] text-[12.5px] font-medium text-muted">
-          <Clock size={14} strokeWidth={1.75} className="text-faint" />
-          {duration}
-        </div>
-      </div>
-      <div className="mb-4 font-display text-[21px] font-semibold tracking-tight text-white">
-        {summary.name}
-      </div>
-      <div className="flex gap-[10px]">
-        <StatTile value={summary.exerciseCount} label="exercises" />
-        <StatTile value={summary.setCount} label="sets" />
-        <StatTile value={formatVolume(summary.volumeKg, unit)} label={`${unit} lifted`} />
-      </div>
-    </button>
+      leading={
+        <IconTile>
+          <Dumbbell size={20} strokeWidth={1.75} />
+        </IconTile>
+      }
+      title={summary.name}
+      titleClassName="font-display text-[17px] tracking-[-0.01em]"
+      meta={meta}
+    />
   )
 }

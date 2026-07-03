@@ -16,6 +16,8 @@ export default {
         soft: 'rgba(255,255,255,0.80)', // text soft
         muted: 'rgba(255,255,255,0.60)', // text muted
         faint: 'rgba(255,255,255,0.42)', // text faint / overlines
+        track: '#1c1e22', // chart / progress track on black (flatter than inset)
+        divider: 'rgba(255,255,255,0.08)', // hairline between flat sections
       },
       fontFamily: {
         display: ['"Inter Tight"', 'Inter', 'system-ui', 'sans-serif'],
@@ -24,6 +26,7 @@ export default {
       boxShadow: {
         resume: '0 12px 30px -10px rgba(73,79,223,.5)',
         toast: '0 12px 30px -8px rgba(0,0,0,.4)',
+        pill: '0 12px 30px -10px rgba(73,79,223,.5)', // floating action pill (1b redesign)
       },
     },
   },

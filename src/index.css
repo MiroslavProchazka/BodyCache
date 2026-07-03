@@ -39,7 +39,9 @@
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
-  /* Fade so scroll content slides under the sticky bottom action. */
+  /* Fade so scroll content slides under the sticky bottom action.
+     Deprecated (1b redesign): superseded by the <FloatingAction> component's
+     built-in gradient. Kept for screens not yet migrated off <StickyAction>. */
   .action-fade {
     background: linear-gradient(to top, #000000 62%, rgba(0, 0, 0, 0));
   }

@@ -1,4 +1,10 @@
-/** One of the three inset stat tiles (big number + small label). */
+/**
+ * One of the three inset stat tiles (big number + small label).
+ *
+ * @deprecated 1b redesign — boxed stat tiles are being replaced by the single
+ * `HeroStat` number plus `·`-separated meta rows. Do not use in new/restyled
+ * screens; kept only until every consumer migrates.
+ */
 export function StatTile({ value, label }: { value: string | number; label: string }) {
   return (
     <div className="flex-1 rounded-2xl bg-inset px-[13px] py-3">

@@ -15,7 +15,7 @@ interface FilterChipsProps {
 
 /**
  * Horizontal pill filter row (body parts, etc.). Active chip = neon bg /
- * deep-green text; inactive = surface bg / muted text / hairline border.
+ * white text; inactive = inset bg / soft text (SPEC §5.8).
  * Hides its scrollbar and bleeds to the screen edges.
  */
 export function FilterChips({
@@ -41,8 +41,8 @@ export function FilterChips({
             className={[
               'shrink-0 rounded-full border px-[15px] py-[9px] text-[13.5px] font-semibold transition-colors',
               active
-                ? 'border-neon bg-neon text-ink'
-                : 'border-white/10 bg-surface text-muted',
+                ? 'border-neon bg-neon text-white'
+                : 'border-transparent bg-inset text-soft',
             ].join(' ')}
           >
             {opt.label}
