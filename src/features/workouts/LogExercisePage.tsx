@@ -103,6 +103,7 @@ function LogInner({
 
   const type = (exercise?.type as ExerciseType) ?? 'strength'
   const fields = SET_FIELDS[type]
+  const stackedFields = fields.length > 2
   const prev = previousSession(history, sessionId)
   const trend = sessionTrend(history, type, sessionId)
   // The "stored best" to beat: every working (non-warm-up) completed set from
@@ -390,21 +391,43 @@ function LogInner({
                   ))}
                 </div>
               )}
-              <div className="flex gap-2">
+              <div className={stackedFields ? 'grid gap-2' : 'flex gap-2'}>
                 {fields.map((f, idx) => (
                   <Fragment key={f.key}>
-                    {idx > 0 && <div className="w-px self-stretch bg-white/[0.08]" />}
-                    <div className="min-w-0 flex-1 text-center">
-                      <div className="mb-[9px] text-[10.5px] font-semibold uppercase tracking-[0.08em] text-faint">
+                    {!stackedFields && idx > 0 && (
+                      <div className="w-px self-stretch bg-white/[0.08]" />
+                    )}
+                    <div
+                      className={
+                        stackedFields
+                          ? 'flex min-w-0 items-center justify-between gap-3 rounded-[14px] bg-inset px-3 py-2'
+                          : 'min-w-0 flex-1 text-center'
+                      }
+                    >
+                      <div
+                        className={
+                          stackedFields
+                            ? 'text-[10.5px] font-semibold uppercase tracking-[0.08em] text-faint'
+                            : 'mb-[9px] text-[10.5px] font-semibold uppercase tracking-[0.08em] text-faint'
+                        }
+                      >
                         {f.isWeight ? `${f.label} (${unit})` : f.label}
                       </div>
-                      <div className="flex items-center justify-between gap-1">
+                      <div
+                        className={
+                          stackedFields
+                            ? 'flex flex-none items-center gap-2'
+                            : 'flex items-center justify-between gap-1'
+                        }
+                      >
                         <StepButton onClick={() => step(i, f, -1)} label={`Decrease ${f.label}`}>
                           <Minus size={20} strokeWidth={2} />
                         </StepButton>
                         <span
-                          className="font-display text-[28px] font-semibold tnum text-white"
-                          style={{ minWidth: f.isWeight ? 44 : 32 }}
+                          className={`font-display font-semibold tnum text-white ${
+                            stackedFields ? 'text-right text-[26px]' : 'text-[28px]'
+                          }`}
+                          style={{ minWidth: f.displayAsMinutes ? 58 : f.isWeight ? 44 : 42 }}
                         >
                           {f.isWeight
                             ? toDisplayWeight(row.fields[f.key] ?? 0, unit)

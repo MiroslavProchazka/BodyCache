@@ -47,6 +47,7 @@ export function PlanExerciseEditor({
   const { addPlanSet, updatePlanSet, removePlanSet } = useBodyCacheMutations()
   const type = entry.exerciseType as ExerciseType
   const fields = SET_FIELDS[type]
+  const stackedFields = fields.length > 2
   const sets = useQuery(planSetsForPlanExercise(entry.id as PlanExerciseId))
 
   const clamp = (value: number, f: SetFieldDef) =>
@@ -128,21 +129,44 @@ export function PlanExerciseEditor({
                 <X size={16} strokeWidth={1.9} />
               </button>
             </div>
-            <div className="flex gap-2">
+            <div className={stackedFields ? 'grid gap-2' : 'flex gap-2'}>
               {fields.map((f, idx) => {
                 const value = (s[f.key] as number | null) ?? 0
                 return (
                   <Fragment key={f.key}>
-                    {idx > 0 && <div className="w-px self-stretch bg-white/[0.07]" />}
-                    <div className="min-w-0 flex-1 text-center">
-                      <div className="mb-[7px] text-[10px] font-semibold uppercase tracking-[0.07em] text-faint">
+                    {!stackedFields && idx > 0 && (
+                      <div className="w-px self-stretch bg-white/[0.07]" />
+                    )}
+                    <div
+                      className={
+                        stackedFields
+                          ? 'flex min-w-0 items-center justify-between gap-3 rounded-[12px] bg-surface px-3 py-2'
+                          : 'min-w-0 flex-1 text-center'
+                      }
+                    >
+                      <div
+                        className={
+                          stackedFields
+                            ? 'text-[10px] font-semibold uppercase tracking-[0.07em] text-faint'
+                            : 'mb-[7px] text-[10px] font-semibold uppercase tracking-[0.07em] text-faint'
+                        }
+                      >
                         {f.isWeight ? `${f.label} (${unit})` : f.label}
                       </div>
-                      <div className="flex items-center justify-between gap-1">
+                      <div
+                        className={
+                          stackedFields
+                            ? 'flex flex-none items-center gap-2'
+                            : 'flex items-center justify-between gap-1'
+                        }
+                      >
                         <StepButton onClick={() => step(s.id as PlanSetId, value, f, -1)} label={`Decrease ${f.label}`}>
                           <Minus size={17} strokeWidth={2} />
                         </StepButton>
-                        <span className="font-display text-[22px] font-semibold tnum text-white">
+                        <span
+                          className="font-display text-[22px] font-semibold tnum text-white"
+                          style={{ minWidth: f.displayAsMinutes ? 50 : f.isWeight ? 40 : 36 }}
+                        >
                           {f.isWeight ? toDisplayWeight(value, unit) : displaySetFieldValue(value, f)}
                         </span>
                         <StepButton onClick={() => step(s.id as PlanSetId, value, f, 1)} label={`Increase ${f.label}`}>
