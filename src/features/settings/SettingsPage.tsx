@@ -24,7 +24,7 @@ import { useRestTimer, REST_PRESETS } from '@/shared/rest/RestTimerContext'
 import { formatDuration } from '@/shared/utils/units'
 import { useOnlineStatus } from '@/shared/utils/useOnlineStatus'
 import { Avatar } from '@/features/profile/Avatar'
-import { formatProfileMeta } from '@/features/profile/profile'
+import { formatProfileMeta, narrowGender } from '@/features/profile/profile'
 import { parseRestoreMnemonic } from './mnemonic'
 import { useDataTransfer } from './useDataTransfer'
 
@@ -223,7 +223,12 @@ export function SettingsPage() {
           onClick={() => navigate('/settings/profile')}
           className="mb-[18px] flex w-full items-center gap-[13px] rounded-[18px] border border-white/[0.07] bg-surface p-4 text-left active:scale-[0.99]"
         >
-          <Avatar seed={profile.avatarSeed ?? profile.id} size={52} className="flex-none" />
+          <Avatar
+            seed={profile.avatarSeed ?? profile.id}
+            gender={narrowGender(profile.gender)}
+            size={52}
+            className="flex-none"
+          />
           <div className="min-w-0 flex-1">
             <div className="truncate text-[16px] font-semibold text-white">{profile.name}</div>
             <div className="mt-[2px] truncate text-[12.5px] text-muted">

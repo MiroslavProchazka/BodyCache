@@ -1,17 +1,14 @@
 import { useEffect, useState } from 'react'
+import type { Gender } from '@/evolu/schema'
+import { toonHeadOptions } from './avatarOptions'
 
-const toonHeadSrc = async (seed: string, size: number): Promise<string> => {
+const toonHeadSrc = async (seed: string, size: number, gender?: Gender): Promise<string> => {
   const [{ Avatar: DiceBearAvatar, Style }, toonHead] = await Promise.all([
     import('@dicebear/core'),
     import('@dicebear/styles/toon-head.json'),
   ])
   const toonHeadStyle = new Style(toonHead.default)
-  return new DiceBearAvatar(toonHeadStyle, {
-    seed,
-    size,
-    backgroundColor: ['16181a'],
-    borderRadius: 28,
-  }).toDataUri()
+  return new DiceBearAvatar(toonHeadStyle, toonHeadOptions(seed, size, gender)).toDataUri()
 }
 
 /**
@@ -21,10 +18,12 @@ const toonHeadSrc = async (seed: string, size: number): Promise<string> => {
  */
 export function Avatar({
   seed,
+  gender,
   size = 44,
   className = '',
 }: {
   seed: string
+  gender?: Gender
   size?: number
   className?: string
 }) {
@@ -33,13 +32,13 @@ export function Avatar({
   useEffect(() => {
     let cancelled = false
     setSrc(undefined)
-    toonHeadSrc(seed, size).then((uri) => {
+    toonHeadSrc(seed, size, gender).then((uri) => {
       if (!cancelled) setSrc(uri)
     })
     return () => {
       cancelled = true
     }
-  }, [seed, size])
+  }, [seed, size, gender])
 
   return (
     <img

@@ -49,7 +49,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps
     <div className="flex flex-col">
       {/* Avatar + shuffle */}
       <div className="mb-6 flex flex-col items-center">
-        <Avatar seed={avatarSeed} size={92} />
+        <Avatar seed={avatarSeed} gender={gender || undefined} size={92} />
         <button
           type="button"
           onClick={() => setAvatarSeed(randomSeed())}

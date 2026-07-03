@@ -29,6 +29,7 @@ import { ListRow } from '@/shared/components/ListRow'
 import { SplitBar } from '@/shared/components/SplitBar'
 import { ActionPill, FloatingAction } from '@/shared/components/FloatingAction'
 import { Avatar } from '@/features/profile/Avatar'
+import { narrowGender } from '@/features/profile/profile'
 import { RecentExerciseCard } from '@/features/exercises/RecentExerciseCard'
 import { useLastPerformanceIndex } from '@/features/exercises/useLastPerformanceIndex'
 import { LastWorkoutCard } from './LastWorkoutCard'
@@ -87,7 +88,7 @@ export function TodayPage() {
             className="flex h-[30px] w-[30px] flex-none items-center justify-center overflow-hidden rounded-full border border-white/10 bg-surface text-soft"
           >
             {profile?.avatarSeed ? (
-              <Avatar seed={String(profile.avatarSeed)} size={30} />
+              <Avatar seed={String(profile.avatarSeed)} gender={narrowGender(profile.gender)} size={30} />
             ) : (
               <User size={15} strokeWidth={1.75} />
             )}
