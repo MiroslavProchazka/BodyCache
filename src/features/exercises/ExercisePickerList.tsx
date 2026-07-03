@@ -20,11 +20,12 @@ const CHIP_OPTIONS = [
 
 /** A single row: photo tile + name + a caller-supplied subtitle + pick affordance. */
 const ROW_ESTIMATE = 72
+const MAX_FAVORITES = 12
 
 interface ExercisePickerListProps {
   /** The full candidate list (already query-filtered, e.g. non-deleted). */
   exercises: readonly ExerciseRow[]
-  /** Recent/favourite exercises to pin above the full list. */
+  /** Recent/favorite exercises to pin above the full list. */
   favorites?: readonly ExerciseRow[]
   /** Called with the picked exercise's id when a row is tapped. Keep stable. */
   onPick: (id: ExerciseId) => void
@@ -64,7 +65,10 @@ export function ExercisePickerList({
     [exercises, debouncedSearch, part],
   )
   const visibleFavorites = useMemo(
-    () => favorites.filter((e) => matchesExerciseFilter(e, debouncedSearch, part)).slice(0, 12),
+    () =>
+      favorites
+        .filter((e) => matchesExerciseFilter(e, debouncedSearch, part))
+        .slice(0, MAX_FAVORITES),
     [favorites, debouncedSearch, part],
   )
 
