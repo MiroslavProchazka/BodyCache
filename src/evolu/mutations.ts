@@ -52,6 +52,7 @@ export interface AddSetInput {
   readonly assistanceWeightKg?: number | null
   readonly durationSec?: number | null
   readonly distanceMeters?: number | null
+  readonly elevationMeters?: number | null
   readonly inclinePercent?: number | null
   readonly speedKmh?: number | null
   readonly resistanceLevel?: number | null
@@ -70,6 +71,7 @@ export interface UpdateSetPatch {
   readonly assistanceWeightKg?: number | null
   readonly durationSec?: number | null
   readonly distanceMeters?: number | null
+  readonly elevationMeters?: number | null
   readonly inclinePercent?: number | null
   readonly speedKmh?: number | null
   readonly resistanceLevel?: number | null
@@ -128,6 +130,7 @@ export interface AddPlanSetInput {
   readonly addedWeightKg?: number | null
   readonly durationSec?: number | null
   readonly distanceMeters?: number | null
+  readonly elevationMeters?: number | null
   readonly setType?: SetType | null
 }
 
@@ -138,6 +141,7 @@ export interface UpdatePlanSetPatch {
   readonly addedWeightKg?: number | null
   readonly durationSec?: number | null
   readonly distanceMeters?: number | null
+  readonly elevationMeters?: number | null
   readonly setType?: SetType | null
 }
 
@@ -275,6 +279,7 @@ export const useBodyCacheMutations = () => {
       assistanceWeightKg: setData.assistanceWeightKg ?? null,
       durationSec: setData.durationSec ?? null,
       distanceMeters: setData.distanceMeters ?? null,
+      elevationMeters: setData.elevationMeters ?? null,
       inclinePercent: setData.inclinePercent ?? null,
       speedKmh: setData.speedKmh ?? null,
       resistanceLevel: setData.resistanceLevel ?? null,
@@ -345,6 +350,7 @@ export const useBodyCacheMutations = () => {
       addedWeightKg: setData.addedWeightKg ?? null,
       durationSec: setData.durationSec ?? null,
       distanceMeters: setData.distanceMeters ?? null,
+      elevationMeters: setData.elevationMeters ?? null,
       setType: setData.setType ?? null,
     })
 

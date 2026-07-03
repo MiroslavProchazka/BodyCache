@@ -15,6 +15,7 @@ export interface PlanSetSource {
   readonly addedWeightKg: number | null
   readonly durationSec: number | null
   readonly distanceMeters: number | null
+  readonly elevationMeters: number | null
   readonly setType: string | null
 }
 
@@ -32,6 +33,7 @@ export const planSetToSetInput = (s: PlanSetSource, orderIndex: number): AddSetI
   addedWeightKg: s.addedWeightKg ?? null,
   durationSec: s.durationSec ?? null,
   distanceMeters: s.distanceMeters ?? null,
+  elevationMeters: s.elevationMeters ?? null,
   setType: narrowSetType(s.setType),
 })
 

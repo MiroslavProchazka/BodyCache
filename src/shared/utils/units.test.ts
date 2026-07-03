@@ -90,6 +90,7 @@ describe('formatSetSummary', () => {
     assistanceWeightKg: null,
     durationSec: null,
     distanceMeters: null,
+    elevationMeters: null,
   }
 
   it('formats strength as weight × reps, with fallbacks', () => {
@@ -129,6 +130,13 @@ describe('formatSetSummary', () => {
       formatSetSummary({ ...empty, distanceMeters: 1600, durationSec: 600 }, 'distance', 'kg'),
     ).toBe('1.6 km · 10:00')
     expect(formatSetSummary({ ...empty, distanceMeters: 500 }, 'distance', 'kg')).toBe('500 m')
+    expect(
+      formatSetSummary(
+        { ...empty, elevationMeters: 25, distanceMeters: 500, durationSec: 315 },
+        'distance',
+        'kg',
+      ),
+    ).toBe('25 m elev · 500 m · 5:15')
     expect(formatSetSummary(empty, 'distance', 'kg')).toBe('—')
   })
 })

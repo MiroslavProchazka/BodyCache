@@ -166,6 +166,7 @@ export const Schema = {
     assistanceWeightKg: Evolu.nullOr(Evolu.NonNegativeNumber),
     durationSec: Evolu.nullOr(Evolu.NonNegativeInt),
     distanceMeters: Evolu.nullOr(Evolu.NonNegativeNumber),
+    elevationMeters: Evolu.nullOr(Evolu.NonNegativeNumber),
     inclinePercent: Evolu.nullOr(Evolu.FiniteNumber),
     speedKmh: Evolu.nullOr(Evolu.NonNegativeNumber),
     resistanceLevel: Evolu.nullOr(Evolu.NonNegativeInt),
@@ -233,6 +234,7 @@ export const Schema = {
     addedWeightKg: Evolu.nullOr(Evolu.NonNegativeNumber),
     durationSec: Evolu.nullOr(Evolu.NonNegativeInt),
     distanceMeters: Evolu.nullOr(Evolu.NonNegativeNumber),
+    elevationMeters: Evolu.nullOr(Evolu.NonNegativeNumber),
     // Stored as NonEmptyString100; null = normal set, else narrowed to `SetType`.
     setType: Evolu.nullOr(Evolu.NonEmptyString100),
   },

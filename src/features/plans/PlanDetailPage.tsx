@@ -194,6 +194,7 @@ function PlanExerciseRowView({ entry, onOpen }: { entry: PlanExerciseRow; onOpen
                     assistanceWeightKg: null,
                     durationSec: s.durationSec,
                     distanceMeters: s.distanceMeters,
+                    elevationMeters: s.elevationMeters,
                   },
                   type,
                   unit,

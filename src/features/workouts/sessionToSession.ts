@@ -17,6 +17,7 @@ export interface RepeatSetSource {
   readonly assistanceWeightKg: number | null
   readonly durationSec: number | null
   readonly distanceMeters: number | null
+  readonly elevationMeters: number | null
   readonly inclinePercent: number | null
   readonly speedKmh: number | null
   readonly resistanceLevel: number | null
@@ -40,6 +41,7 @@ export const repeatSetToSetInput = (s: RepeatSetSource, orderIndex: number): Add
   assistanceWeightKg: s.assistanceWeightKg ?? null,
   durationSec: s.durationSec ?? null,
   distanceMeters: s.distanceMeters ?? null,
+  elevationMeters: s.elevationMeters ?? null,
   inclinePercent: s.inclinePercent ?? null,
   speedKmh: s.speedKmh ?? null,
   resistanceLevel: s.resistanceLevel ?? null,

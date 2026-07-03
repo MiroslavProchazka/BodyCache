@@ -199,6 +199,7 @@ export const useDataTransfer = () => {
           assistanceWeightKg: (r.assistanceWeightKg as number | null) ?? null,
           durationSec: (r.durationSec as number | null) ?? null,
           distanceMeters: (r.distanceMeters as number | null) ?? null,
+          elevationMeters: (r.elevationMeters as number | null) ?? null,
           inclinePercent: (r.inclinePercent as number | null) ?? null,
           speedKmh: (r.speedKmh as number | null) ?? null,
           resistanceLevel: (r.resistanceLevel as number | null) ?? null,
@@ -238,6 +239,7 @@ export const useDataTransfer = () => {
           addedWeightKg: (r.addedWeightKg as number | null) ?? null,
           durationSec: (r.durationSec as number | null) ?? null,
           distanceMeters: (r.distanceMeters as number | null) ?? null,
+          elevationMeters: (r.elevationMeters as number | null) ?? null,
           setType: (r.setType as string | null) ?? null,
         })
       }

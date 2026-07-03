@@ -77,6 +77,7 @@ describe('groupExerciseSets', () => {
     assistanceWeightKg: null,
     durationSec: null,
     distanceMeters: null,
+    elevationMeters: null,
     setType: null,
     workoutExerciseId: 'we1',
     exerciseId: 'e1',

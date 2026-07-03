@@ -18,6 +18,7 @@ export interface MetricSet {
   readonly assistanceWeightKg: number | null
   readonly durationSec: number | null
   readonly distanceMeters: number | null
+  readonly elevationMeters: number | null
 }
 
 /** A completed set with the session it belongs to (from `completedSetsForExercise`). */
@@ -53,7 +54,8 @@ export const hasMetrics = (set: MetricSet): boolean =>
   n(set.addedWeightKg) > 0 ||
   n(set.assistanceWeightKg) > 0 ||
   n(set.durationSec) > 0 ||
-  n(set.distanceMeters) > 0
+  n(set.distanceMeters) > 0 ||
+  n(set.elevationMeters) > 0
 
 /**
  * Ordered metric tuple for ranking sets of a given type; higher is better and
@@ -73,9 +75,9 @@ const rankTuple = (set: MetricSet, type: ExerciseType): number[] => {
     case 'timed':
       return [n(set.durationSec)]
     case 'distance':
-      return [n(set.distanceMeters)]
+      return [n(set.distanceMeters), n(set.elevationMeters)]
     case 'freeform':
-      return [n(set.reps), n(set.weightKg), n(set.durationSec), n(set.distanceMeters)]
+      return [n(set.reps), n(set.weightKg), n(set.durationSec), n(set.distanceMeters), n(set.elevationMeters)]
   }
 }
 

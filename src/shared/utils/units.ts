@@ -57,6 +57,7 @@ interface SetSummaryInput {
   assistanceWeightKg: number | null
   durationSec: number | null
   distanceMeters: number | null
+  elevationMeters?: number | null
 }
 
 /**
@@ -89,9 +90,13 @@ export const formatSetSummary = (
     case 'timed':
       return set.durationSec != null ? formatDuration(set.durationSec) : '—'
     case 'distance': {
+      const elev =
+        set.elevationMeters != null && set.elevationMeters > 0
+          ? `${trim(set.elevationMeters)} m elev`
+          : null
       const dist = set.distanceMeters != null ? formatDistance(set.distanceMeters) : null
       const dur = set.durationSec != null ? formatDuration(set.durationSec) : null
-      return [dist, dur].filter(Boolean).join(' · ') || '—'
+      return [elev, dist, dur].filter(Boolean).join(' · ') || '—'
     }
   }
 }
