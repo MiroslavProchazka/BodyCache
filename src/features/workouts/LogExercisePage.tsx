@@ -40,7 +40,13 @@ import { TrendBadge } from '@/features/exercises/TrendBadge'
 import { PrBadge } from '@/features/exercises/PrBadge'
 import { toHistorySets } from '@/features/exercises/history'
 import { nextOrderIndex } from '@/features/plans/planToSession'
-import { SET_FIELDS, DEFAULT_VALUES, type SetFieldDef, type SetFieldKey } from './setFields'
+import {
+  SET_FIELDS,
+  DEFAULT_VALUES,
+  displaySetFieldValue,
+  type SetFieldDef,
+  type SetFieldKey,
+} from './setFields'
 import { SetTypeTag } from './SetTypeTag'
 import { narrowSetType, nextSetType, setTypeLabel } from './setTypes'
 import { RPE_VALUES, clampRpe, formatRpe } from './rpe'
@@ -63,6 +69,7 @@ const metricOf = (d: DraftSet): MetricSet => ({
   assistanceWeightKg: null,
   durationSec: d.durationSec ?? null,
   distanceMeters: d.distanceMeters ?? null,
+  elevationMeters: d.elevationMeters ?? null,
 })
 
 export function LogExercisePage() {
@@ -401,7 +408,7 @@ function LogInner({
                         >
                           {f.isWeight
                             ? toDisplayWeight(row.fields[f.key] ?? 0, unit)
-                            : (row.fields[f.key] ?? 0)}
+                            : displaySetFieldValue(row.fields[f.key] ?? 0, f)}
                         </span>
                         <StepButton onClick={() => step(i, f, 1)} label={`Increase ${f.label}`}>
                           <Plus size={20} strokeWidth={2} />

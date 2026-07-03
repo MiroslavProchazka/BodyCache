@@ -182,6 +182,7 @@ interface CsvSet {
   readonly assistanceWeightKg: number | null
   readonly durationSec: number | null
   readonly distanceMeters: number | null
+  readonly elevationMeters: number | null
   readonly rpe: number | null
   readonly notes: string | null
 }
@@ -206,6 +207,7 @@ const CSV_HEADER = [
   'assistance_weight_kg',
   'duration_sec',
   'distance_m',
+  'elevation_m',
   'rpe',
   'notes',
 ] as const
@@ -272,6 +274,7 @@ export const toHistoryCsv = (source: CsvSource): string => {
       r.set.assistanceWeightKg,
       r.set.durationSec,
       r.set.distanceMeters,
+      r.set.elevationMeters,
       r.set.rpe,
       r.set.notes,
     ]

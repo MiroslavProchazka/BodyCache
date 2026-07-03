@@ -72,6 +72,7 @@ const indexRow = (over: Record<string, unknown>): CompletedSetIndexRow =>
     assistanceWeightKg: null,
     durationSec: null,
     distanceMeters: null,
+    elevationMeters: null,
     setType: null,
     rpe: null,
     exerciseId: 'ex-1',

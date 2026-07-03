@@ -9,6 +9,7 @@ const doneSet = (over: Partial<RepeatSetSource> = {}): RepeatSetSource => ({
   assistanceWeightKg: null,
   durationSec: null,
   distanceMeters: null,
+  elevationMeters: null,
   inclinePercent: null,
   speedKmh: null,
   resistanceLevel: null,
@@ -38,6 +39,7 @@ describe('repeatSetToSetInput', () => {
       doneSet({
         durationSec: 600,
         distanceMeters: 2000,
+        elevationMeters: 42,
         inclinePercent: 3,
         speedKmh: 12,
         resistanceLevel: 8,
@@ -48,6 +50,7 @@ describe('repeatSetToSetInput', () => {
     expect(input).toMatchObject({
       durationSec: 600,
       distanceMeters: 2000,
+      elevationMeters: 42,
       inclinePercent: 3,
       speedKmh: 12,
       resistanceLevel: 8,

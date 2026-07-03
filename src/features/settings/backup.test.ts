@@ -185,8 +185,8 @@ describe('toHistoryCsv', () => {
   it('sorts newest workout first and one-indexes the set number', () => {
     const lines = toHistoryCsv(source).split('\r\n')
     // s2 (Jun 11) before s1 (Jun 10); set column is orderIndex + 1.
-    expect(lines[1]).toBe('2026-06-11,Plank,timed,core,1,,,,,60,,,')
-    expect(lines[2]).toBe('2026-06-10,Squat,strength,legs,1,100,5,,,,,,')
+    expect(lines[1]).toBe('2026-06-11,Plank,timed,core,1,,,,,60,,,,')
+    expect(lines[2]).toBe('2026-06-10,Squat,strength,legs,1,100,5,,,,,,,')
   })
 
   it('excludes incomplete sets and non-finished sessions', () => {
@@ -210,6 +210,7 @@ function base(
     assistanceWeightKg: null,
     durationSec: null,
     distanceMeters: null,
+    elevationMeters: null,
     rpe: null,
     notes: null,
     ...over,

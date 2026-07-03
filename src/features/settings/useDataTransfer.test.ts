@@ -47,7 +47,7 @@ const sampleTables: Record<string, unknown[]> = {
     { id: 'we1', workoutSessionId: 's1', exerciseId: 'ex1', orderIndex: 0, notes: null, ...sys },
   ],
   'q:exerciseSet': [
-    { id: 'set1', workoutExerciseId: 'we1', orderIndex: 0, completedAt: '2026-06-10T09:05:00.000Z', weightKg: 100, reps: 5, addedWeightKg: null, assistanceWeightKg: null, durationSec: null, distanceMeters: null, inclinePercent: null, speedKmh: null, resistanceLevel: null, rpe: 8, notes: null, ...sys },
+    { id: 'set1', workoutExerciseId: 'we1', orderIndex: 0, completedAt: '2026-06-10T09:05:00.000Z', weightKg: 100, reps: 5, addedWeightKg: null, assistanceWeightKg: null, durationSec: null, distanceMeters: null, elevationMeters: null, inclinePercent: null, speedKmh: null, resistanceLevel: null, rpe: 8, notes: null, ...sys },
   ],
 }
 
@@ -180,6 +180,6 @@ describe('exportCsv', () => {
     const csv = await dl.read()
     const lines = csv.split('\r\n')
     expect(lines[0]).toContain('date,exercise,type,body_part,set,weight_kg,reps')
-    expect(lines[1]).toBe('2026-06-10,Squat,strength,legs,1,100,5,,,,,8,')
+    expect(lines[1]).toBe('2026-06-10,Squat,strength,legs,1,100,5,,,,,,8,')
   })
 })

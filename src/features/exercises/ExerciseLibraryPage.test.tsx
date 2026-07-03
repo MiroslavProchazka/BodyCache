@@ -82,6 +82,7 @@ const completedSetIndexRow = (exerciseId: string, sessionStartedAt: string) => (
   assistanceWeightKg: null,
   durationSec: null,
   distanceMeters: null,
+  elevationMeters: null,
   setType: null,
   rpe: null,
 })

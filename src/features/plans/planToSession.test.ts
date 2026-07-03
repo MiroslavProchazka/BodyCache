@@ -8,6 +8,7 @@ const planSet = (over: Partial<PlanSetSource> = {}): PlanSetSource => ({
   addedWeightKg: null,
   durationSec: null,
   distanceMeters: null,
+  elevationMeters: null,
   setType: null,
   ...over,
 })
@@ -38,6 +39,7 @@ describe('planSetToSetInput', () => {
     expect(input.weightKg).toBeNull()
     expect(input.reps).toBeNull()
     expect(input.distanceMeters).toBeNull()
+    expect(input.elevationMeters).toBeNull()
   })
 })
 

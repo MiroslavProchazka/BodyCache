@@ -11,6 +11,7 @@ const hist = (over: Partial<HistorySet>): HistorySet => ({
   assistanceWeightKg: null,
   durationSec: null,
   distanceMeters: null,
+  elevationMeters: null,
   sessionId: 's',
   sessionStartedAt: '2026-01-01T00:00:00.000Z',
   setType: null,

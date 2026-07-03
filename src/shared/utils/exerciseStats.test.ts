@@ -21,6 +21,7 @@ const empty: MetricSet = {
   assistanceWeightKg: null,
   durationSec: null,
   distanceMeters: null,
+  elevationMeters: null,
 }
 
 const set = (over: Partial<MetricSet>): MetricSet => ({ ...empty, ...over })
@@ -80,6 +81,16 @@ describe('compareSets (other types)', () => {
   it('distance ranks longer distance as better', () => {
     expect(
       compareSets(set({ distanceMeters: 2000 }), set({ distanceMeters: 1500 }), 'distance'),
+    ).toBeGreaterThan(0)
+  })
+
+  it('distance breaks distance ties on elevation', () => {
+    expect(
+      compareSets(
+        set({ distanceMeters: 2000, elevationMeters: 25 }),
+        set({ distanceMeters: 2000, elevationMeters: 10 }),
+        'distance',
+      ),
     ).toBeGreaterThan(0)
   })
 })

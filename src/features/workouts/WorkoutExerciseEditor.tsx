@@ -13,7 +13,13 @@ import type {
 import { useUnits } from '@/shared/units/UnitsContext'
 import { toDisplayWeight } from '@/shared/utils/units'
 import { ExerciseTile } from '@/features/exercises/ExerciseTile'
-import { SET_FIELDS, DEFAULT_VALUES, type SetFieldDef, type SetFieldKey } from './setFields'
+import {
+  SET_FIELDS,
+  DEFAULT_VALUES,
+  displaySetFieldValue,
+  type SetFieldDef,
+  type SetFieldKey,
+} from './setFields'
 import { nextSetType, setTypeLabel, narrowSetType } from './setTypes'
 import { LinkNextButton, SupersetBadge } from './SupersetGroup'
 
@@ -168,7 +174,7 @@ export function WorkoutExerciseEditor({
                           <Minus size={17} strokeWidth={2} />
                         </StepButton>
                         <span className="font-display text-[22px] font-semibold tnum text-white">
-                          {f.isWeight ? toDisplayWeight(value, unit) : value}
+                          {f.isWeight ? toDisplayWeight(value, unit) : displaySetFieldValue(value, f)}
                         </span>
                         <StepButton onClick={() => step(s, f, 1)} label={`Increase ${f.label}`}>
                           <Plus size={17} strokeWidth={2} />

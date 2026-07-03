@@ -13,6 +13,7 @@ const set = (over: Partial<PrSetInput>): PrSetInput => ({
   assistanceWeightKg: null,
   durationSec: null,
   distanceMeters: null,
+  elevationMeters: null,
   ...over,
 })
 

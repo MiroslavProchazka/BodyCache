@@ -16,6 +16,7 @@ const set = (iso: string, over: Partial<WeekStatSet> = {}): WeekStatSet => ({
   assistanceWeightKg: null,
   durationSec: null,
   distanceMeters: null,
+  elevationMeters: null,
   setType: null,
   exerciseId: 'ex1',
   exerciseType: 'strength',
