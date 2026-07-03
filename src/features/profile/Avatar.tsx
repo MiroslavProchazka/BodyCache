@@ -1,9 +1,23 @@
-import { avatarCells, avatarHue } from '@/shared/utils/avatar'
+import { useEffect, useState } from 'react'
+
+const toonHeadSrc = async (seed: string, size: number): Promise<string> => {
+  const [{ Avatar: DiceBearAvatar, Style }, toonHead] = await Promise.all([
+    import('@dicebear/core'),
+    import('@dicebear/styles/toon-head.json'),
+  ])
+  const toonHeadStyle = new Style(toonHead.default)
+  return new DiceBearAvatar(toonHeadStyle, {
+    seed,
+    size,
+    backgroundColor: ['16181a'],
+    borderRadius: 28,
+  }).toDataUri()
+}
 
 /**
- * A generated identicon avatar from a profile's `avatarSeed`. Renders inline
- * SVG (no image binary, no network) — a 5×5 mirrored cell grid on a hue-derived
- * gradient. Deterministic: the same seed always draws the same avatar.
+ * A generated Toon Head avatar from a profile's `avatarSeed`. DiceBear renders
+ * the SVG locally from the seed, so profiles still sync as plain text and never
+ * depend on a remote image service.
  */
 export function Avatar({
   seed,
@@ -14,43 +28,27 @@ export function Avatar({
   size?: number
   className?: string
 }) {
-  const hue = avatarHue(seed)
-  const cells = avatarCells(seed)
-  const cell = 100 / 5
-  const fg = `hsl(${hue} 70% 62%)`
-  const bgFrom = `hsl(${hue} 45% 22%)`
-  const bgTo = `hsl(${(hue + 40) % 360} 45% 14%)`
-  const gradId = `av-${hue}`
+  const [src, setSrc] = useState<string | undefined>()
+
+  useEffect(() => {
+    let cancelled = false
+    setSrc(undefined)
+    toonHeadSrc(seed, size).then((uri) => {
+      if (!cancelled) setSrc(uri)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [seed, size])
 
   return (
-    <svg
-      role="img"
-      aria-label="Profile avatar"
-      viewBox="0 0 100 100"
+    <img
+      src={src}
+      alt="Profile avatar"
       width={size}
       height={size}
       className={className}
       style={{ borderRadius: size * 0.28, display: 'block' }}
-    >
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor={bgFrom} />
-          <stop offset="1" stopColor={bgTo} />
-        </linearGradient>
-      </defs>
-      <rect width="100" height="100" fill={`url(#${gradId})`} />
-      {cells.map((on, i) =>
-        on ? (
-          <rect
-            key={i}
-            x={(i % 5) * cell}
-            y={Math.floor(i / 5) * cell}
-            width={cell}
-            height={cell}
-            fill={fg}
-          />
-        ) : null,
-      )}
-    </svg>
+    />
   )
 }
