@@ -1,5 +1,5 @@
 import type { BodyPart, Equipment, ExerciseType } from '@/evolu/schema'
-import { STARTER_CATALOG } from './starterCatalog.generated'
+import { normalizeExerciseName } from './exerciseName'
 
 /**
  * A single entry in the built-in starter library. Mirrors the `exercise`
@@ -30,17 +30,21 @@ export interface StarterExercise {
 }
 
 /**
- * The starter catalog is generated from the exercises-dataset by
- * `scripts/import-exercises.mjs` and lives in `./starterCatalog.generated.ts`
- * (the whole gym-focused dataset, with demo animations streamed from the repo +
- * form cues). It is re-exported here so the rest of the app keeps importing it
- * from one place. Regenerate with `node scripts/import-exercises.mjs`.
+ * Lazily load the generated catalog (the whole gym-focused dataset, ~1,088
+ * entries — a 739 kB / 84 kB-gzip JS module). Loading it via `import()` keeps
+ * the array in its **own async chunk** fetched only when the starter page
+ * actually needs it, instead of baking it into any route's synchronous parse
+ * path. Regenerate the source with `node scripts/import-exercises.mjs`.
  */
-export { STARTER_CATALOG }
+export const loadStarterCatalog = (): Promise<readonly StarterExercise[]> =>
+  import('./starterCatalog.generated').then((m) => m.STARTER_CATALOG)
 
-/** Normalise an exercise name for case/space-insensitive duplicate matching. */
-export const normalizeExerciseName = (name: string): string =>
-  name.trim().toLowerCase().replace(/\s+/g, ' ')
+/**
+ * `normalizeExerciseName` moved to `./exerciseName` so `cues.ts` (and thus the
+ * exercise-detail chunk) can normalise names without importing the catalog.
+ * Re-exported here for the starter-page callers that already import it.
+ */
+export { normalizeExerciseName }
 
 /**
  * Split the catalog into ordered body-part groups for the picker. The order
@@ -53,7 +57,7 @@ export interface StarterGroup {
 }
 
 export function groupStarterCatalog(
-  catalog: readonly StarterExercise[] = STARTER_CATALOG,
+  catalog: readonly StarterExercise[],
 ): readonly StarterGroup[] {
   const order: readonly BodyPart[] = [
     'chest',

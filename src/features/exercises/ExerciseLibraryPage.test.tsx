@@ -10,6 +10,7 @@ const useQueryMock = vi.fn()
 vi.mock('@/evolu/queries', () => ({
   allExercises: 'all-exercises-query',
   performedExercises: 'performed-exercises-query',
+  completedSetsIndex: 'completed-sets-index-query',
 }))
 
 // happy-dom has no layout, so a real virtualizer would render nothing. Render
@@ -59,9 +60,13 @@ const setQueries = ({
   exercises = [] as ExerciseRow[],
   performed = [] as Array<{ id: string }>,
 }) => {
-  useQueryMock.mockImplementation((query: unknown) =>
-    query === 'performed-exercises-query' ? performed : exercises,
-  )
+  useQueryMock.mockImplementation((query: unknown) => {
+    if (query === 'performed-exercises-query') return performed
+    // The last-performance index query is exercised in lastPerformance.test.ts;
+    // here the mocked ExerciseCard ignores the summary, so an empty set is fine.
+    if (query === 'completed-sets-index-query') return []
+    return exercises
+  })
 }
 
 describe('ExerciseLibraryPage', () => {

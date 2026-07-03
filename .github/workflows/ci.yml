@@ -25,6 +25,9 @@ jobs:
       - run: npm run type-check
       # `npm run build` runs `tsc -b` (typecheck) then the production Vite build.
       - run: npm run build
+      # Guard the bundle shape: the starter catalog must stay a dynamic-only
+      # chunk, off the detail-page and index chunks (see scripts/check-chunks.mjs).
+      - run: npm run check-chunks
       - run: npm run test:coverage
       - name: Upload coverage report
         if: always()

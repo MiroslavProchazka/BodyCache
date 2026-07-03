@@ -6,6 +6,7 @@ import type {
   sessionExercises,
   setsForWorkoutExercise,
   completedSetsForExercise,
+  completedSetsIndex,
   completedSetsForSession,
   finishedSessionSets,
   sessionSetsDetailed,
@@ -27,6 +28,7 @@ export type WorkoutExerciseRow = RowOf<ReturnType<typeof workoutExercisesForSess
 export type SessionExerciseRow = RowOf<ReturnType<typeof sessionExercises>>
 export type ExerciseSetRow = RowOf<ReturnType<typeof setsForWorkoutExercise>>
 export type ExerciseHistorySetRow = RowOf<ReturnType<typeof completedSetsForExercise>>
+export type CompletedSetIndexRow = RowOf<typeof completedSetsIndex>
 export type WorkoutSessionRow = RowOf<typeof finishedWorkoutSessions>
 export type ExercisePhotoRow = RowOf<ReturnType<typeof photosForExercise>>
 export type SessionSetRow = RowOf<ReturnType<typeof completedSetsForSession>>

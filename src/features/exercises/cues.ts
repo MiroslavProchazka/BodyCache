@@ -15,7 +15,7 @@
  *
  * Pure data + lookup — kept UI-free so it can be tested.
  */
-import { normalizeExerciseName } from './starterCatalog'
+import { normalizeExerciseName } from './exerciseName'
 
 /** Cues for seeded exercises, keyed by normalized name. */
 const CUES: Record<string, readonly string[]> = {

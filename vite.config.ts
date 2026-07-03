@@ -22,6 +22,12 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['@evolu/sqlite-wasm'],
   },
+  build: {
+    // Emit `.vite/manifest.json` so the CI chunk guard (scripts/check-chunks.mjs)
+    // can assert the starter catalog never leaks into the detail-page or index
+    // chunk. See docs/exercise-library-performance.md §W4.
+    manifest: true,
+  },
   plugins: [
     react(),
     VitePWA({

@@ -1,16 +1,13 @@
 import { memo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@evolu/react'
-import { completedSetsForExercise } from '@/evolu/queries'
 import type { ExerciseRow } from '@/evolu/rows'
-import type { ExerciseId, ExercisePhotoId, ExerciseType } from '@/evolu/schema'
-import { sessionTrend } from '@/shared/utils/exerciseStats'
+import type { ExercisePhotoId, ExerciseType } from '@/evolu/schema'
 import { metaLine } from '@/shared/utils/bodyParts'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { ExerciseTile } from './ExerciseTile'
 import { TrendBadge } from './TrendBadge'
 import { bodyFor } from './muscleMap'
-import { toHistorySets, lastSummaryLabel } from './history'
+import { summaryLabel, summaryTrend, type ExercisePerformanceSummary } from './lastPerformance'
 
 /**
  * Photo-first library grid card (our differentiator vs. text-first trackers):
@@ -18,16 +15,22 @@ import { toHistorySets, lastSummaryLabel } from './history'
  * highlighting what the exercise works — then name, meta, and the last
  * performance with a trend arrow. Tap → detail.
  *
- * Memoized: each card runs its own history query + photo lookup, so in a large
- * virtualized grid we don't want a parent re-render (e.g. typing in search) to
- * re-run that work for cards whose `exercise` row hasn't changed.
+ * The last-performance `summary` is computed once per page from the aggregate
+ * `completedSetsIndex` query (see `useLastPerformanceIndex`) and passed in — the
+ * card runs no query of its own, so a 1,000-exercise grid no longer fires a
+ * per-card history join. Memoized: a parent re-render (e.g. typing in search)
+ * skips cards whose `exercise`/`summary` props are unchanged.
  */
-export const ExerciseCard = memo(function ExerciseCard({ exercise }: { exercise: ExerciseRow }) {
+export const ExerciseCard = memo(function ExerciseCard({
+  exercise,
+  summary,
+}: {
+  exercise: ExerciseRow
+  summary?: ExercisePerformanceSummary
+}) {
   const navigate = useNavigate()
   const { unit } = useUnits()
   const type = exercise.type as ExerciseType
-  const history = toHistorySets(useQuery(completedSetsForExercise(exercise.id as ExerciseId)))
-  const trend = sessionTrend(history, type)
   const body = bodyFor(exercise)
 
   return (
@@ -54,9 +57,9 @@ export const ExerciseCard = memo(function ExerciseCard({ exercise }: { exercise:
         </div>
         <div className="flex items-center justify-between">
           <span className="truncate text-[12.5px] font-medium tnum text-soft">
-            {lastSummaryLabel(history, type, unit)}
+            {summaryLabel(summary, type, unit)}
           </span>
-          <TrendBadge trend={trend} unit={unit} iconOnly size={15} />
+          <TrendBadge trend={summaryTrend(summary, type)} unit={unit} iconOnly size={15} />
         </div>
       </div>
     </button>

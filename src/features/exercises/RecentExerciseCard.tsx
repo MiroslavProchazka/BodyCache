@@ -1,12 +1,9 @@
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@evolu/react'
-import { completedSetsForExercise } from '@/evolu/queries'
 import type { ExerciseId, ExercisePhotoId, ExerciseType } from '@/evolu/schema'
-import { sessionTrend } from '@/shared/utils/exerciseStats'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { ExerciseTile } from './ExerciseTile'
 import { TrendBadge } from './TrendBadge'
-import { toHistorySets, lastSummaryLabel } from './history'
+import { summaryLabel, summaryTrend, type ExercisePerformanceSummary } from './lastPerformance'
 
 interface RecentExerciseCardProps {
   id: ExerciseId
@@ -14,6 +11,8 @@ interface RecentExerciseCardProps {
   type: ExerciseType
   bodyPart: string | null
   primaryPhotoId: ExercisePhotoId | null
+  /** Last-performance summary from the page's `useLastPerformanceIndex`. */
+  summary?: ExercisePerformanceSummary
 }
 
 /** 158px rail card for the Home "recent exercises" scroller. Tap → detail. */
@@ -23,11 +22,10 @@ export function RecentExerciseCard({
   type,
   bodyPart,
   primaryPhotoId,
+  summary,
 }: RecentExerciseCardProps) {
   const navigate = useNavigate()
   const { unit } = useUnits()
-  const history = toHistorySets(useQuery(completedSetsForExercise(id)))
-  const trend = sessionTrend(history, type)
 
   return (
     <button
@@ -44,10 +42,8 @@ export function RecentExerciseCard({
       <div className="mb-[3px] truncate text-[14.5px] font-semibold leading-tight tracking-tight text-white">
         {name}
       </div>
-      <div className="mb-[9px] truncate text-xs text-muted">
-        {lastSummaryLabel(history, type, unit)}
-      </div>
-      <TrendBadge trend={trend} unit={unit} />
+      <div className="mb-[9px] truncate text-xs text-muted">{summaryLabel(summary, type, unit)}</div>
+      <TrendBadge trend={summaryTrend(summary, type)} unit={unit} />
     </button>
   )
 }
