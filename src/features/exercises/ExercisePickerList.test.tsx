@@ -130,4 +130,53 @@ describe('ExercisePickerList', () => {
     )
     expect(screen.getByText('Create new exercise')).toBeTruthy()
   })
+
+  it('renders favorites above the full exercise list', () => {
+    render(
+      <ExercisePickerList
+        exercises={[
+          makeExercise({ id: '1', name: 'Bench Press' }),
+          makeExercise({ id: '2', name: 'Squat', bodyPart: 'legs' }),
+        ]}
+        favorites={[makeExercise({ id: '2', name: 'Squat', bodyPart: 'legs' })]}
+        onPick={vi.fn()}
+        subtitleFor={subtitleFor}
+      />,
+    )
+
+    expect(screen.getByRole('heading', { name: 'Favorites' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'All exercises' })).toBeTruthy()
+    expect(screen.getByRole('region', { name: 'Favorites' }).textContent).toContain('Squat')
+  })
+
+  it('filters favorites with the same search and chips', async () => {
+    render(
+      <ExercisePickerList
+        exercises={[
+          makeExercise({ id: '1', name: 'Bench Press', bodyPart: 'chest' }),
+          makeExercise({ id: '2', name: 'Squat', bodyPart: 'legs' }),
+        ]}
+        favorites={[
+          makeExercise({ id: '1', name: 'Bench Press', bodyPart: 'chest' }),
+          makeExercise({ id: '2', name: 'Squat', bodyPart: 'legs' }),
+        ]}
+        onPick={vi.fn()}
+        subtitleFor={subtitleFor}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Legs' }))
+    await waitFor(() => {
+      const favorites = screen.getByRole('region', { name: 'Favorites' })
+      expect(favorites.textContent).toContain('Squat')
+      expect(favorites.textContent).not.toContain('Bench Press')
+    })
+
+    fireEvent.change(screen.getByPlaceholderText('Search exercises'), {
+      target: { value: 'bench' },
+    })
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Favorites' })).toBeNull(),
+    )
+  })
 })

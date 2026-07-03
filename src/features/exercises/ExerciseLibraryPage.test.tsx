@@ -53,21 +53,34 @@ const makeExercise = (overrides: Record<string, unknown>): ExerciseRow =>
     ...overrides,
   }) as ExerciseRow
 
-/** One `performedExercises` row (the page only reads `id` off it). */
-const performedRow = (id: string) => ({ id })
-
 const setQueries = ({
   exercises = [] as ExerciseRow[],
-  performed = [] as Array<{ id: string }>,
+  completedSets = [] as Array<Record<string, unknown>>,
 }) => {
   useQueryMock.mockImplementation((query: unknown) => {
-    if (query === 'performed-exercises-query') return performed
     // The last-performance index query is exercised in lastPerformance.test.ts;
-    // here the mocked ExerciseCard ignores the summary, so an empty set is fine.
-    if (query === 'completed-sets-index-query') return []
+    // here the mocked ExerciseCard ignores the summary, except Favorites uses
+    // the index's exercise id + recency.
+    if (query === 'completed-sets-index-query') return completedSets
     return exercises
   })
 }
+
+const completedSet = (exerciseId: string, sessionStartedAt: string) => ({
+  id: `${exerciseId}-${sessionStartedAt}`,
+  exerciseId,
+  sessionId: `session-${sessionStartedAt}`,
+  sessionStartedAt,
+  orderIndex: 0,
+  weightKg: 1,
+  reps: 1,
+  addedWeightKg: null,
+  assistanceWeightKg: null,
+  durationSec: null,
+  distanceMeters: null,
+  setType: null,
+  rpe: null,
+})
 
 describe('ExerciseLibraryPage', () => {
   afterEach(() => {
@@ -149,58 +162,64 @@ describe('ExerciseLibraryPage', () => {
     await waitFor(() => expect(screen.getByText('No exercises match.')).toBeTruthy())
   })
 
-  it('hides the Favourites section when nothing has been logged', () => {
+  it('hides the Favorites section when nothing has been logged', () => {
     setQueries({
       exercises: [makeExercise({ id: '1', name: 'Bench Press', bodyPart: 'chest' })],
     })
 
     render(<ExerciseLibraryPage />)
 
-    expect(screen.queryByRole('heading', { name: 'Favourites' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Favorites' })).toBeNull()
     expect(screen.queryByRole('heading', { name: 'All exercises' })).toBeNull()
   })
 
-  it('shows logged exercises in Favourites, deduplicated and recency-ordered', () => {
+  it('shows logged exercises in Favorites, deduplicated and recency-ordered', () => {
     setQueries({
       exercises: [
         makeExercise({ id: '1', name: 'Bench Press', bodyPart: 'chest' }),
         makeExercise({ id: '2', name: 'Leg Press', bodyPart: 'legs' }),
         makeExercise({ id: '3', name: 'Squat', bodyPart: 'legs' }),
       ],
-      // Rows repeat per completed set, newest session first.
-      performed: [performedRow('2'), performedRow('2'), performedRow('1')],
+      completedSets: [
+        completedSet('2', '2026-03-01T00:00:00Z'),
+        completedSet('2', '2026-03-01T00:00:00Z'),
+        completedSet('1', '2026-02-01T00:00:00Z'),
+      ],
     })
 
     render(<ExerciseLibraryPage />)
 
-    expect(screen.getByRole('heading', { name: 'Favourites' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Favorites' })).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'All exercises' })).toBeTruthy()
 
-    const favourites = screen.getByRole('region', { name: 'Favourites' })
-    const names = Array.from(favourites.querySelectorAll('div div')).map((el) => el.textContent)
+    const favorites = screen.getByRole('region', { name: 'Favorites' })
+    const names = Array.from(favorites.querySelectorAll('div div')).map((el) => el.textContent)
     expect(names).toEqual(['Leg Press', 'Bench Press'])
 
-    // Never-logged exercise stays out of Favourites but remains in the grid.
-    expect(favourites.textContent).not.toContain('Squat')
+    // Never-logged exercise stays out of Favorites but remains in the grid.
+    expect(favorites.textContent).not.toContain('Squat')
     expect(screen.getByText('Squat')).toBeTruthy()
   })
 
-  it('applies search and body-part filters to Favourites too', async () => {
+  it('applies search and body-part filters to Favorites too', async () => {
     setQueries({
       exercises: [
         makeExercise({ id: '1', name: 'Bench Press', bodyPart: 'chest' }),
         makeExercise({ id: '2', name: 'Leg Press', bodyPart: 'legs' }),
       ],
-      performed: [performedRow('1'), performedRow('2')],
+      completedSets: [
+        completedSet('1', '2026-02-01T00:00:00Z'),
+        completedSet('2', '2026-01-01T00:00:00Z'),
+      ],
     })
 
     render(<ExerciseLibraryPage />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Legs' }))
 
-    const favourites = screen.getByRole('region', { name: 'Favourites' })
-    expect(favourites.textContent).toContain('Leg Press')
-    expect(favourites.textContent).not.toContain('Bench Press')
+    const favorites = screen.getByRole('region', { name: 'Favorites' })
+    expect(favorites.textContent).toContain('Leg Press')
+    expect(favorites.textContent).not.toContain('Bench Press')
 
     fireEvent.change(screen.getByPlaceholderText('Search exercises'), {
       target: { value: 'bench' },
@@ -208,7 +227,7 @@ describe('ExerciseLibraryPage', () => {
 
     // Chest exercise doesn't match the Legs chip — the whole section hides.
     await waitFor(() =>
-      expect(screen.queryByRole('heading', { name: 'Favourites' })).toBeNull(),
+      expect(screen.queryByRole('heading', { name: 'Favorites' })).toBeNull(),
     )
   })
 })

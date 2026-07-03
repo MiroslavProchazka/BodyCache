@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { ChevronLeft, Plus } from 'lucide-react'
@@ -26,6 +26,14 @@ function AddExerciseInner() {
   const performanceIndex = useLastPerformanceIndex()
   const { unit } = useUnits()
 
+  const favorites = useMemo(() => {
+    const byId = new Map<string, ExerciseRow>(exercises.map((exercise) => [exercise.id, exercise]))
+    return Array.from(performanceIndex.entries())
+      .sort(([, a], [, b]) => b.lastPerformedAt.localeCompare(a.lastPerformedAt))
+      .map(([id]) => byId.get(id))
+      .filter((exercise): exercise is ExerciseRow => Boolean(exercise))
+  }, [exercises, performanceIndex])
+
   const subtitleFor = useCallback(
     (exercise: ExerciseRow) =>
       summaryLabel(performanceIndex.get(exercise.id), exercise.type as ExerciseType, unit),
@@ -50,6 +58,7 @@ function AddExerciseInner() {
 
       <ExercisePickerList
         exercises={exercises}
+        favorites={favorites}
         onPick={pick}
         subtitleFor={subtitleFor}
         header={

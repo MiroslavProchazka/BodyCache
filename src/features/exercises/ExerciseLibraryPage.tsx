@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { Plus, Dumbbell, ListPlus } from 'lucide-react'
-import { allExercises, performedExercises } from '@/evolu/queries'
+import { allExercises } from '@/evolu/queries'
 import type { ExerciseRow } from '@/evolu/rows'
 import { BODY_PARTS } from '@/evolu/schema'
 import { SearchField } from '@/shared/components/SearchField'
@@ -25,16 +25,16 @@ const CHIP_OPTIONS = [
 /** Two cards per grid row; each row slot reserves card height + the 12px gap. */
 const COLS = 2
 const ROW_ESTIMATE = 212
+const MAX_FAVORITES = 12
 
 /**
  * Browse / search all exercises; entry to detail and create. Exercises the
- * user has logged before surface in a Favourites section above the full
+ * user has logged before surface in a Favorites section above the full
  * catalog, so the everyday handful is reachable without scrolling hundreds.
  */
 export function ExerciseLibraryPage() {
   const navigate = useNavigate()
   const exercises = useQuery(allExercises)
-  const performed = useQuery(performedExercises)
   // One aggregate query for every card's "last time" label + trend, replacing
   // the per-card history join that used to fire once per rendered card.
   const performanceIndex = useLastPerformanceIndex()
@@ -44,22 +44,16 @@ export function ExerciseLibraryPage() {
   // Debounce so filtering 1,000+ exercises doesn't run on every keystroke.
   const debouncedSearch = useDebouncedValue(search)
 
-  // Favourites = exercises the user has actually logged in a finished workout,
-  // most recently performed first — the handful they use, surfaced above the
-  // full catalog. `performedExercises` repeats rows per completed set, so
-  // de-duplicate by id and resolve each to its live library row.
-  const favourites = useMemo(() => {
-    const byId = new Map(exercises.map((e) => [e.id, e]))
-    const seen = new Set<string>()
-    const result: ExerciseRow[] = []
-    for (const row of performed) {
-      if (seen.has(row.id)) continue
-      seen.add(row.id)
-      const exercise = byId.get(row.id)
-      if (exercise) result.push(exercise)
-    }
-    return result
-  }, [exercises, performed])
+  // Favorites = recently logged exercises, surfaced above the full catalog.
+  // Reuse the aggregate performance index already needed for card subtitles
+  // instead of running a second per-set scan for the same ids.
+  const favorites = useMemo(() => {
+    const byId = new Map<string, ExerciseRow>(exercises.map((e) => [e.id, e]))
+    return Array.from(performanceIndex.entries())
+      .sort(([, a], [, b]) => b.lastPerformedAt.localeCompare(a.lastPerformedAt))
+      .map(([id]) => byId.get(id))
+      .filter((exercise): exercise is ExerciseRow => Boolean(exercise))
+  }, [exercises, performanceIndex])
 
   const matchesFilter = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase()
@@ -73,9 +67,9 @@ export function ExerciseLibraryPage() {
   }, [debouncedSearch, part])
 
   const filtered = useMemo(() => exercises.filter(matchesFilter), [exercises, matchesFilter])
-  const favouritesFiltered = useMemo(
-    () => favourites.filter(matchesFilter),
-    [favourites, matchesFilter],
+  const favoritesFiltered = useMemo(
+    () => favorites.filter(matchesFilter).slice(0, MAX_FAVORITES),
+    [favorites, matchesFilter],
   )
 
   const rows = useMemo(() => chunk(filtered, COLS), [filtered])
@@ -86,13 +80,13 @@ export function ExerciseLibraryPage() {
   // AppShell `<main>` column, so the virtualizer watches that ancestor.
   const listRef = useRef<HTMLDivElement>(null)
   const scrollParent = useScrollParent(listRef)
-  // The Favourites section sits above the virtualized grid and resizes as the
+  // The Favorites section sits above the virtualized grid and resizes as the
   // filter changes, so its row count doubles as the re-measure revision.
   const scrollMargin = useListScrollMargin(
     listRef,
     scrollParent,
     filtered.length > 0,
-    favouritesFiltered.length,
+    favoritesFiltered.length,
   )
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -168,13 +162,13 @@ export function ExerciseLibraryPage() {
         <p className="py-10 text-center text-sm text-faint">No exercises match.</p>
       ) : (
         <>
-          {favouritesFiltered.length > 0 && (
-            <section aria-label="Favourites" className="mb-[18px]">
+          {favoritesFiltered.length > 0 && (
+            <section aria-label="Favorites" className="mb-[18px]">
               <h2 className="mb-[14px] font-display text-[17px] font-semibold tracking-tight text-white">
-                Favourites
+                Favorites
               </h2>
               <div className="grid grid-cols-2 gap-3">
-                {favouritesFiltered.map((exercise) => (
+                {favoritesFiltered.map((exercise) => (
                   <ExerciseCard
                     key={exercise.id}
                     exercise={exercise}
@@ -184,7 +178,7 @@ export function ExerciseLibraryPage() {
               </div>
             </section>
           )}
-          {favouritesFiltered.length > 0 && (
+          {favoritesFiltered.length > 0 && (
             <h2 className="mb-[14px] font-display text-[17px] font-semibold tracking-tight text-white">
               All exercises
             </h2>
