@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { useQuery } from '@evolu/react'
 import { Dumbbell } from 'lucide-react'
 import { photoById } from '@/evolu/queries'
@@ -58,16 +59,28 @@ export function ExerciseTile({
 }: ExerciseTileProps) {
   if (photoId)
     return (
-      <ResolvedTile
-        photoId={photoId}
-        bodyPart={bodyPart}
-        radius={radius}
-        className={className}
-        glyphSize={glyphSize}
-        full={full}
-        fit={fit}
-        map={map}
-      />
+      <Suspense
+        fallback={
+          <Placeholder
+            bodyPart={bodyPart}
+            radius={radius}
+            className={className}
+            glyphSize={glyphSize}
+            map={map}
+          />
+        }
+      >
+        <ResolvedTile
+          photoId={photoId}
+          bodyPart={bodyPart}
+          radius={radius}
+          className={className}
+          glyphSize={glyphSize}
+          full={full}
+          fit={fit}
+          map={map}
+        />
+      </Suspense>
     )
   return (
     <Placeholder
