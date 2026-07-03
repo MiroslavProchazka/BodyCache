@@ -1,67 +1,62 @@
+import type { ReactNode } from 'react'
 import { useQuery } from '@evolu/react'
-import { Flame } from 'lucide-react'
 import { finishedSessionSets } from '@/evolu/queries'
-import { Overline } from '@/shared/components/Overline'
+import { HeroStat } from '@/shared/components/HeroStat'
+import { BarWeek, type BarWeekDay } from '@/shared/components/BarWeek'
+import { PrChip, StreakChip, TrendChip } from '@/shared/components/Chips'
 import { formatVolume } from '@/shared/utils/units'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { weeklyMomentum } from './weeklyMomentum'
-
-/** Bar geometry — a 56px-tall track; active bars scale 10→38px across the week. */
-const TRACK_PX = 56
-const REST_PX = 5
-const MIN_ACTIVE_PX = 10
-const ACTIVE_RANGE_PX = 28
+import { prsThisWeek, weekOverWeek } from './weeklyStats'
 
 /**
- * Home "This week" card: the week's total volume, a day-streak flame pill, and
- * a Mon→Sun bar chart of daily training volume. Reads every finished set once
- * (the same query History uses) and buckets it by weekday.
+ * Home hero (mock 1b): the week's total volume as the screen's one big number,
+ * trend / PR / streak chips derived from the same finished-set data, and a
+ * full-width Mon→Sun bar chart. Reads every finished set once (the query
+ * History uses) — no boxed card, it sits directly on the black canvas.
  */
 export function WeeklyMomentumCard() {
   const { unit } = useUnits()
   const sets = useQuery(finishedSessionSets)
   const week = weeklyMomentum(sets)
-  const maxKg = Math.max(...week.days.map((d) => d.volumeKg), 0)
+  const wow = weekOverWeek(sets)
+  const prCount = prsThisWeek(sets)
+
+  const days: BarWeekDay[] = week.days.map((d) => ({
+    label: d.label,
+    value: d.volumeKg,
+    active: d.active,
+    isToday: d.isToday,
+  }))
+
+  const chips: ReactNode[] = []
+  if (wow.pct != null) {
+    chips.push(
+      <TrendChip key="wow" dir={wow.pct < 0 ? 'down' : 'up'}>
+        {`${wow.pct > 0 ? '+' : ''}${wow.pct}% vs last week`}
+      </TrendChip>,
+    )
+  }
+  if (prCount > 0) {
+    chips.push(<PrChip key="pr">{`${prCount} PR${prCount === 1 ? '' : 's'}`}</PrChip>)
+  }
+  if (week.activeDays > 0) {
+    chips.push(
+      <StreakChip key="streak">
+        {`${week.activeDays} ${week.activeDays === 1 ? 'day' : 'days'}`}
+      </StreakChip>,
+    )
+  }
 
   return (
-    <div className="mb-[26px] rounded-[22px] border border-white/[0.07] bg-surface p-[18px]">
-      <div className="mb-4 flex items-end justify-between">
-        <div>
-          <Overline className="mb-2">This week</Overline>
-          <div className="flex items-baseline gap-[7px]">
-            <span className="font-display text-[26px] font-bold tracking-tight text-white tnum">
-              {formatVolume(week.totalKg, unit)}
-            </span>
-            <span className="text-[12.5px] font-medium text-muted">{unit} lifted</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-[6px] whitespace-nowrap rounded-full bg-neon/[0.12] px-[11px] py-[6px] text-[12.5px] font-semibold text-neon">
-          <Flame size={15} strokeWidth={1.9} />
-          {week.activeDays} {week.activeDays === 1 ? 'day' : 'days'}
-        </div>
-      </div>
-
-      <div className="flex items-end justify-between gap-[7px]" style={{ height: TRACK_PX }}>
-        {week.days.map((d, i) => {
-          const height =
-            d.active && maxKg > 0
-              ? Math.round(MIN_ACTIVE_PX + (d.volumeKg / maxKg) * ACTIVE_RANGE_PX)
-              : REST_PX
-          const labelColor = d.isToday ? 'text-white' : d.active ? 'text-muted' : 'text-faint'
-          return (
-            <div
-              key={i}
-              className="flex h-full flex-1 flex-col items-center justify-end gap-2"
-            >
-              <div
-                className={`w-full max-w-[26px] rounded-[6px] ${d.active ? 'bg-neon' : 'bg-inset'}`}
-                style={{ height }}
-              />
-              <div className={`text-[10px] font-semibold ${labelColor}`}>{d.label}</div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
+    <section className="mb-7">
+      <HeroStat
+        intro="This week you’ve lifted"
+        value={formatVolume(week.totalKg, unit)}
+        unit={unit}
+        chips={chips.length > 0 ? chips : undefined}
+      />
+      <BarWeek days={days} className="mt-7" />
+    </section>
   )
 }
