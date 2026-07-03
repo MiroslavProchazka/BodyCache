@@ -1,8 +1,18 @@
-import { Avatar as DiceBearAvatar, Style } from '@dicebear/core'
-import toonHead from '@dicebear/styles/toon-head.json'
-import { useMemo } from 'react'
+import { useEffect, useState } from 'react'
 
-const toonHeadStyle = new Style(toonHead)
+const toonHeadSrc = async (seed: string, size: number): Promise<string> => {
+  const [{ Avatar: DiceBearAvatar, Style }, toonHead] = await Promise.all([
+    import('@dicebear/core'),
+    import('@dicebear/styles/toon-head.json'),
+  ])
+  const toonHeadStyle = new Style(toonHead.default)
+  return new DiceBearAvatar(toonHeadStyle, {
+    seed,
+    size,
+    backgroundColor: ['16181a'],
+    borderRadius: 28,
+  }).toDataUri()
+}
 
 /**
  * A generated Toon Head avatar from a profile's `avatarSeed`. DiceBear renders
@@ -18,16 +28,18 @@ export function Avatar({
   size?: number
   className?: string
 }) {
-  const src = useMemo(
-    () =>
-      new DiceBearAvatar(toonHeadStyle, {
-        seed,
-        size,
-        backgroundColor: ['16181a'],
-        borderRadius: 28,
-      }).toDataUri(),
-    [seed, size],
-  )
+  const [src, setSrc] = useState<string | undefined>()
+
+  useEffect(() => {
+    let cancelled = false
+    setSrc(undefined)
+    toonHeadSrc(seed, size).then((uri) => {
+      if (!cancelled) setSrc(uri)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [seed, size])
 
   return (
     <img
