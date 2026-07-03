@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { ChevronLeft, Plus } from 'lucide-react'
-import { activeWorkoutSession, allExercises } from '@/evolu/queries'
+import { activeWorkoutSession, allExercises, performedExercises } from '@/evolu/queries'
 import type { ExerciseRow } from '@/evolu/rows'
 import type { ExerciseId, ExerciseType } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
@@ -22,17 +22,23 @@ function AddExerciseInner() {
   const navigate = useNavigate()
   const active = useQuery(activeWorkoutSession)[0]
   const exercises = useQuery(allExercises)
+  const performed = useQuery(performedExercises)
   // One aggregate query for every row's "last time" line — no per-row history join.
   const performanceIndex = useLastPerformanceIndex()
   const { unit } = useUnits()
 
   const favorites = useMemo(() => {
     const byId = new Map<string, ExerciseRow>(exercises.map((exercise) => [exercise.id, exercise]))
-    return Array.from(performanceIndex.entries())
-      .sort(([, a], [, b]) => b.lastPerformedAt.localeCompare(a.lastPerformedAt))
-      .map(([id]) => byId.get(id))
-      .filter((exercise): exercise is ExerciseRow => Boolean(exercise))
-  }, [exercises, performanceIndex])
+    const seen = new Set<string>()
+    const result: ExerciseRow[] = []
+    for (const row of performed) {
+      if (seen.has(row.id)) continue
+      seen.add(row.id)
+      const exercise = byId.get(row.id)
+      if (exercise) result.push(exercise)
+    }
+    return result
+  }, [exercises, performed])
 
   const subtitleFor = useCallback(
     (exercise: ExerciseRow) =>

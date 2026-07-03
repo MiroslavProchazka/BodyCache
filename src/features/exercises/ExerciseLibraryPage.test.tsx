@@ -55,18 +55,22 @@ const makeExercise = (overrides: Record<string, unknown>): ExerciseRow =>
 
 const setQueries = ({
   exercises = [] as ExerciseRow[],
+  performed = [] as Array<{ id: string }>,
   completedSets = [] as Array<Record<string, unknown>>,
 }) => {
   useQueryMock.mockImplementation((query: unknown) => {
+    if (query === 'performed-exercises-query') return performed
     // The last-performance index query is exercised in lastPerformance.test.ts;
-    // here the mocked ExerciseCard ignores the summary, except Favorites uses
-    // the index's exercise id + recency.
+    // here the mocked ExerciseCard ignores the summary, so an empty set is fine.
     if (query === 'completed-sets-index-query') return completedSets
     return exercises
   })
 }
 
-const completedSet = (exerciseId: string, sessionStartedAt: string) => ({
+/** One `performedExercises` row (the page only reads `id` off it). */
+const performedRow = (id: string) => ({ id })
+
+const completedSetIndexRow = (exerciseId: string, sessionStartedAt: string) => ({
   id: `${exerciseId}-${sessionStartedAt}`,
   exerciseId,
   sessionId: `session-${sessionStartedAt}`,
@@ -180,11 +184,8 @@ describe('ExerciseLibraryPage', () => {
         makeExercise({ id: '2', name: 'Leg Press', bodyPart: 'legs' }),
         makeExercise({ id: '3', name: 'Squat', bodyPart: 'legs' }),
       ],
-      completedSets: [
-        completedSet('2', '2026-03-01T00:00:00Z'),
-        completedSet('2', '2026-03-01T00:00:00Z'),
-        completedSet('1', '2026-02-01T00:00:00Z'),
-      ],
+      // Rows repeat per completed set, newest finished session first.
+      performed: [performedRow('2'), performedRow('2'), performedRow('1')],
     })
 
     render(<ExerciseLibraryPage />)
@@ -207,10 +208,7 @@ describe('ExerciseLibraryPage', () => {
         makeExercise({ id: '1', name: 'Bench Press', bodyPart: 'chest' }),
         makeExercise({ id: '2', name: 'Leg Press', bodyPart: 'legs' }),
       ],
-      completedSets: [
-        completedSet('1', '2026-02-01T00:00:00Z'),
-        completedSet('2', '2026-01-01T00:00:00Z'),
-      ],
+      performed: [performedRow('1'), performedRow('2')],
     })
 
     render(<ExerciseLibraryPage />)
@@ -229,5 +227,22 @@ describe('ExerciseLibraryPage', () => {
     await waitFor(() =>
       expect(screen.queryByRole('heading', { name: 'Favorites' })).toBeNull(),
     )
+  })
+
+  it('does not use completed-set index rows as the Favorites source', () => {
+    setQueries({
+      exercises: [
+        makeExercise({ id: '1', name: 'Bench Press', bodyPart: 'chest' }),
+        makeExercise({ id: '2', name: 'Leg Press', bodyPart: 'legs' }),
+      ],
+      performed: [performedRow('1')],
+      completedSets: [completedSetIndexRow('2', '2026-03-01T00:00:00Z')],
+    })
+
+    render(<ExerciseLibraryPage />)
+
+    const favorites = screen.getByRole('region', { name: 'Favorites' })
+    expect(favorites.textContent).toContain('Bench Press')
+    expect(favorites.textContent).not.toContain('Leg Press')
   })
 })

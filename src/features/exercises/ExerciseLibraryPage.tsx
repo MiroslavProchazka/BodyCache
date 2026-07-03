@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { Plus, Dumbbell, ListPlus } from 'lucide-react'
-import { allExercises } from '@/evolu/queries'
+import { allExercises, performedExercises } from '@/evolu/queries'
 import type { ExerciseRow } from '@/evolu/rows'
 import { BODY_PARTS } from '@/evolu/schema'
 import { SearchField } from '@/shared/components/SearchField'
@@ -35,6 +35,7 @@ const MAX_FAVORITES = 12
 export function ExerciseLibraryPage() {
   const navigate = useNavigate()
   const exercises = useQuery(allExercises)
+  const performed = useQuery(performedExercises)
   // One aggregate query for every card's "last time" label + trend, replacing
   // the per-card history join that used to fire once per rendered card.
   const performanceIndex = useLastPerformanceIndex()
@@ -44,16 +45,20 @@ export function ExerciseLibraryPage() {
   // Debounce so filtering 1,000+ exercises doesn't run on every keystroke.
   const debouncedSearch = useDebouncedValue(search)
 
-  // Favorites = recently logged exercises, surfaced above the full catalog.
-  // Reuse the aggregate performance index already needed for card subtitles
-  // instead of running a second per-set scan for the same ids.
+  // Favorites = exercises logged in finished workouts, newest first. Resolve
+  // the performed rows back to live library rows so edits/deletes stay current.
   const favorites = useMemo(() => {
     const byId = new Map<string, ExerciseRow>(exercises.map((e) => [e.id, e]))
-    return Array.from(performanceIndex.entries())
-      .sort(([, a], [, b]) => b.lastPerformedAt.localeCompare(a.lastPerformedAt))
-      .map(([id]) => byId.get(id))
-      .filter((exercise): exercise is ExerciseRow => Boolean(exercise))
-  }, [exercises, performanceIndex])
+    const seen = new Set<string>()
+    const result: ExerciseRow[] = []
+    for (const row of performed) {
+      if (seen.has(row.id)) continue
+      seen.add(row.id)
+      const exercise = byId.get(row.id)
+      if (exercise) result.push(exercise)
+    }
+    return result
+  }, [exercises, performed])
 
   const matchesFilter = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase()
