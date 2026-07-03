@@ -1,48 +1,10 @@
 /**
- * Deterministic, seeded avatar generation.
+ * Avatar seed generation.
  *
- * A profile stores only a short `avatarSeed` string (never an image binary, per
- * the photo rules). These pure helpers turn that seed into a stable identicon:
- * a 5×5 vertically-mirrored cell grid plus a hue. The same seed always yields
- * the same avatar, so it syncs as plain text and renders identically anywhere.
+ * A profile stores only a short `avatarSeed` string. The profile UI turns that
+ * seed into a deterministic DiceBear avatar at render time, so sync never needs
+ * to store image binaries.
  */
-
-/** Grid is 5 columns wide; the left 3 columns are mirrored onto the right 2. */
-const GRID = 5
-const HALF = Math.ceil(GRID / 2) // 3 unique columns per row
-
-/** Deterministic 32-bit FNV-1a hash of a string. */
-export const hashSeed = (seed: string): number => {
-  let h = 0x811c9dc5
-  for (let i = 0; i < seed.length; i++) {
-    h ^= seed.charCodeAt(i)
-    // 32-bit FNV prime multiply via shifts, kept unsigned.
-    h = Math.imul(h, 0x01000193)
-  }
-  return h >>> 0
-}
-
-/** A hue (0–359) derived from the seed, for the avatar's gradient. */
-export const avatarHue = (seed: string): number => hashSeed(seed) % 360
-
-/**
- * A 25-length boolean grid (row-major, 5×5), symmetric across the vertical
- * axis so it reads as a face/figure rather than noise. Each of the 15 unique
- * cells is on/off from one bit of the hash.
- */
-export const avatarCells = (seed: string): boolean[] => {
-  const h = hashSeed(seed)
-  const cells: boolean[] = new Array(GRID * GRID).fill(false)
-  for (let row = 0; row < GRID; row++) {
-    for (let col = 0; col < HALF; col++) {
-      const bit = (h >>> (row * HALF + col)) & 1
-      const on = bit === 1
-      cells[row * GRID + col] = on
-      cells[row * GRID + (GRID - 1 - col)] = on // mirror
-    }
-  }
-  return cells
-}
 
 /**
  * A fresh random seed for a brand-new (or shuffled) avatar. Uses the crypto RNG
