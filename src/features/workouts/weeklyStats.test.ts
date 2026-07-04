@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  bodyPartSplit,
   muscleSplit7Days,
   prsThisWeek,
   weekOverWeek,
@@ -117,5 +118,35 @@ describe('muscleSplit7Days', () => {
       set('2025-06-10T08:00', { bodyPart, weightKg: 100, reps: parts.length - i }),
     )
     expect(muscleSplit7Days(sets, NOW, 4)).toHaveLength(4)
+  })
+})
+
+describe('bodyPartSplit', () => {
+  it('weights by volume when the sets carry weight', () => {
+    const split = bodyPartSplit([
+      set('2025-06-10T08:00', { bodyPart: 'chest', weightKg: 100, reps: 6 }), // 600
+      set('2025-06-10T09:00', { bodyPart: 'back', weightKg: 100, reps: 4 }), // 400
+    ])
+    expect(split.map((s) => [s.key, s.percent])).toEqual([
+      ['chest', 60],
+      ['back', 40],
+    ])
+  })
+
+  it('falls back to a set count for zero-volume (bodyweight/timed/distance) sessions', () => {
+    // Pull-ups (reps, no weight) + a timed plank — no volume, but sets exist.
+    const split = bodyPartSplit([
+      set('2025-06-10T08:00', { bodyPart: 'back', weightKg: null, reps: 10 }),
+      set('2025-06-10T08:10', { bodyPart: 'back', weightKg: null, reps: 8 }),
+      set('2025-06-10T08:20', { bodyPart: 'core', weightKg: null, reps: null, durationSec: 60 }),
+    ])
+    expect(split.map((s) => [s.key, Math.round(s.percent)])).toEqual([
+      ['back', 67],
+      ['core', 33],
+    ])
+  })
+
+  it('returns nothing for no sets', () => {
+    expect(bodyPartSplit([])).toEqual([])
   })
 })

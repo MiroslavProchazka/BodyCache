@@ -124,17 +124,26 @@ export interface SplitSet {
 }
 
 /**
- * Volume share by body part, highest first, capped at `limit` bars. Percentages
- * are of the whole set's volume, so a truncated tail reads honestly as "<100%".
- * The top half of the shown bars are `strong` (solid neon), the rest lighter.
+ * Share by body part, highest first, capped at `limit` bars. Weighted by
+ * volume (`weightKg × reps`) when the sets carry any; otherwise it falls back
+ * to a plain set count, so a bodyweight / timed / distance session (zero
+ * volume) still shows a split instead of vanishing. The top half of the shown
+ * bars are `strong` (solid neon), the rest lighter.
  */
 export const bodyPartSplit = (sets: readonly SplitSet[], limit = 6): MuscleSplitItem[] => {
-  const totals = new Map<string, number>()
+  const volumeTotals = new Map<string, number>()
+  const countTotals = new Map<string, number>()
+  let totalVolume = 0
   for (const s of sets) {
     const key = s.bodyPart ?? 'other'
-    totals.set(key, (totals.get(key) ?? 0) + volumeOf(s))
+    const v = volumeOf(s)
+    volumeTotals.set(key, (volumeTotals.get(key) ?? 0) + v)
+    countTotals.set(key, (countTotals.get(key) ?? 0) + 1)
+    totalVolume += v
   }
 
+  // Volume-weighted when any set is loaded; else weight every set equally.
+  const totals = totalVolume > 0 ? volumeTotals : countTotals
   const entries = [...totals.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1])
   const total = entries.reduce((sum, [, v]) => sum + v, 0)
   if (total <= 0) return []
