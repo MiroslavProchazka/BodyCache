@@ -24,7 +24,7 @@ export interface WeekStatSet extends MetricSet {
   readonly sessionStartedAt: string | null
 }
 
-const volumeOf = (s: WeekStatSet): number =>
+const volumeOf = (s: { weightKg: number | null; reps: number | null }): number =>
   s.weightKg != null && s.reps != null ? s.weightKg * s.reps : 0
 
 /** Local-midnight date `n` days offset from `d` (DST-safe via date components). */
@@ -116,21 +116,21 @@ const BODY_PART_LABELS: Record<string, string> = {
   other: 'Other',
 }
 
+/** A set carrying just what a body-part volume split needs. */
+export interface SplitSet {
+  readonly weightKg: number | null
+  readonly reps: number | null
+  readonly bodyPart: string | null
+}
+
 /**
- * Volume share by body part over the trailing 7 days (today inclusive),
- * highest first, capped at `limit` bars. Percentages are of the whole window's
- * volume, so a truncated tail reads honestly as "< 100%".
+ * Volume share by body part, highest first, capped at `limit` bars. Percentages
+ * are of the whole set's volume, so a truncated tail reads honestly as "<100%".
+ * The top half of the shown bars are `strong` (solid neon), the rest lighter.
  */
-export const muscleSplit7Days = (
-  sets: readonly WeekStatSet[],
-  now: Date = new Date(),
-  limit = 6,
-): MuscleSplitItem[] => {
-  const since = addDays(new Date(now.getFullYear(), now.getMonth(), now.getDate()), -6).getTime()
+export const bodyPartSplit = (sets: readonly SplitSet[], limit = 6): MuscleSplitItem[] => {
   const totals = new Map<string, number>()
   for (const s of sets) {
-    if (!s.sessionStartedAt) continue
-    if (new Date(s.sessionStartedAt).getTime() < since) continue
     const key = s.bodyPart ?? 'other'
     totals.set(key, (totals.get(key) ?? 0) + volumeOf(s))
   }
@@ -147,4 +147,20 @@ export const muscleSplit7Days = (
     percent: (v / total) * 100,
     strong: i < strongCount,
   }))
+}
+
+/**
+ * Volume share by body part over the trailing 7 days (today inclusive),
+ * highest first, capped at `limit` bars.
+ */
+export const muscleSplit7Days = (
+  sets: readonly WeekStatSet[],
+  now: Date = new Date(),
+  limit = 6,
+): MuscleSplitItem[] => {
+  const since = addDays(new Date(now.getFullYear(), now.getMonth(), now.getDate()), -6).getTime()
+  const window = sets.filter(
+    (s) => s.sessionStartedAt && new Date(s.sessionStartedAt).getTime() >= since,
+  )
+  return bodyPartSplit(window, limit)
 }

@@ -1,18 +1,28 @@
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { Check, Medal } from 'lucide-react'
-import { finishedWorkoutSessions, completedSetsForSession, finishedSessionSets } from '@/evolu/queries'
+import { Check, Clock, Layers } from 'lucide-react'
+import {
+  finishedWorkoutSessions,
+  completedSetsForSession,
+  finishedSessionSets,
+} from '@/evolu/queries'
 import type { WorkoutSessionRow } from '@/evolu/rows'
-import type { WorkoutSessionId } from '@/evolu/schema'
-import { Button } from '@/shared/components/Button'
-import { StatTile } from '@/shared/components/StatTile'
+import type { ExerciseType, WorkoutSessionId } from '@/evolu/schema'
+import { Divider } from '@/shared/components/Divider'
+import { HeroStat } from '@/shared/components/HeroStat'
+import { Overline } from '@/shared/components/Overline'
+import { PrChip } from '@/shared/components/Chips'
+import { SplitBar } from '@/shared/components/SplitBar'
+import { ActionPill, FloatingAction } from '@/shared/components/FloatingAction'
 import { finishedDurationSec, formatDurationSec } from '@/shared/utils/workoutStats'
-import { formatVolume } from '@/shared/utils/units'
+import { formatSetSummary, formatVolume } from '@/shared/utils/units'
+import { bestSet, workingSets } from '@/shared/utils/exerciseStats'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { summarizeSession } from './sessionSummary'
-import { sessionPersonalRecords, prBadgeLabel } from './sessionPrs'
+import { sessionPersonalRecords } from './sessionPrs'
+import { bodyPartSplit } from './weeklyStats'
 
-/** Confirmation + recap shown right after finishing a workout. */
+/** Confirmation + recap shown right after finishing a workout (mock 3b). */
 export function FinishPage() {
   const location = useLocation()
   const finished = useQuery(finishedWorkoutSessions)
@@ -24,6 +34,9 @@ export function FinishPage() {
   return <FinishInner session={session as WorkoutSessionRow} />
 }
 
+const chip =
+  'inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-neon/[0.16] px-[10px] py-1 text-[12px] font-bold text-[#8b90f7]'
+
 function FinishInner({ session }: { session: WorkoutSessionRow }) {
   const navigate = useNavigate()
   const { unit } = useUnits()
@@ -32,49 +45,111 @@ function FinishInner({ session }: { session: WorkoutSessionRow }) {
   const summary = summarizeSession(rows)
   const durationSec = finishedDurationSec(session)
   const duration = durationSec != null ? formatDurationSec(durationSec) : '—'
-  const prLabel = prBadgeLabel(
-    sessionPersonalRecords(String(session.id as WorkoutSessionId), allSets),
+
+  const sessionSets = allSets.filter((s) => String(s.sessionId) === String(session.id))
+  const split = bodyPartSplit(sessionSets)
+  const prIds = new Set(
+    sessionPersonalRecords(String(session.id as WorkoutSessionId), allSets).map((p) => p.exerciseId),
   )
+  const prCount = prIds.size
+
+  // Per-exercise recap rows, in workout order.
+  const byExercise = new Map<
+    string,
+    { name: string; type: ExerciseType; order: number; sets: typeof sessionSets }
+  >()
+  for (const s of sessionSets) {
+    if (!s.exerciseId) continue
+    const key = String(s.exerciseId)
+    const g = byExercise.get(key)
+    if (g) g.sets.push(s)
+    else
+      byExercise.set(key, {
+        name: String(s.exerciseName ?? 'Exercise'),
+        type: (s.exerciseType as ExerciseType) ?? 'strength',
+        order: Number(s.exerciseOrder ?? 0),
+        sets: [s],
+      })
+  }
+  const exercises = [...byExercise.entries()]
+    .sort((a, b) => a[1].order - b[1].order)
+    .map(([id, g]) => {
+      const best = bestSet(workingSets(g.sets), g.type)
+      return {
+        id,
+        name: g.name,
+        count: g.sets.length,
+        value: best ? formatSetSummary(best, g.type, unit) : '—',
+        isPr: prIds.has(id),
+      }
+    })
 
   return (
-    <div className="flex flex-col items-center px-5 pb-[130px] pt-[30px] text-center">
-      <div
-        className="mb-5 flex h-[72px] w-[72px] items-center justify-center bg-gradient-to-br from-neon to-brand text-white"
-        style={{ borderRadius: '20px' }}
-      >
-        <Check size={36} strokeWidth={2} />
+    <>
+      <div className="px-[22px] pb-[130px] pt-[26px]">
+        <h1 className="mb-[14px] font-display text-[28px] font-bold tracking-tight text-white">
+          Nice work.
+        </h1>
+
+        <HeroStat
+          intro="You lifted"
+          value={formatVolume(summary.volumeKg, unit)}
+          unit={unit}
+          chips={
+            <>
+              <span className={chip}>
+                <Clock size={13} strokeWidth={2} />
+                {duration}
+              </span>
+              <span className={chip}>
+                <Layers size={13} strokeWidth={2} />
+                {summary.setCount} {summary.setCount === 1 ? 'set' : 'sets'}
+              </span>
+              {prCount > 0 && <PrChip>{`${prCount} PR${prCount === 1 ? '' : 's'}`}</PrChip>}
+            </>
+          }
+        />
+
+        {split.length > 0 && (
+          <>
+            <Divider className="my-[18px]" />
+            <Overline className="mb-3">By muscle</Overline>
+            <div className="flex flex-col gap-[10px]">
+              {split.map((s) => (
+                <SplitBar key={s.key} label={s.label} percent={s.percent} strong={s.strong} />
+              ))}
+            </div>
+          </>
+        )}
+
+        {exercises.length > 0 && (
+          <>
+            <Divider className="my-[18px]" />
+            <Overline className="mb-[14px]">Exercises</Overline>
+            <div className="flex flex-col gap-4">
+              {exercises.map((e) => (
+                <div key={e.id} className="flex items-center gap-[13px]">
+                  <span className="min-w-0 flex-1 truncate text-[14.5px] font-semibold text-white">
+                    {e.name}
+                  </span>
+                  <span className="whitespace-nowrap text-[13px] font-semibold tnum text-muted">
+                    {e.count} × {e.value}
+                  </span>
+                  {e.isPr && <PrChip>PR</PrChip>}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
-      <h1 className="mb-[6px] font-display text-[30px] font-bold tracking-tight text-white">
-        Nice work.
-      </h1>
-      <p className="mb-[26px] max-w-[280px] text-[15px] text-muted">
-        Cached. Everything's saved — next time we'll remind you exactly where you left off.
-      </p>
 
-      {prLabel && (
-        <div
-          className="mb-[18px] flex items-center gap-[7px] rounded-full border px-[14px] py-[8px] text-[13.5px] font-semibold text-pr"
-          style={{ borderColor: 'rgba(242,160,101,.28)', background: 'rgba(242,160,101,.14)' }}
-        >
-          <Medal size={16} strokeWidth={1.9} />
-          {prLabel}
-        </div>
-      )}
-
-      <div className="mb-[14px] w-full rounded-[22px] border border-white/[0.07] bg-surface p-[18px] text-left">
-        <div className="mb-[14px] font-display text-[20px] font-semibold text-white">
-          {summary.name}
-        </div>
-        <div className="flex gap-[10px]">
-          <StatTile value={duration} label="duration" />
-          <StatTile value={summary.setCount} label="sets" />
-          <StatTile value={formatVolume(summary.volumeKg, unit)} label={unit} />
-        </div>
-      </div>
-
-      <Button fullWidth onClick={() => navigate('/')}>
-        Done
-      </Button>
-    </div>
+      <FloatingAction>
+        <ActionPill
+          label="Done"
+          icon={<Check size={19} strokeWidth={2} />}
+          onClick={() => navigate('/')}
+        />
+      </FloatingAction>
+    </>
   )
 }

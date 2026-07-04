@@ -4,18 +4,19 @@ import { ChevronUp, ChevronDown, Trash2 } from 'lucide-react'
 import { setsForWorkoutExercise } from '@/evolu/queries'
 import type { SessionExerciseRow } from '@/evolu/rows'
 import type { ExerciseId, ExercisePhotoId, ExerciseType } from '@/evolu/schema'
-import { humanize } from '@/shared/utils/bodyParts'
 import { formatSetSummary } from '@/shared/utils/units'
+import { bestSet, workingSets } from '@/shared/utils/exerciseStats'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { ExerciseTile } from '@/features/exercises/ExerciseTile'
-import { LinkNextButton, SupersetBadge } from './SupersetGroup'
+import { LinkNextButton } from './SupersetGroup'
 
 /**
- * One exercise inside the active workout: photo, name, set count, and a wrap of
- * set chips. The body taps through to the Log screen; a trailing cluster of
- * up/down chevrons reorders the exercise in place (no drag) and a trash button
- * removes it from the workout. Optionally wears an A1/A2 superset badge and a
- * "Superset with next" link (standalone only).
+ * One exercise inside the active workout (mock 3b): a flat row — photo tile,
+ * name, and an `n sets · top W × R` recall line. The body taps through to the
+ * Log screen; a trailing cluster of up/down chevrons reorders the exercise in
+ * place (no drag) and a trash button removes it. A standalone row can also show
+ * a "Superset with next" link. Grouping into supersets is conveyed by the
+ * parent `SupersetGroup` rail + overline, not a per-row badge.
  */
 export function WorkoutEntryCard({
   entry,
@@ -24,7 +25,6 @@ export function WorkoutEntryCard({
   onMoveUp,
   onMoveDown,
   onRemove,
-  badge = null,
   onLinkNext,
 }: {
   entry: SessionExerciseRow
@@ -33,7 +33,6 @@ export function WorkoutEntryCard({
   onMoveUp: () => void
   onMoveDown: () => void
   onRemove: () => void
-  badge?: string | null
   onLinkNext?: () => void
 }) {
   const navigate = useNavigate()
@@ -43,34 +42,38 @@ export function WorkoutEntryCard({
   // confirmed (completed) sets here so prescribed targets don't read as logged.
   // The targets still pre-fill the logger when the user taps in.
   const sets = useQuery(setsForWorkoutExercise(entry.id)).filter((s) => s.completedAt != null)
+  const top = bestSet(workingSets(sets), type)
+
+  const meta =
+    sets.length === 0
+      ? 'Not logged yet'
+      : `${sets.length} ${sets.length === 1 ? 'set' : 'sets'}${
+          top ? ` · top ${formatSetSummary(top, type, unit)}` : ''
+        }`
 
   return (
-    <div className="rounded-[20px] border border-white/[0.07] bg-surface p-4">
-      <div className="mb-[13px] flex items-center gap-[11px]">
-        {badge && <SupersetBadge label={badge} />}
+    <div>
+      <div className="flex items-center gap-[13px]">
         <button
           type="button"
           onClick={() => navigate(`/workout/log/${entry.exerciseId as ExerciseId}`)}
-          className="flex min-w-0 flex-1 items-center gap-[13px] text-left"
+          className="flex min-h-[44px] min-w-0 flex-1 items-center gap-[13px] text-left transition-transform active:scale-[0.99]"
         >
           <ExerciseTile
             photoId={entry.primaryPhotoId as ExercisePhotoId | null}
             bodyPart={entry.bodyPart as string | null}
             radius="14px"
-            className="h-[46px] w-[46px] flex-none"
-            glyphSize={23}
+            className="h-[42px] w-[42px] flex-none"
+            glyphSize={20}
           />
           <div className="min-w-0 flex-1">
-            <div className="truncate text-base font-semibold tracking-tight text-white">
+            <div className="truncate text-[15px] font-semibold text-white">
               {entry.exerciseName}
             </div>
-            <div className="mt-[2px] truncate text-[12.5px] text-muted">
-              {sets.length} {sets.length === 1 ? 'set' : 'sets'}
-              {entry.bodyPart ? ` · ${humanize(entry.bodyPart as string)}` : ''}
-            </div>
+            <div className="mt-[2px] truncate text-[12.5px] text-muted">{meta}</div>
           </div>
         </button>
-        <div className="flex flex-none items-center gap-1">
+        <div className="flex flex-none items-center">
           <MoveBtn onClick={onMoveUp} disabled={index === 0} label="Move up">
             <ChevronUp size={18} strokeWidth={2} />
           </MoveBtn>
@@ -82,24 +85,12 @@ export function WorkoutEntryCard({
           </MoveBtn>
         </div>
       </div>
-      {sets.length > 0 && (
-        <div className="flex flex-wrap gap-[7px]">
-          {sets.map((s) => (
-            <span
-              key={s.id}
-              className="whitespace-nowrap rounded-[9px] bg-inset px-[10px] py-[6px] text-[12.5px] font-semibold tnum text-soft"
-            >
-              {formatSetSummary(s, type, unit, true)}
-            </span>
-          ))}
-        </div>
-      )}
       {onLinkNext && <LinkNextButton onClick={onLinkNext} />}
     </div>
   )
 }
 
-/** 34px square chevron button; disabled (dimmed) at the ends of the list. */
+/** 34px borderless chevron/trash button; dimmed & disabled at the list ends. */
 function MoveBtn({
   onClick,
   disabled,
@@ -117,7 +108,7 @@ function MoveBtn({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      className="flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-white/10 bg-inset text-soft transition-transform active:scale-[0.95] disabled:opacity-30"
+      className="flex h-[34px] w-[34px] items-center justify-center rounded-full text-faint transition-transform active:scale-[0.9] disabled:opacity-25"
     >
       {children}
     </button>

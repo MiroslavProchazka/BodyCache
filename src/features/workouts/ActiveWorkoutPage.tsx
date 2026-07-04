@@ -1,17 +1,23 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { ChevronLeft, Pause, Play, Plus, Dumbbell, Trash2 } from 'lucide-react'
+import { Check, ChevronLeft, Dumbbell, Layers, Pause, Play, Plus } from 'lucide-react'
 import { activeWorkoutSession, completedSetsForSession, sessionExercises } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { SessionExerciseRow, WorkoutSessionRow } from '@/evolu/rows'
 import type { WorkoutExerciseId, WorkoutSessionId } from '@/evolu/schema'
+import { Button } from '@/shared/components/Button'
 import { CircleButton } from '@/shared/components/CircleButton'
-import { StickyAction } from '@/shared/components/StickyAction'
-import { activeElapsedSec, formatDurationSec } from '@/shared/utils/workoutStats'
+import { Divider } from '@/shared/components/Divider'
+import { HeroStat } from '@/shared/components/HeroStat'
+import { Overline } from '@/shared/components/Overline'
+import { FloatingAction, SecondaryPill } from '@/shared/components/FloatingAction'
+import { activeElapsedSec, formatDurationSec, totalVolumeKg } from '@/shared/utils/workoutStats'
+import { formatVolume } from '@/shared/utils/units'
+import { useUnits } from '@/shared/units/UnitsContext'
 import { WorkoutEntryCard } from './WorkoutEntryCard'
 import { SupersetGroup } from './SupersetGroup'
-import { groupExercises, newSupersetKey, supersetLabel } from './supersets'
+import { groupExercises, newSupersetKey } from './supersets'
 import { MuscleDistributionCard } from './MuscleDistributionCard'
 
 /** The live session: elapsed timer, logged exercises, add, pause, and finish. */
@@ -34,6 +40,7 @@ export function ActiveWorkoutPage() {
 
 function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
   const navigate = useNavigate()
+  const { unit } = useUnits()
   const {
     finishWorkoutSession,
     discardWorkoutSession,
@@ -60,6 +67,7 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
   const canFinish = completedSets.length > 0
   const paused = session.status === 'paused'
   const elapsedSec = activeElapsedSec(session, now)
+  const volumeKg = totalVolumeKg(completedSets)
 
   const blocks = groupExercises(entries)
   const indexOf = (entry: SessionExerciseRow) =>
@@ -125,75 +133,60 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
     navigate('/', { replace: true })
   }
 
+  const chip =
+    'inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-neon/[0.16] px-[10px] py-1 text-[12px] font-bold text-[#8b90f7]'
+
   return (
     <>
-      <div className="px-5 pb-[150px] pt-[6px]">
-        <header className="mb-5 flex items-start justify-between">
-          <div>
-            <div
-              className={[
-                'mb-[7px] flex items-center gap-[7px] text-xs font-semibold uppercase tracking-[0.08em]',
-                paused ? '' : 'text-neon',
-              ].join(' ')}
-              style={paused ? { color: '#F5B45A' } : undefined}
-            >
-              <span
-                className={['h-[7px] w-[7px] rounded-full', paused ? '' : 'bg-neon'].join(' ')}
-                style={{
-                  backgroundColor: paused ? '#F5B45A' : undefined,
-                  boxShadow: paused
-                    ? '0 0 0 4px rgba(245,180,90,.18)'
-                    : '0 0 0 4px rgba(73,79,223,.22)',
-                }}
-              />
-              {paused ? 'Paused' : 'Live workout'}
-            </div>
-            <div className="font-display text-[30px] font-semibold leading-none tracking-tight tnum text-white">
-              {formatDurationSec(elapsedSec)}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <CircleButton
-              onClick={handlePauseToggle}
-              label={paused ? 'Resume workout' : 'Pause workout'}
-            >
-              {paused ? (
-                <Play size={18} strokeWidth={1.9} fill="currentColor" stroke="none" />
-              ) : (
-                <Pause size={18} strokeWidth={1.9} />
-              )}
-            </CircleButton>
-            <CircleButton onClick={() => navigate('/')} label="Back to home">
-              <ChevronLeft size={18} strokeWidth={1.75} />
-            </CircleButton>
-          </div>
+      <div className="px-[22px] pb-[130px] pt-[12px]">
+        <header className="mb-6 flex items-center justify-between">
+          <CircleButton onClick={() => navigate('/')} label="Back to home">
+            <ChevronLeft size={18} strokeWidth={1.75} />
+          </CircleButton>
+          <button
+            type="button"
+            onClick={handleDiscard}
+            aria-label="Discard workout"
+            className="text-[13px] font-semibold text-muted active:scale-[0.97]"
+          >
+            Discard
+          </button>
         </header>
 
-        <MuscleDistributionCard sessionId={session.id as WorkoutSessionId} />
+        <HeroStat
+          intro={paused ? 'Workout paused' : 'Workout in progress'}
+          value={formatDurationSec(elapsedSec)}
+          size={52}
+          chips={
+            <>
+              <span className={chip}>
+                <Dumbbell size={13} strokeWidth={2} />
+                {entries.length} {entries.length === 1 ? 'exercise' : 'exercises'}
+              </span>
+              <span className={chip}>
+                <Layers size={13} strokeWidth={2} />
+                {completedSets.length} {completedSets.length === 1 ? 'set' : 'sets'}
+              </span>
+              <span className={`${chip} tnum`}>
+                {formatVolume(volumeKg, unit)} {unit}
+              </span>
+            </>
+          }
+        />
+
+        <Divider className="my-[18px]" />
+        <Overline className="mb-[14px]">Exercises</Overline>
 
         {empty ? (
-          <div className="mb-4 rounded-[22px] border-[1.5px] border-dashed border-white/[0.14] px-6 py-[38px] text-center">
-            <div
-              className="mx-auto mb-4 flex h-14 w-14 items-center justify-center bg-inset text-neon"
-              style={{ borderRadius: '20px' }}
-            >
-              <Dumbbell size={26} strokeWidth={1.75} />
-            </div>
-            <div className="mb-[6px] font-display text-lg font-semibold text-white">
-              Nothing logged yet
-            </div>
-            <div className="text-sm leading-[1.45] text-muted">
-              Add the first exercise you're about to do.
-              <br />
-              We'll show what you did last time.
-            </div>
-          </div>
+          <p className="mb-5 text-[13.5px] leading-[1.45] text-muted">
+            Add the first exercise you’re about to do. We’ll show what you did last time.
+          </p>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="mb-[18px] flex flex-col gap-[18px]">
             {(() => {
               let supersetIndex = 0
               return blocks.map((block) => {
-                const card = (entry: SessionExerciseRow, badge: string | null, linkable: boolean) => (
+                const card = (entry: SessionExerciseRow, linkable: boolean) => (
                   <WorkoutEntryCard
                     key={entry.id}
                     entry={entry}
@@ -202,23 +195,23 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
                     onMoveUp={() => move(entry, -1)}
                     onMoveDown={() => move(entry, 1)}
                     onRemove={() => handleRemove(entry)}
-                    badge={badge}
                     onLinkNext={linkable ? () => linkNext(entry) : undefined}
                   />
                 )
                 if (block.group === null) {
                   const entry = block.items[0]
                   const hasNext = indexOf(entry) < entries.length - 1
-                  return card(entry, null, hasNext)
+                  return card(entry, hasNext)
                 }
                 const sIdx = supersetIndex++
                 return (
                   <SupersetGroup
                     key={block.items[0].id}
                     label={String.fromCharCode(65 + sIdx)}
+                    variant="flat"
                     onUngroup={() => ungroup(block.items)}
                   >
-                    {block.items.map((entry, mi) => card(entry, supersetLabel(sIdx, mi), false))}
+                    {block.items.map((entry) => card(entry, false))}
                   </SupersetGroup>
                 )
               })
@@ -229,37 +222,40 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
         <button
           type="button"
           onClick={() => navigate('/workout/add-exercise')}
-          className="mt-[14px] flex w-full items-center justify-center gap-2 rounded-[18px] border-[1.5px] border-neon/35 bg-neon/10 p-4 text-[15.5px] font-semibold text-neon"
+          className="flex items-center gap-[13px] active:scale-[0.99]"
         >
-          <Plus size={20} strokeWidth={2} />
-          Add exercise
+          <span className="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-[14px] border border-dashed border-white/[0.22] text-[#8b90f7]">
+            <Plus size={20} strokeWidth={2} />
+          </span>
+          <span className="text-[14.5px] font-semibold text-[#8b90f7]">Add exercise</span>
         </button>
 
-        <button
-          type="button"
-          onClick={handleDiscard}
-          className="mt-[18px] flex w-full items-center justify-center gap-[7px] text-[13.5px] font-medium text-faint underline-offset-2 hover:underline"
-        >
-          <Trash2 size={15} strokeWidth={1.75} />
-          Discard workout
-        </button>
+        <MuscleDistributionCard sessionId={session.id as WorkoutSessionId} />
       </div>
 
-      <StickyAction>
-        <button
-          type="button"
+      <FloatingAction>
+        <SecondaryPill
+          label={paused ? 'Resume' : 'Pause'}
+          icon={
+            paused ? (
+              <Play size={17} strokeWidth={1.9} fill="currentColor" stroke="none" />
+            ) : (
+              <Pause size={17} strokeWidth={1.9} />
+            )
+          }
+          onClick={handlePauseToggle}
+        />
+        <Button
+          variant="primary"
           onClick={handleFinish}
           disabled={!canFinish}
-          className={[
-            'w-full rounded-2xl border py-[17px] text-base font-bold',
-            !canFinish
-              ? 'border-white/[0.08] bg-surface text-faint opacity-60'
-              : 'border-white bg-white text-ink',
-          ].join(' ')}
+          aria-label="Finish workout"
+          className="pointer-events-auto flex-[1.3]"
         >
-          Finish workout
-        </button>
-      </StickyAction>
+          Finish
+          <Check size={17} strokeWidth={2} />
+        </Button>
+      </FloatingAction>
     </>
   )
 }

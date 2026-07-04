@@ -12,19 +12,18 @@ import {
 import { useBodyCacheMutations } from '@/evolu/mutations'
 import type {
   ExerciseId,
-  ExercisePhotoId,
   ExerciseType,
   SetType,
   WorkoutExerciseId,
   WorkoutSessionId,
 } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
-import { StickyAction } from '@/shared/components/StickyAction'
+import { Divider } from '@/shared/components/Divider'
+import { FloatingAction } from '@/shared/components/FloatingAction'
 import { Overline } from '@/shared/components/Overline'
 import { useToast } from '@/shared/components/Toast'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { useRestTimer } from '@/shared/rest/RestTimerContext'
-import { metaLine } from '@/shared/utils/bodyParts'
 import { formatRelativeDay } from '@/shared/utils/dates'
 import { toDisplayWeight, formatSetSummary } from '@/shared/utils/units'
 import {
@@ -35,7 +34,6 @@ import {
   workingSets,
   type MetricSet,
 } from '@/shared/utils/exerciseStats'
-import { ExerciseTile } from '@/features/exercises/ExerciseTile'
 import { TrendBadge } from '@/features/exercises/TrendBadge'
 import { PrBadge } from '@/features/exercises/PrBadge'
 import { toHistorySets } from '@/features/exercises/history'
@@ -252,29 +250,27 @@ function LogInner({
 
   return (
     <>
-      <div className="px-5 pb-[160px] pt-[6px]">
-        <header className="mb-[18px] flex items-center gap-3">
+      <div className="px-[22px] pb-[160px] pt-[12px]">
+        <header className="mb-6 flex items-center gap-3">
           <CircleButton onClick={() => navigate('/workout')} label="Back">
             <ChevronLeft size={18} strokeWidth={1.75} />
           </CircleButton>
-          <div className="min-w-0 flex-1">
-            <div className="truncate font-display text-[20px] font-semibold leading-[1.1] tracking-tight text-white">
+          <div className="min-w-0 flex-1 text-center">
+            <div className="truncate font-display text-[17px] font-semibold tracking-[-0.01em] text-white">
               {exercise.name}
             </div>
-            <div className="mt-[2px] truncate text-[12.5px] text-muted">
-              {metaLine(exercise.bodyPart, exercise.equipment) || humanizeType(type)}
-            </div>
           </div>
-          <ExerciseTile
-            photoId={exercise.primaryPhotoId as ExercisePhotoId | null}
-            bodyPart={exercise.bodyPart}
-            radius="14px"
-            className="h-[44px] w-[44px] flex-none"
-          />
+          <button
+            type="button"
+            onClick={() => navigate(`/library/${exerciseId}`)}
+            className="flex-none text-[13px] font-semibold text-[#8b90f7]"
+          >
+            History
+          </button>
         </header>
 
-        {/* Previous performance */}
-        <div className="mb-[18px] rounded-[18px] border border-white/[0.07] bg-surface p-[15px]">
+        {/* Previous performance — flat section */}
+        <div className="mb-5">
           <div className="mb-3 flex items-center justify-between">
             <Overline className="whitespace-nowrap">
               Last time · {prev ? formatRelativeDay(prev.startedAt) : '—'}
@@ -313,22 +309,20 @@ function LogInner({
           type="button"
           onClick={copyPrevious}
           disabled={!prev}
-          className="mb-[18px] flex w-full items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-inset p-[13px] text-sm font-semibold text-soft disabled:opacity-40"
+          className="mb-5 flex w-full items-center justify-center gap-2 rounded-full border border-white/[0.08] bg-inset p-[13px] text-sm font-semibold text-soft disabled:opacity-40"
         >
           <Copy size={17} strokeWidth={1.75} />
           Copy last workout
         </button>
 
+        <Divider className="mb-[18px]" />
         <Overline className="mb-3">Today's sets</Overline>
-        <div className="mb-[14px] flex flex-col gap-3">
+        <div className="mb-[14px] flex flex-col gap-4">
           {draft.map((row, i) => (
-            <div
-              key={i}
-              className="rounded-[20px] border border-white/[0.07] bg-surface px-[14px] pb-4 pt-[14px]"
-            >
+            <div key={i} className={i > 0 ? 'border-t border-divider pt-4' : ''}>
               <div className="mb-[14px] flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="whitespace-nowrap rounded-lg bg-neon/[0.12] px-[10px] py-1 text-[12.5px] font-semibold text-neon">
+                  <span className="whitespace-nowrap rounded-lg bg-neon/[0.16] px-[10px] py-1 text-[12.5px] font-semibold text-[#8b90f7]">
                     Set {i + 1}
                   </span>
                   {/* Tap to cycle the set type (Normal → Warm-up → Drop → Failure). */}
@@ -449,7 +443,7 @@ function LogInner({
           <button
             type="button"
             onClick={addDraftSet}
-            className="flex flex-1 items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-white/[0.16] p-[14px] text-[14.5px] font-semibold text-muted"
+            className="flex flex-1 items-center justify-center gap-2 rounded-full border-[1.5px] border-dashed border-white/[0.16] p-[14px] text-[14.5px] font-semibold text-muted"
           >
             <Plus size={18} strokeWidth={2} />
             Add set
@@ -458,7 +452,7 @@ function LogInner({
             type="button"
             onClick={() => rest.start()}
             aria-label="Start rest timer"
-            className="flex items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-inset px-[18px] text-[14.5px] font-semibold text-soft active:scale-[0.98]"
+            className="flex items-center justify-center gap-2 rounded-full border border-white/[0.08] bg-inset px-[18px] text-[14.5px] font-semibold text-soft active:scale-[0.98]"
           >
             <Timer size={18} strokeWidth={2} />
             Rest
@@ -466,16 +460,16 @@ function LogInner({
         </div>
       </div>
 
-      <StickyAction>
+      <FloatingAction>
         <button
           type="button"
           onClick={handleSave}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-[17px] text-base font-bold text-ink transition-transform active:scale-[0.99]"
+          className="pointer-events-auto flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-neon to-brand py-[17px] text-base font-bold text-white shadow-pill transition-transform active:scale-[0.985]"
         >
           <Check size={20} strokeWidth={2} />
           Save {validCount} {validCount === 1 ? 'set' : 'sets'}
         </button>
-      </StickyAction>
+      </FloatingAction>
     </>
   )
 }
@@ -501,6 +495,3 @@ function StepButton({
     </button>
   )
 }
-
-const humanizeType = (type: ExerciseType): string =>
-  type.charAt(0).toUpperCase() + type.slice(1)

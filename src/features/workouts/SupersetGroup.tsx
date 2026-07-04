@@ -2,21 +2,50 @@ import type { ReactNode } from 'react'
 import { Link2, Unlink } from 'lucide-react'
 
 /**
- * Visual container for a superset block: a cobalt-tinted bordered group with a
- * "Superset A" header (chain glyph) and an Ungroup action. Used by both the
- * active logger and the plan editor; the member cards/editors render as
- * children and carry their own A1/A2 badge.
+ * Visual container for a superset block. Two variants:
+ * - `boxed` (default): a cobalt-tinted bordered group — used by the plan editor
+ *   and edit-session screens (still on the pre-1b card language).
+ * - `flat` (1b redesign, mock 3b): a 3px cobalt left rail + "SUPERSET A"
+ *   micro-overline, no box — used by the active logger.
+ *
+ * Both carry an Ungroup action; the member cards/editors render as children.
  */
 export function SupersetGroup({
   label,
   onUngroup,
   children,
+  variant = 'boxed',
 }: {
   /** The superset's letter, e.g. "A". */
   label: string
   onUngroup: () => void
   children: ReactNode
+  variant?: 'boxed' | 'flat'
 }) {
+  if (variant === 'flat') {
+    return (
+      <div className="flex gap-[13px]">
+        <div className="w-[3px] flex-none rounded-full bg-neon" />
+        <div className="min-w-0 flex-1">
+          <div className="mb-[10px] flex items-center justify-between">
+            <div className="text-[10.5px] font-semibold uppercase tracking-[0.09em] text-[#8b90f7]">
+              Superset {label}
+            </div>
+            <button
+              type="button"
+              onClick={onUngroup}
+              className="flex items-center gap-[5px] text-[11.5px] font-semibold text-muted active:scale-[0.97]"
+            >
+              <Unlink size={13} strokeWidth={2} />
+              Ungroup
+            </button>
+          </div>
+          <div className="flex flex-col gap-[18px]">{children}</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       className="rounded-[22px] border p-[10px]"
