@@ -2,10 +2,10 @@ import type { ReactNode } from 'react'
 import { Link2, Unlink } from 'lucide-react'
 
 /**
- * Visual container for a superset block: a cobalt-tinted bordered group with a
- * "Superset A" header (chain glyph) and an Ungroup action. Used by both the
- * active logger and the plan editor; the member cards/editors render as
- * children and carry their own A1/A2 badge.
+ * Flat container for a superset block (SPEC §5 — supersets get a rail, not a
+ * box): a 3px cobalt left rail beside a "SUPERSET A" overline (with an Ungroup
+ * action) and the member rows/editors. Used by the active logger, edit-session
+ * and plan editors; members render as children.
  */
 export function SupersetGroup({
   label,
@@ -18,28 +18,28 @@ export function SupersetGroup({
   children: ReactNode
 }) {
   return (
-    <div
-      className="rounded-[22px] border p-[10px]"
-      style={{ borderColor: 'rgba(73,79,223,.4)', backgroundColor: 'rgba(73,79,223,.06)' }}
-    >
-      <div className="mb-[10px] flex items-center justify-between px-[6px] pt-[2px]">
-        <div
-          className="flex items-center gap-[6px] text-[11px] font-semibold uppercase tracking-[0.09em]"
-          style={{ color: '#7c82f5' }}
-        >
-          <Link2 size={13} strokeWidth={2.25} />
-          Superset {label}
+    <div className="flex gap-[13px]">
+      <div className="w-[3px] flex-none rounded-[2px] bg-neon" />
+      <div className="min-w-0 flex-1">
+        <div className="mb-[10px] flex items-center justify-between">
+          <div
+            className="flex items-center gap-[6px] text-[10.5px] font-semibold uppercase tracking-[0.09em]"
+            style={{ color: '#8b90f7' }}
+          >
+            <Link2 size={12} strokeWidth={2.25} />
+            Superset {label}
+          </div>
+          <button
+            type="button"
+            onClick={onUngroup}
+            className="flex items-center gap-[4px] text-[12px] font-semibold text-muted active:scale-[0.97]"
+          >
+            <Unlink size={12} strokeWidth={2} />
+            Ungroup
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onUngroup}
-          className="flex items-center gap-[5px] rounded-full border border-white/10 bg-inset px-[10px] py-[5px] text-[11.5px] font-semibold text-muted active:scale-[0.97]"
-        >
-          <Unlink size={13} strokeWidth={2} />
-          Ungroup
-        </button>
+        <div className="flex flex-col gap-[16px]">{children}</div>
       </div>
-      <div className="flex flex-col gap-[10px]">{children}</div>
     </div>
   )
 }

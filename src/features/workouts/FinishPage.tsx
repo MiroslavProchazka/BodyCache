@@ -1,16 +1,29 @@
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { Check, Medal } from 'lucide-react'
-import { finishedWorkoutSessions, completedSetsForSession, finishedSessionSets } from '@/evolu/queries'
+import { Check, Clock, Dumbbell } from 'lucide-react'
+import {
+  finishedWorkoutSessions,
+  completedSetsForSession,
+  finishedSessionSets,
+  sessionSetsForDistribution,
+} from '@/evolu/queries'
 import type { WorkoutSessionRow } from '@/evolu/rows'
 import type { WorkoutSessionId } from '@/evolu/schema'
-import { Button } from '@/shared/components/Button'
-import { StatTile } from '@/shared/components/StatTile'
+import { Divider } from '@/shared/components/Divider'
+import { HeroStat } from '@/shared/components/HeroStat'
+import { SectionHeader } from '@/shared/components/SectionHeader'
+import { SplitBar } from '@/shared/components/SplitBar'
+import { MetaChip, PrChip } from '@/shared/components/Chips'
+import { ActionPill, FloatingAction } from '@/shared/components/FloatingAction'
 import { finishedDurationSec, formatDurationSec } from '@/shared/utils/workoutStats'
-import { formatVolume } from '@/shared/utils/units'
+import { formatVolume, formatWeight } from '@/shared/utils/units'
 import { useUnits } from '@/shared/units/UnitsContext'
-import { summarizeSession } from './sessionSummary'
-import { sessionPersonalRecords, prBadgeLabel } from './sessionPrs'
+import { summarizeSession, exerciseBreakdown } from './sessionSummary'
+import { muscleSplit } from './weeklyStats'
+import { sessionPersonalRecords } from './sessionPrs'
+
+/** How many exercise rows to list before collapsing the rest into a summary row. */
+const MAX_ROWS = 5
 
 /** Confirmation + recap shown right after finishing a workout. */
 export function FinishPage() {
@@ -28,53 +41,94 @@ function FinishInner({ session }: { session: WorkoutSessionRow }) {
   const navigate = useNavigate()
   const { unit } = useUnits()
   const rows = useQuery(completedSetsForSession(session.id as WorkoutSessionId))
+  const detail = useQuery(sessionSetsForDistribution(session.id as WorkoutSessionId))
   const allSets = useQuery(finishedSessionSets)
+
   const summary = summarizeSession(rows)
+  const breakdown = exerciseBreakdown(detail)
+  const split = muscleSplit(detail)
   const durationSec = finishedDurationSec(session)
-  const duration = durationSec != null ? formatDurationSec(durationSec) : '—'
-  const prLabel = prBadgeLabel(
-    sessionPersonalRecords(String(session.id as WorkoutSessionId), allSets),
-  )
+  const duration = durationSec != null ? formatDurationSec(durationSec) : null
+  const prs = sessionPersonalRecords(String(session.id as WorkoutSessionId), allSets)
+  const prExercises = new Set(prs.map((p) => p.exerciseId))
+
+  // Collapse a long list: show the first few, roll the rest into one summary row.
+  const truncated = breakdown.length > MAX_ROWS
+  const shown = truncated ? breakdown.slice(0, MAX_ROWS - 1) : breakdown
 
   return (
-    <div className="flex flex-col items-center px-5 pb-[130px] pt-[30px] text-center">
-      <div
-        className="mb-5 flex h-[72px] w-[72px] items-center justify-center bg-gradient-to-br from-neon to-brand text-white"
-        style={{ borderRadius: '20px' }}
-      >
-        <Check size={36} strokeWidth={2} />
+    <>
+      <div className="px-[22px] pb-[130px] pt-[24px]">
+        <div className="mb-[14px] text-[11px] font-semibold uppercase tracking-[0.09em] text-[#8b90f7]">
+          Workout complete
+        </div>
+
+        <HeroStat
+          intro="You lifted"
+          value={formatVolume(summary.volumeKg, unit)}
+          unit={unit}
+          chips={
+            <>
+              <MetaChip icon={<Dumbbell size={13} strokeWidth={2} />}>
+                {summary.exerciseCount} {summary.exerciseCount === 1 ? 'exercise' : 'exercises'}
+              </MetaChip>
+              {duration && <MetaChip icon={<Clock size={13} strokeWidth={2} />}>{duration}</MetaChip>}
+              {prs.length > 0 && <PrChip>{`${prs.length} PR${prs.length === 1 ? '' : 's'}`}</PrChip>}
+            </>
+          }
+        />
+
+        {split.length > 0 && (
+          <>
+            <Divider className="my-6" />
+            <SectionHeader>By muscle</SectionHeader>
+            <div className="flex flex-col gap-[10px]">
+              {split.map((s) => (
+                <SplitBar key={s.key} label={s.label} percent={s.percent} strong={s.strong} />
+              ))}
+            </div>
+          </>
+        )}
+
+        {breakdown.length > 0 && (
+          <>
+            <Divider className="my-6" />
+            <SectionHeader>Exercises · {summary.exerciseCount}</SectionHeader>
+            <div className="flex flex-col gap-[16px]">
+              {shown.map((ex) => (
+                <div key={ex.exerciseId} className="flex items-center gap-[13px]">
+                  <span className="min-w-0 flex-1 truncate text-[14.5px] font-semibold text-white">
+                    {ex.name}
+                  </span>
+                  <span className="whitespace-nowrap text-[13px] font-semibold tnum text-muted">
+                    {ex.setCount} {ex.setCount === 1 ? 'set' : 'sets'}
+                    {ex.topWeightKg != null ? ` · ${formatWeight(ex.topWeightKg, unit)}` : ''}
+                  </span>
+                  {prExercises.has(ex.exerciseId) && <PrChip>PR</PrChip>}
+                </div>
+              ))}
+              {truncated && (
+                <div className="flex items-center gap-[13px]">
+                  <span className="flex-1 text-[14.5px] font-semibold text-muted">
+                    + {breakdown.length - (MAX_ROWS - 1)} more
+                  </span>
+                  <span className="whitespace-nowrap text-[13px] font-semibold tnum text-faint">
+                    {summary.setCount} sets total
+                  </span>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
-      <h1 className="mb-[6px] font-display text-[30px] font-bold tracking-tight text-white">
-        Nice work.
-      </h1>
-      <p className="mb-[26px] max-w-[280px] text-[15px] text-muted">
-        Cached. Everything's saved — next time we'll remind you exactly where you left off.
-      </p>
 
-      {prLabel && (
-        <div
-          className="mb-[18px] flex items-center gap-[7px] rounded-full border px-[14px] py-[8px] text-[13.5px] font-semibold text-pr"
-          style={{ borderColor: 'rgba(242,160,101,.28)', background: 'rgba(242,160,101,.14)' }}
-        >
-          <Medal size={16} strokeWidth={1.9} />
-          {prLabel}
-        </div>
-      )}
-
-      <div className="mb-[14px] w-full rounded-[22px] border border-white/[0.07] bg-surface p-[18px] text-left">
-        <div className="mb-[14px] font-display text-[20px] font-semibold text-white">
-          {summary.name}
-        </div>
-        <div className="flex gap-[10px]">
-          <StatTile value={duration} label="duration" />
-          <StatTile value={summary.setCount} label="sets" />
-          <StatTile value={formatVolume(summary.volumeKg, unit)} label={unit} />
-        </div>
-      </div>
-
-      <Button fullWidth onClick={() => navigate('/')}>
-        Done
-      </Button>
-    </div>
+      <FloatingAction>
+        <ActionPill
+          label="Done"
+          icon={<Check size={19} strokeWidth={2} />}
+          onClick={() => navigate('/')}
+        />
+      </FloatingAction>
+    </>
   )
 }

@@ -43,3 +43,18 @@ export function StreakChip({ children }: { children: ReactNode }) {
     </span>
   )
 }
+
+/**
+ * Generic accent-tinted info chip with an optional leading glyph — the neutral
+ * hero-meta chip used for counts / volume / duration (e.g. "3 exercises",
+ * "14 sets", "3 240 kg", "23m") that aren't a trend, PR or streak. Numbers get
+ * `.tnum` so they stay tabular. Pass any Lucide icon element as `icon`.
+ */
+export function MetaChip({ icon, children }: { icon?: ReactNode; children: ReactNode }) {
+  return (
+    <span className={[base, accent, 'tnum'].join(' ')}>
+      {icon}
+      {children}
+    </span>
+  )
+}

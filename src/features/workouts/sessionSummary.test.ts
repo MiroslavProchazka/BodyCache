@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { summarizeSession, type SummarySetInput } from './sessionSummary'
+import {
+  exerciseBreakdown,
+  summarizeSession,
+  type BreakdownSetInput,
+  type SummarySetInput,
+} from './sessionSummary'
 
 const set = (over: Partial<SummarySetInput>): SummarySetInput => ({
   exerciseId: 'ex1',
@@ -41,5 +46,39 @@ describe('summarizeSession', () => {
   it('derives the workout name from trained body parts', () => {
     const s = summarizeSession([set({ bodyPart: 'legs' }), set({ bodyPart: 'legs' })])
     expect(s.name).toBe('Leg day')
+  })
+})
+
+const bset = (over: Partial<BreakdownSetInput>): BreakdownSetInput => ({
+  exerciseId: 'a',
+  exerciseName: 'Bench press',
+  weightKg: null,
+  ...over,
+})
+
+describe('exerciseBreakdown', () => {
+  it('is empty for no sets', () => {
+    expect(exerciseBreakdown([])).toEqual([])
+  })
+
+  it('groups sets per exercise in first-seen order with set counts and top weight', () => {
+    const result = exerciseBreakdown([
+      bset({ exerciseId: 'a', exerciseName: 'Bench press', weightKg: 70 }),
+      bset({ exerciseId: 'a', exerciseName: 'Bench press', weightKg: 72.5 }),
+      bset({ exerciseId: 'b', exerciseName: 'Squat', weightKg: 100 }),
+      bset({ exerciseId: 'a', exerciseName: 'Bench press', weightKg: 60 }),
+    ])
+    expect(result).toEqual([
+      { exerciseId: 'a', name: 'Bench press', setCount: 3, topWeightKg: 72.5 },
+      { exerciseId: 'b', name: 'Squat', setCount: 1, topWeightKg: 100 },
+    ])
+  })
+
+  it('leaves top weight null for a weightless exercise and ignores id-less rows', () => {
+    const result = exerciseBreakdown([
+      bset({ exerciseId: 'p', exerciseName: 'Plank', weightKg: null }),
+      bset({ exerciseId: null }),
+    ])
+    expect(result).toEqual([{ exerciseId: 'p', name: 'Plank', setCount: 1, topWeightKg: null }])
   })
 })

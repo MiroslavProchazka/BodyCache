@@ -116,23 +116,25 @@ const BODY_PART_LABELS: Record<string, string> = {
   other: 'Other',
 }
 
+/** Minimal set shape a muscle split reads: a body part and a volume. */
+export interface SplitSet {
+  readonly bodyPart: string | null
+  readonly weightKg: number | null
+  readonly reps: number | null
+}
+
 /**
- * Volume share by body part over the trailing 7 days (today inclusive),
- * highest first, capped at `limit` bars. Percentages are of the whole window's
- * volume, so a truncated tail reads honestly as "< 100%".
+ * Volume share by body part over an already-scoped set list, highest first,
+ * capped at `limit` bars. Percentages are of the whole list's volume, so a
+ * truncated tail reads honestly as "< 100%". Used for the in-session and
+ * finish-recap splits; `muscleSplit7Days` layers a date window on top.
  */
-export const muscleSplit7Days = (
-  sets: readonly WeekStatSet[],
-  now: Date = new Date(),
-  limit = 6,
-): MuscleSplitItem[] => {
-  const since = addDays(new Date(now.getFullYear(), now.getMonth(), now.getDate()), -6).getTime()
+export const muscleSplit = (sets: readonly SplitSet[], limit = 6): MuscleSplitItem[] => {
   const totals = new Map<string, number>()
   for (const s of sets) {
-    if (!s.sessionStartedAt) continue
-    if (new Date(s.sessionStartedAt).getTime() < since) continue
+    const vol = s.weightKg != null && s.reps != null ? s.weightKg * s.reps : 0
     const key = s.bodyPart ?? 'other'
-    totals.set(key, (totals.get(key) ?? 0) + volumeOf(s))
+    totals.set(key, (totals.get(key) ?? 0) + vol)
   }
 
   const entries = [...totals.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1])
@@ -147,4 +149,20 @@ export const muscleSplit7Days = (
     percent: (v / total) * 100,
     strong: i < strongCount,
   }))
+}
+
+/**
+ * Volume share by body part over the trailing 7 days (today inclusive),
+ * highest first, capped at `limit` bars.
+ */
+export const muscleSplit7Days = (
+  sets: readonly WeekStatSet[],
+  now: Date = new Date(),
+  limit = 6,
+): MuscleSplitItem[] => {
+  const since = addDays(new Date(now.getFullYear(), now.getMonth(), now.getDate()), -6).getTime()
+  const inWindow = sets.filter(
+    (s) => s.sessionStartedAt && new Date(s.sessionStartedAt).getTime() >= since,
+  )
+  return muscleSplit(inWindow, limit)
 }

@@ -14,7 +14,7 @@ test('log a workout from an on-the-fly exercise', async ({ page }) => {
 
   // Add → create a new exercise (carries the active session).
   await page.getByRole('button', { name: 'Add exercise' }).click()
-  await page.getByRole('button', { name: /Create new exercise/ }).click()
+  await page.getByRole('button', { name: 'New', exact: true }).click()
   await page.getByPlaceholder('e.g. Chest Press Machine').fill('Leg Press')
   await page.getByRole('button', { name: 'Legs', exact: true }).click()
   await page.getByRole('button', { name: 'Save exercise' }).click()
@@ -25,8 +25,8 @@ test('log a workout from an on-the-fly exercise', async ({ page }) => {
   await expect(page).toHaveURL(/\/workout$/)
 
   // Finish and confirm the recap.
-  await page.getByRole('button', { name: 'Finish workout' }).click()
-  await expect(page.getByRole('heading', { name: 'Nice work.' })).toBeVisible()
+  await page.getByRole('button', { name: 'Finish', exact: true }).click()
+  await expect(page.getByText('Workout complete')).toBeVisible()
   await page.getByRole('button', { name: 'Done' }).click()
 
   // Home now surfaces the exercise in the "Recent exercises" rail.
@@ -39,7 +39,7 @@ test('an empty workout can be discarded', async ({ page }) => {
   await page.getByRole('button', { name: 'Start workout' }).click()
 
   page.on('dialog', (d) => d.accept())
-  await page.getByRole('button', { name: 'Discard workout' }).click()
+  await page.getByRole('button', { name: 'Discard', exact: true }).click()
 
   await expect(page).toHaveURL(/\/$/)
   await expect(page.getByRole('button', { name: 'Start workout' })).toBeVisible()
