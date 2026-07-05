@@ -6,7 +6,7 @@ import { planById, planExercises } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { PlanExerciseRow } from '@/evolu/rows'
 import type { PlanExerciseId, PlanId } from '@/evolu/schema'
-import { StickyAction } from '@/shared/components/StickyAction'
+import { ActionPill, FloatingAction } from '@/shared/components/FloatingAction'
 import { Overline } from '@/shared/components/Overline'
 import { SupersetGroup } from '@/features/workouts/SupersetGroup'
 import { groupExercises, newSupersetKey, supersetLabel } from '@/features/workouts/supersets'
@@ -44,7 +44,7 @@ function PlanEditorInner({ planId }: { planId: PlanId }) {
     return (
       <div className="px-5 py-16 text-center text-muted">
         <p>Plan not found.</p>
-        <button type="button" onClick={() => navigate('/plans')} className="mt-3 font-semibold text-neon">
+        <button type="button" onClick={() => navigate('/plans')} className="mt-3 font-semibold text-[#8b90f7]">
           Back to plans
         </button>
       </div>
@@ -96,8 +96,8 @@ function PlanEditorInner({ planId }: { planId: PlanId }) {
 
   return (
     <>
-      <div className="px-5 pb-[150px] pt-[6px]">
-        <h1 className="mb-4 font-display text-[22px] font-semibold tracking-tight text-white">
+      <div className="px-[22px] pb-[150px] pt-[14px]">
+        <h1 className="mb-5 font-display text-[24px] font-semibold tracking-[-0.02em] text-white">
           Edit plan
         </h1>
 
@@ -107,7 +107,7 @@ function PlanEditorInner({ planId }: { planId: PlanId }) {
           onChange={(e) => setName(e.target.value)}
           onBlur={commitName}
           placeholder="e.g. Leg Day"
-          className="mb-4 w-full rounded-[14px] border border-white/[0.08] bg-surface px-4 py-[13px] text-[16px] font-semibold text-white placeholder:text-faint focus:outline-none focus:ring-1 focus:ring-neon/40"
+          className="mb-4 w-full rounded-[14px] bg-inset px-4 py-[13px] text-[16px] font-semibold text-white placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-neon"
         />
 
         <Overline className="mb-2">Notes (optional)</Overline>
@@ -117,7 +117,7 @@ function PlanEditorInner({ planId }: { planId: PlanId }) {
           onBlur={commitNotes}
           rows={2}
           placeholder="Focus, cues, anything to remember"
-          className="mb-6 w-full resize-none rounded-[14px] border border-white/[0.08] bg-surface px-4 py-[12px] text-[14px] leading-relaxed text-soft placeholder:text-faint focus:outline-none focus:ring-1 focus:ring-neon/40"
+          className="mb-6 w-full resize-none rounded-[14px] bg-inset px-4 py-[12px] text-[14px] leading-relaxed text-soft placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-neon"
         />
 
         <Overline className="mb-3">Exercises</Overline>
@@ -166,23 +166,22 @@ function PlanEditorInner({ planId }: { planId: PlanId }) {
         <button
           type="button"
           onClick={() => navigate(`/plans/${planId}/add-exercise`)}
-          className="flex w-full items-center justify-center gap-2 rounded-[18px] border-[1.5px] border-neon/35 bg-neon/10 p-4 text-[15.5px] font-semibold text-neon"
+          className="mt-[18px] flex min-h-[44px] w-full items-center gap-[13px] text-left transition-transform active:scale-[0.99]"
         >
-          <Plus size={20} strokeWidth={2} />
-          Add exercise
+          <span className="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-[14px] border border-dashed border-white/[0.22] text-[#8b90f7]">
+            <Plus size={20} strokeWidth={2} />
+          </span>
+          <span className="text-[14.5px] font-semibold text-[#8b90f7]">Add exercise</span>
         </button>
       </div>
 
-      <StickyAction>
-        <button
-          type="button"
+      <FloatingAction>
+        <ActionPill
+          label="Done"
+          icon={<Check size={19} strokeWidth={2} />}
           onClick={() => navigate(`/plans/${planId}`)}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-[17px] text-base font-bold text-ink transition-transform active:scale-[0.99]"
-        >
-          <Check size={20} strokeWidth={2} />
-          Done
-        </button>
-      </StickyAction>
+        />
+      </FloatingAction>
     </>
   )
 }

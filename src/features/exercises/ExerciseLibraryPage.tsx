@@ -9,6 +9,8 @@ import { BODY_PARTS } from '@/evolu/schema'
 import { SearchField } from '@/shared/components/SearchField'
 import { FilterChips } from '@/shared/components/FilterChips'
 import { Button } from '@/shared/components/Button'
+import { Overline } from '@/shared/components/Overline'
+import { ActionPill, FloatingAction } from '@/shared/components/FloatingAction'
 import { humanize } from '@/shared/utils/bodyParts'
 import { chunk } from '@/shared/utils/chunk'
 import { useDebouncedValue } from '@/shared/utils/useDebouncedValue'
@@ -24,7 +26,7 @@ const CHIP_OPTIONS = [
 
 /** Two cards per grid row; each row slot reserves card height + the 12px gap. */
 const COLS = 2
-const ROW_ESTIMATE = 212
+const ROW_ESTIMATE = 236
 const MAX_FAVORITES = 12
 
 /**
@@ -104,29 +106,20 @@ export function ExerciseLibraryPage() {
   const hasAny = exercises.length > 0
 
   return (
-    <div className="px-5 pb-[130px] pt-[6px]">
-      <header className="mb-4 flex items-center justify-between">
-        <h1 className="font-display text-[26px] font-semibold tracking-tight text-white">
+    <>
+    <div className="px-[22px] pb-[130px] pt-[14px]">
+      <header className="mb-[18px] flex items-center justify-between">
+        <h1 className="font-display text-[24px] font-semibold tracking-[-0.02em] text-white">
           Exercises
         </h1>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => navigate('/library/starter')}
-            aria-label="Add from starter library"
-            className="flex h-[42px] w-[42px] items-center justify-center rounded-[14px] border border-white/10 bg-surface text-soft"
-          >
-            <ListPlus size={21} strokeWidth={2} />
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/library/new')}
-            aria-label="Create exercise"
-            className="flex h-[42px] w-[42px] items-center justify-center rounded-[14px] bg-neon text-ink"
-          >
-            <Plus size={22} strokeWidth={2} />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => navigate('/library/starter')}
+          aria-label="Add from starter library"
+          className="flex h-[42px] w-[42px] items-center justify-center rounded-[14px] border border-white/10 bg-surface text-soft"
+        >
+          <ListPlus size={21} strokeWidth={2} />
+        </button>
       </header>
 
       {hasAny && (
@@ -148,7 +141,7 @@ export function ExerciseLibraryPage() {
 
       {!hasAny ? (
         <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-inset text-neon">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-inset text-[#8b90f7]">
             <Dumbbell size={28} strokeWidth={1.75} />
           </div>
           <h2 className="font-display text-lg font-semibold text-white">No exercises yet</h2>
@@ -168,11 +161,9 @@ export function ExerciseLibraryPage() {
       ) : (
         <>
           {favoritesFiltered.length > 0 && (
-            <section aria-label="Favorites" className="mb-[18px]">
-              <h2 className="mb-[14px] font-display text-[17px] font-semibold tracking-tight text-white">
-                Favorites
-              </h2>
-              <div className="grid grid-cols-2 gap-3">
+            <section aria-label="Favorites" className="mb-[22px]">
+              <Overline className="mb-[14px]">Favorites</Overline>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-[18px]">
                 {favoritesFiltered.map((exercise) => (
                   <ExerciseCard
                     key={exercise.id}
@@ -183,11 +174,7 @@ export function ExerciseLibraryPage() {
               </div>
             </section>
           )}
-          {favoritesFiltered.length > 0 && (
-            <h2 className="mb-[14px] font-display text-[17px] font-semibold tracking-tight text-white">
-              All exercises
-            </h2>
-          )}
+          {favoritesFiltered.length > 0 && <Overline className="mb-[14px]">All exercises</Overline>}
           <div ref={listRef}>
             <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
               {virtualizer.getVirtualItems().map((row) => (
@@ -218,5 +205,15 @@ export function ExerciseLibraryPage() {
         </>
       )}
     </div>
+    {hasAny && (
+      <FloatingAction raised>
+        <ActionPill
+          label="New exercise"
+          icon={<Plus size={19} strokeWidth={2} />}
+          onClick={() => navigate('/library/new')}
+        />
+      </FloatingAction>
+    )}
+    </>
   )
 }

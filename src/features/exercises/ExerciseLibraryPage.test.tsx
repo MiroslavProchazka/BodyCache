@@ -191,8 +191,8 @@ describe('ExerciseLibraryPage', () => {
 
     render(<ExerciseLibraryPage />)
 
-    expect(screen.getByRole('heading', { name: 'Favorites' })).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'All exercises' })).toBeTruthy()
+    expect(screen.getByText('Favorites')).toBeTruthy()
+    expect(screen.getByText('All exercises')).toBeTruthy()
 
     const favorites = screen.getByRole('region', { name: 'Favorites' })
     const names = Array.from(favorites.querySelectorAll('div div')).map((el) => el.textContent)

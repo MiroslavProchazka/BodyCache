@@ -1,22 +1,28 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { CalendarDays, ChevronRight, Clock } from 'lucide-react'
+import { Dumbbell } from 'lucide-react'
 import { finishedWorkoutSessions, finishedSessionSets } from '@/evolu/queries'
 import type { WorkoutSessionRow, FinishedSessionSetRow } from '@/evolu/rows'
 import type { WorkoutSessionId } from '@/evolu/schema'
-import { StatTile } from '@/shared/components/StatTile'
+import { Divider } from '@/shared/components/Divider'
+import { HeroStat } from '@/shared/components/HeroStat'
+import { IconTile } from '@/shared/components/IconTile'
+import { ListRow } from '@/shared/components/ListRow'
 import { Overline } from '@/shared/components/Overline'
+import { MetaChip, PrChip } from '@/shared/components/Chips'
 import { formatRelativeDay, formatMonth, monthKey } from '@/shared/utils/dates'
 import { finishedDurationSec, formatDurationSec } from '@/shared/utils/workoutStats'
 import { formatVolume } from '@/shared/utils/units'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { sessionSummaries, historyTotals } from './historyStats'
+import { prsThisMonth } from './weeklyStats'
 import type { SessionSummary } from './sessionSummary'
 
 /**
- * History — every finished workout, newest first and grouped by month, with an
- * all-time stats header. Answers "what have I done?" without re-querying each
- * session: one set query feeds every per-session summary and the totals.
+ * History — every finished workout, newest first and grouped by month on the
+ * flat black canvas: a this-month volume hero, then overline-labelled month
+ * sections of flat rows. One set query feeds every per-session summary and the
+ * header totals — no per-session re-query.
  */
 export function HistoryPage() {
   const navigate = useNavigate()
@@ -26,12 +32,16 @@ export function HistoryPage() {
 
   const summaries = sessionSummaries(sets)
   const totals = historyTotals(sessions, sets)
+  const prCount = prsThisMonth(sets)
 
   // Group sessions into month buckets, preserving the newest-first order.
+  const currentMonth = monthKey(new Date().toISOString())
   const months: { key: string; label: string; sessions: WorkoutSessionRow[] }[] = []
+  let monthVolumeKg = 0
   for (const s of sessions) {
     if (!s.startedAt) continue
     const key = monthKey(s.startedAt)
+    if (key === currentMonth) monthVolumeKg += summaries.get(String(s.id))?.volumeKg ?? 0
     let bucket = months.find((m) => m.key === key)
     if (!bucket) {
       bucket = { key, label: formatMonth(s.startedAt), sessions: [] }
@@ -41,48 +51,46 @@ export function HistoryPage() {
   }
 
   return (
-    <div className="px-5 pb-[130px] pt-[6px]">
-      <h1 className="mb-[22px] font-display text-[30px] font-semibold leading-[1.08] tracking-tight text-white">
+    <div className="px-[22px] pb-[130px] pt-[14px]">
+      <h1 className="mb-5 font-display text-[24px] font-semibold tracking-[-0.02em] text-white">
         History
       </h1>
 
       {sessions.length === 0 ? (
-        <div className="mt-6 rounded-[22px] border-[1.5px] border-dashed border-white/[0.14] px-6 py-[42px] text-center">
-          <div
-            className="mx-auto mb-4 flex h-14 w-14 items-center justify-center bg-inset text-neon"
-            style={{ borderRadius: '20px' }}
-          >
-            <CalendarDays size={26} strokeWidth={1.75} />
-          </div>
-          <div className="mb-[6px] font-display text-lg font-semibold text-white">
-            No workouts yet
-          </div>
-          <div className="text-sm leading-[1.45] text-muted">
-            Finish a workout and it'll show up here —
-            <br />
-            with everything you logged, ready to recall.
-          </div>
+        <div className="mt-4">
+          <Overline className="mb-[10px]">No workouts yet</Overline>
+          <p className="text-[13.5px] leading-[1.5] text-muted">
+            Finish a workout and it’ll show up here — with everything you logged, ready to recall.
+          </p>
         </div>
       ) : (
         <>
-          <div className="mb-[26px] flex gap-[10px]">
-            <StatTile value={totals.workouts} label="workouts" />
-            <StatTile value={totals.thisMonth} label="this month" />
-            <StatTile value={formatVolume(totals.volumeKg, unit)} label={`${unit} lifted`} />
-          </div>
+          <HeroStat
+            intro="This month"
+            value={formatVolume(monthVolumeKg, unit)}
+            unit={unit}
+            size={44}
+            chips={
+              <>
+                <MetaChip icon={<Dumbbell size={13} strokeWidth={2} />}>
+                  {totals.thisMonth} {totals.thisMonth === 1 ? 'workout' : 'workouts'}
+                </MetaChip>
+                {prCount > 0 && <PrChip>{`${prCount} PR${prCount === 1 ? '' : 's'}`}</PrChip>}
+              </>
+            }
+          />
 
           {months.map((month) => (
-            <section key={month.key} className="mb-[26px]">
+            <section key={month.key}>
+              <Divider className="my-6" />
               <Overline className="mb-3">{month.label}</Overline>
-              <div className="flex flex-col gap-[10px]">
+              <div className="flex flex-col gap-[18px]">
                 {month.sessions.map((session) => (
                   <SessionRow
                     key={session.id}
                     session={session}
                     summary={summaries.get(String(session.id))}
-                    onClick={() =>
-                      navigate(`/history/${session.id as WorkoutSessionId}`)
-                    }
+                    onClick={() => navigate(`/history/${session.id as WorkoutSessionId}`)}
                   />
                 ))}
               </div>
@@ -94,7 +102,7 @@ export function HistoryPage() {
   )
 }
 
-/** One finished workout in the list: name, date, duration and quick stats. */
+/** One finished workout as a flat row: dumbbell tile, name, `date · … · kg` meta. */
 function SessionRow({
   session,
   summary,
@@ -106,55 +114,29 @@ function SessionRow({
 }) {
   const { unit } = useUnits()
   const durationSec = finishedDurationSec(session)
-  const duration = durationSec != null ? formatDurationSec(durationSec) : null
   const name = summary?.name ?? 'Workout'
   const setCount = summary?.setCount ?? 0
-  const exerciseCount = summary?.exerciseCount ?? 0
   const volumeKg = summary?.volumeKg ?? 0
 
+  const meta = [
+    session.startedAt ? formatRelativeDay(session.startedAt) : null,
+    durationSec != null ? formatDurationSec(durationSec) : null,
+    `${setCount} ${setCount === 1 ? 'set' : 'sets'}`,
+    volumeKg > 0 ? `${formatVolume(volumeKg, unit)} ${unit}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
   return (
-    <button
-      type="button"
+    <ListRow
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-[18px] border border-white/[0.07] bg-surface px-[16px] py-[14px] text-left"
-    >
-      <div className="min-w-0 flex-1">
-        <div className="mb-[5px] flex items-center gap-[10px]">
-          <span className="truncate font-display text-[17px] font-semibold tracking-tight text-white">
-            {name}
-          </span>
-          <span className="whitespace-nowrap text-[12.5px] font-medium text-muted">
-            {session.startedAt ? formatRelativeDay(session.startedAt) : '—'}
-          </span>
-        </div>
-        <div className="flex items-center gap-[5px] text-[12.5px] text-muted tnum">
-          <span>
-            {exerciseCount} {exerciseCount === 1 ? 'exercise' : 'exercises'}
-          </span>
-          <span className="text-faint">·</span>
-          <span>
-            {setCount} {setCount === 1 ? 'set' : 'sets'}
-          </span>
-          {volumeKg > 0 && (
-            <>
-              <span className="text-faint">·</span>
-              <span>
-                {formatVolume(volumeKg, unit)} {unit}
-              </span>
-            </>
-          )}
-          {duration && (
-            <>
-              <span className="text-faint">·</span>
-              <span className="flex items-center gap-[3px]">
-                <Clock size={12} strokeWidth={1.75} className="text-faint" />
-                {duration}
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-      <ChevronRight size={18} strokeWidth={1.75} className="flex-none text-faint" />
-    </button>
+      leading={
+        <IconTile tone="neutral">
+          <Dumbbell size={20} strokeWidth={1.75} />
+        </IconTile>
+      }
+      title={name}
+      meta={meta}
+    />
   )
 }

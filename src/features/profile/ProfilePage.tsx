@@ -30,12 +30,12 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="px-5 pb-[60px] pt-[6px]">
-      <header className="mb-5 flex items-center gap-3">
+    <div className="px-[22px] pb-[60px] pt-[14px]">
+      <header className="mb-6 flex items-center gap-3">
         <CircleButton onClick={() => navigate('/settings')} label="Back">
           <ChevronLeft size={18} strokeWidth={1.75} />
         </CircleButton>
-        <h1 className="font-display text-[22px] font-semibold tracking-tight text-white">
+        <h1 className="font-display text-[22px] font-semibold tracking-[-0.02em] text-white">
           Edit profile
         </h1>
       </header>

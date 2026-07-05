@@ -1,13 +1,15 @@
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { ChevronLeft, ChevronRight, Pencil, Play, Archive, Trash2 } from 'lucide-react'
+import { ChevronLeft, Pencil, Play } from 'lucide-react'
 import { planById, planExercises, planSetsForPlanExercise } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { PlanExerciseRow } from '@/evolu/rows'
 import type { ExerciseId, ExerciseType, ExercisePhotoId, PlanExerciseId, PlanId } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
-import { StickyAction } from '@/shared/components/StickyAction'
+import { Divider } from '@/shared/components/Divider'
+import { HeroStat } from '@/shared/components/HeroStat'
 import { Overline } from '@/shared/components/Overline'
+import { ActionPill, FloatingAction } from '@/shared/components/FloatingAction'
 import { useToast } from '@/shared/components/Toast'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { metaLine } from '@/shared/utils/bodyParts'
@@ -33,9 +35,13 @@ function PlanDetailInner({ planId }: { planId: PlanId }) {
 
   if (!plan) {
     return (
-      <div className="px-5 py-16 text-center text-muted">
+      <div className="px-[22px] py-16 text-center text-muted">
         <p>Plan not found.</p>
-        <button type="button" onClick={() => navigate('/plans')} className="mt-3 font-semibold text-neon">
+        <button
+          type="button"
+          onClick={() => navigate('/plans')}
+          className="mt-3 font-semibold text-[#8b90f7]"
+        >
           Back to plans
         </button>
       </div>
@@ -65,127 +71,110 @@ function PlanDetailInner({ planId }: { planId: PlanId }) {
 
   return (
     <>
-      <div className="px-5 pb-[150px] pt-[6px]">
-        <header className="mb-[18px] flex items-center gap-3">
+      <div className="px-[22px] pb-[150px] pt-[14px]">
+        <header className="mb-[22px] flex items-center justify-between">
           <CircleButton onClick={() => navigate('/plans')} label="Back">
             <ChevronLeft size={18} strokeWidth={1.75} />
           </CircleButton>
-          <h1 className="min-w-0 flex-1 truncate font-display text-[22px] font-semibold tracking-tight text-white">
-            {plan.name}
-          </h1>
           <CircleButton onClick={() => navigate(`/plans/${planId}/edit`)} label="Edit plan">
             <Pencil size={17} strokeWidth={1.85} />
           </CircleButton>
         </header>
 
+        <Overline className="mb-[10px]">Plan</Overline>
+        <h1 className="mb-4 font-display text-[26px] font-bold leading-[1.1] tracking-[-0.02em] text-white">
+          {plan.name}
+        </h1>
+        <HeroStat value={exercises.length} unit={exercises.length === 1 ? 'exercise' : 'exercises'} size={44} />
+
         {plan.notes && (
-          <p className="mb-[18px] rounded-[16px] border border-white/[0.07] bg-surface p-4 text-sm leading-relaxed text-muted">
-            {plan.notes}
-          </p>
+          <p className="mt-4 text-[13.5px] leading-[1.5] text-muted">{plan.notes}</p>
         )}
 
         {exercises.length === 0 ? (
-          <p className="py-10 text-center text-sm text-faint">
-            This plan is empty. Edit it to add exercises.
-          </p>
+          <>
+            <Divider className="my-6" />
+            <p className="text-[13.5px] text-muted">This plan is empty. Edit it to add exercises.</p>
+          </>
         ) : (
-          <div className="flex flex-col gap-3">
-            {exercises.map((entry) => (
-              <PlanExerciseRowView
-                key={entry.id}
-                entry={entry as PlanExerciseRow}
-                onOpen={() =>
-                  entry.exerciseId &&
-                  navigate(`/library/${entry.exerciseId as ExerciseId}`)
-                }
-              />
-            ))}
-          </div>
+          exercises.map((entry) => (
+            <PlanExerciseRowView
+              key={entry.id}
+              entry={entry as PlanExerciseRow}
+              onOpen={() =>
+                entry.exerciseId && navigate(`/library/${entry.exerciseId as ExerciseId}`)
+              }
+            />
+          ))
         )}
 
-        <div className="mt-7 flex gap-2">
+        <Divider className="my-6" />
+        <div className="flex gap-5">
           <button
             type="button"
             onClick={handleArchive}
-            className="flex flex-1 items-center justify-center gap-[7px] rounded-[14px] border border-white/[0.08] bg-inset py-[12px] text-[13.5px] font-semibold text-soft"
+            className="text-[13.5px] font-semibold text-muted active:scale-[0.99]"
           >
-            <Archive size={16} strokeWidth={1.85} />
-            Archive
+            Archive plan
           </button>
           <button
             type="button"
             onClick={handleDelete}
-            className="flex flex-1 items-center justify-center gap-[7px] rounded-[14px] border border-white/[0.08] bg-inset py-[12px] text-[13.5px] font-semibold text-faint"
+            className="text-[13.5px] font-semibold text-[#fa757e] active:scale-[0.99]"
           >
-            <Trash2 size={16} strokeWidth={1.85} />
-            Delete
+            Delete plan
           </button>
         </div>
       </div>
 
-      <StickyAction>
-        <button
-          type="button"
+      <FloatingAction>
+        <ActionPill
+          label="Start this workout"
+          icon={<Play size={18} strokeWidth={2} fill="currentColor" stroke="none" className="ml-[2px]" />}
           onClick={handleStart}
-          disabled={exercises.length === 0}
-          className={[
-            'flex w-full items-center justify-center gap-2 rounded-2xl py-[17px] text-base font-bold',
-            exercises.length === 0
-              ? 'border border-white/[0.08] bg-surface text-faint opacity-60'
-              : 'bg-white text-ink',
-          ].join(' ')}
-        >
-          <Play size={19} strokeWidth={2} fill="currentColor" stroke="none" />
-          Start workout
-        </button>
-      </StickyAction>
+          className={exercises.length === 0 ? 'opacity-60 grayscale' : ''}
+        />
+      </FloatingAction>
     </>
   )
 }
 
-/** One exercise in the read-only plan view, with its target sets listed. Tapping
- *  the header opens the exercise's detail screen. */
+/** One exercise in the read-only plan view: name overline (→ detail) + target sets. */
 function PlanExerciseRowView({ entry, onOpen }: { entry: PlanExerciseRow; onOpen: () => void }) {
   const { unit } = useUnits()
   const type = entry.exerciseType as ExerciseType
   const sets = useQuery(planSetsForPlanExercise(entry.id as PlanExerciseId))
 
   return (
-    <div className="rounded-[20px] border border-white/[0.07] bg-surface p-4">
-      <button
-        type="button"
-        onClick={onOpen}
-        className="mb-3 flex w-full items-center gap-[13px] text-left"
-      >
+    <div>
+      <Divider className="my-6" />
+      <button type="button" onClick={onOpen} className="mb-3 flex w-full items-center gap-[13px] text-left">
         <ExerciseTile
           photoId={entry.primaryPhotoId as ExercisePhotoId | null}
           bodyPart={entry.bodyPart as string | null}
           radius="14px"
-          className="h-[46px] w-[46px] flex-none"
-          glyphSize={23}
+          className="h-[42px] w-[42px] flex-none"
+          glyphSize={20}
         />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-base font-semibold tracking-tight text-white">
-            {entry.exerciseName}
-          </div>
+          <div className="truncate text-[15px] font-semibold text-white">{entry.exerciseName}</div>
           <div className="mt-[2px] truncate text-[12.5px] text-muted">
             {metaLine(entry.bodyPart as string | null, entry.equipment as string | null) ||
               `${sets.length} ${sets.length === 1 ? 'set' : 'sets'}`}
           </div>
         </div>
-        <ChevronRight size={18} strokeWidth={1.75} className="flex-none text-faint" />
       </button>
       {sets.length === 0 ? (
         <Overline>No target sets</Overline>
       ) : (
-        <div className="flex flex-col gap-[6px]">
+        <div className="flex flex-col gap-[10px]">
           {sets.map((s, i) => (
-            <div key={s.id} className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-2">
-                <span className="font-medium text-muted">Set {i + 1}</span>
-                <SetTypeTag value={s.setType} />
+            <div key={s.id} className="flex items-center gap-[13px]">
+              <span className="w-[44px] flex-none text-[11px] font-semibold uppercase tracking-[0.06em] text-faint">
+                Set {i + 1}
               </span>
-              <span className="font-semibold tnum text-white">
+              <SetTypeTag value={s.setType} />
+              <span className="flex-1 text-right text-[14.5px] font-semibold tnum text-white">
                 {formatSetSummary(
                   {
                     weightKg: s.weightKg,

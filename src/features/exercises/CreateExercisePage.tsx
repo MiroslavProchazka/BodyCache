@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Camera, ChevronLeft, X } from 'lucide-react'
+import { Camera, Check, ChevronLeft, X } from 'lucide-react'
 import { evolu } from '@/evolu/evolu'
 import { planExercises } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
@@ -14,7 +14,7 @@ import {
 } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
 import { Overline } from '@/shared/components/Overline'
-import { StickyAction } from '@/shared/components/StickyAction'
+import { ActionPill, FloatingAction } from '@/shared/components/FloatingAction'
 import { humanize } from '@/shared/utils/bodyParts'
 import { nextOrderIndex } from '@/features/plans/planToSession'
 import { storePhoto } from '@/shared/utils/photos'
@@ -99,12 +99,12 @@ export function CreateExercisePage() {
 
   return (
     <>
-      <div className="px-5 pb-[150px] pt-[6px]">
-        <header className="mb-[18px] flex items-center gap-3">
+      <div className="px-[22px] pb-[150px] pt-[14px]">
+        <header className="mb-[22px] flex items-center gap-3">
           <CircleButton onClick={goBack} label="Back">
             <ChevronLeft size={18} strokeWidth={1.75} />
           </CircleButton>
-          <h1 className="font-display text-[22px] font-semibold tracking-tight text-white">
+          <h1 className="font-display text-[22px] font-semibold tracking-[-0.02em] text-white">
             New exercise
           </h1>
         </header>
@@ -139,7 +139,7 @@ export function CreateExercisePage() {
             className="mb-[18px] flex h-[150px] w-full flex-col items-center justify-center gap-[10px] border-[1.5px] border-dashed border-white/[0.18] bg-surface"
             style={{ borderRadius: '20px' }}
           >
-            <div className="flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-inset text-neon">
+            <div className="flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-inset text-[#8b90f7]">
               <Camera size={26} strokeWidth={1.75} />
             </div>
             <div className="text-[14.5px] font-semibold text-soft">
@@ -156,7 +156,7 @@ export function CreateExercisePage() {
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. Chest Press Machine"
           autoFocus
-          className="mb-[18px] w-full rounded-2xl border border-white/10 bg-surface p-[14px] text-[15px] text-white placeholder:text-faint focus:outline-none"
+          className="mb-[18px] w-full rounded-2xl bg-inset p-[14px] text-[15px] text-white placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-neon"
         />
 
         <Overline className="mb-[10px]">Body part</Overline>
@@ -176,16 +176,14 @@ export function CreateExercisePage() {
         />
       </div>
 
-      <StickyAction>
-        <button
-          type="button"
+      <FloatingAction>
+        <ActionPill
+          label={saving ? 'Saving…' : 'Save exercise'}
+          icon={<Check size={19} strokeWidth={2} />}
           onClick={handleSubmit}
-          disabled={!canSave}
-          className="w-full rounded-2xl bg-white py-[17px] text-base font-bold text-ink transition-transform active:scale-[0.99] disabled:bg-surface disabled:text-faint disabled:opacity-60"
-        >
-          {saving ? 'Saving…' : 'Save exercise'}
-        </button>
-      </StickyAction>
+          className={!canSave ? 'pointer-events-none opacity-60 grayscale' : ''}
+        />
+      </FloatingAction>
     </>
   )
 }
@@ -211,7 +209,7 @@ function SelectChips({
             onClick={() => onChange(opt)}
             className={[
               'rounded-full border px-[15px] py-[9px] text-[13.5px] font-semibold transition-colors',
-              active ? 'border-neon bg-neon text-ink' : 'border-white/10 bg-surface text-muted',
+              active ? 'border-neon bg-neon text-white' : 'border-transparent bg-inset text-soft',
             ].join(' ')}
           >
             {humanize(opt)}

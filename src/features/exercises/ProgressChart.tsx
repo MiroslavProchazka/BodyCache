@@ -1,14 +1,13 @@
-import { useId } from 'react'
-import { scalePoints, linePath, type ProgressPoint } from '@/shared/utils/progress'
+import type { ProgressPoint } from '@/shared/utils/progress'
 
-const WIDTH = 320
-const HEIGHT = 120
-const PAD = 14
+const TRACK_PX = 120
+const MIN_PX = 20
 
 /**
- * A dependency-free SVG line chart of an exercise's progress (one point per
- * session). Draws a soft filled area, the trend line and a dot per session,
- * with the latest point emphasized. `format` renders metric values for labels.
+ * A dependency-free bar chart of an exercise's progress (one bar per session,
+ * oldest → newest). Bars sit on the flat black canvas: every bar is `track`
+ * gray except the latest session, which gets the cobalt gradient (SPEC §5.7).
+ * `format` renders metric values for the low / now / high labels.
  */
 export function ProgressChart({
   points,
@@ -17,56 +16,42 @@ export function ProgressChart({
   points: readonly ProgressPoint[]
   format: (value: number) => string
 }) {
-  const gradId = useId()
   const values = points.map((p) => p.value)
-  const xy = scalePoints(values, WIDTH, HEIGHT, PAD)
-  const line = linePath(xy)
-  const area = `${line} L${xy[xy.length - 1].x} ${HEIGHT - PAD} L${xy[0].x} ${HEIGHT - PAD} Z`
-
   const max = Math.max(...values)
   const min = Math.min(...values)
+  const range = max - min
   const last = points[points.length - 1]
 
   return (
     <div>
-      <svg
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        className="w-full"
-        role="img"
-        aria-label="Progress over time"
-        preserveAspectRatio="none"
-      >
-        <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#494fdf" stopOpacity="0.28" />
-            <stop offset="1" stopColor="#494fdf" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path d={area} fill={`url(#${gradId})`} />
-        <path d={line} fill="none" stroke="#494fdf" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-        {xy.map((p, i) => (
-          <circle
-            key={points[i].sessionId}
-            cx={p.x}
-            cy={p.y}
-            r={i === xy.length - 1 ? 4.5 : 3}
-            fill={i === xy.length - 1 ? '#494fdf' : '#16181a'}
-            stroke="#494fdf"
-            strokeWidth="2"
-          />
-        ))}
-      </svg>
-      <div className="mt-2 flex items-center justify-between text-[12px] text-muted">
+      <div className="flex items-end gap-[6px]" style={{ height: TRACK_PX }}>
+        {points.map((p, i) => {
+          const pct = range > 0 ? (p.value - min) / range : 1
+          const height = Math.round(MIN_PX + pct * (TRACK_PX - MIN_PX))
+          const latest = i === points.length - 1
+          return (
+            <div
+              key={p.sessionId}
+              className="flex-1 rounded-[5px]"
+              style={{
+                height,
+                background: latest ? 'linear-gradient(180deg,#7c82f5,#494fdf)' : '#1c1e22',
+              }}
+            />
+          )
+        })}
+      </div>
+      <div className="mt-3 flex items-center justify-between text-[12px] text-faint">
         <span>
-          Low <span className="font-semibold text-soft">{format(min)}</span>
+          Low <span className="font-semibold tnum text-soft">{format(min)}</span>
         </span>
         {last && (
           <span>
-            Now <span className="font-semibold text-neon">{format(last.value)}</span>
+            Now <span className="font-semibold tnum text-[#8b90f7]">{format(last.value)}</span>
           </span>
         )}
         <span>
-          High <span className="font-semibold text-soft">{format(max)}</span>
+          High <span className="font-semibold tnum text-soft">{format(max)}</span>
         </span>
       </div>
     </div>

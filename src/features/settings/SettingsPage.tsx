@@ -18,6 +18,7 @@ import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { ExerciseId } from '@/evolu/schema'
 import { legacyExercises } from '@/features/exercises/legacyExercises'
 import { Overline } from '@/shared/components/Overline'
+import { Divider } from '@/shared/components/Divider'
 import { useToast } from '@/shared/components/Toast'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { useRestTimer, REST_PRESETS } from '@/shared/rest/RestTimerContext'
@@ -211,8 +212,8 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="px-5 pb-[130px] pt-[6px]">
-      <h1 className="mb-5 font-display text-[26px] font-semibold tracking-tight text-white">
+    <div className="px-[22px] pb-[130px] pt-[14px]">
+      <h1 className="mb-5 font-display text-[24px] font-semibold tracking-[-0.02em] text-white">
         Settings
       </h1>
 
@@ -221,7 +222,7 @@ export function SettingsPage() {
         <button
           type="button"
           onClick={() => navigate('/settings/profile')}
-          className="mb-[18px] flex w-full items-center gap-[13px] rounded-[18px] border border-white/[0.07] bg-surface p-4 text-left active:scale-[0.99]"
+          className="mb-6 flex w-full items-center gap-[13px] text-left transition-transform active:scale-[0.99]"
         >
           <Avatar
             seed={profile.avatarSeed ?? profile.id}
@@ -244,8 +245,9 @@ export function SettingsPage() {
           expose a live SyncState yet, and saving never blocks on the network. */}
       <SyncStatusCard online={online} />
 
-      <Overline className="mb-[10px]">Recovery phrase</Overline>
-      <div className="mb-[22px] rounded-[18px] border border-white/[0.07] bg-surface p-4">
+      <Divider className="mb-6" />
+      <Overline className="mb-3">Recovery phrase</Overline>
+      <div className="mb-6">
         <p className="text-[13px] leading-relaxed text-muted">
           Use your recovery phrase to restore the same synced owner on another device. Keep it
           private. Photos remain local to each device.
@@ -278,7 +280,7 @@ export function SettingsPage() {
             type="button"
             onClick={copyMnemonic}
             disabled={!ownerReady || !showMnemonic || !currentMnemonic}
-            className="rounded-[12px] border border-neon/30 bg-neon/10 px-3 py-[10px] text-[13.5px] font-semibold text-neon disabled:opacity-50"
+            className="rounded-[12px] border border-neon/30 bg-neon/10 px-3 py-[10px] text-[13.5px] font-semibold text-[#8b90f7] disabled:opacity-50"
           >
             Copy phrase
           </button>
@@ -307,7 +309,7 @@ export function SettingsPage() {
             type="button"
             onClick={restoreFromMnemonic}
             disabled={mnemonicBusy !== null || !mnemonicInput.trim()}
-            className="mt-3 w-full rounded-[12px] bg-neon px-4 py-[11px] text-[13.5px] font-semibold text-ink disabled:opacity-50"
+            className="mt-3 w-full rounded-full bg-gradient-to-br from-neon to-brand px-4 py-[12px] text-[13.5px] font-semibold text-white disabled:opacity-50"
           >
             {mnemonicBusy === 'restore' ? 'Restoring...' : 'Restore phrase'}
           </button>
@@ -323,14 +325,15 @@ export function SettingsPage() {
         </button>
       </div>
 
+      <Divider className="mb-6" />
       <Overline className="mb-[10px]">Units</Overline>
-      <div className="mb-[22px] flex rounded-2xl border border-white/[0.08] bg-surface p-1">
+      <div className="mb-6 flex rounded-full bg-inset p-1">
         <Segment label="Kilograms" active={unit === 'kg'} onClick={() => setUnit('kg')} />
         <Segment label="Pounds" active={unit === 'lb'} onClick={() => setUnit('lb')} />
       </div>
 
       <Overline className="mb-[10px]">Default rest timer</Overline>
-      <div className="mb-[22px] flex gap-1 rounded-2xl border border-white/[0.08] bg-surface p-1">
+      <div className="mb-6 flex gap-1 rounded-full bg-inset p-1">
         {REST_PRESETS.map((sec) => (
           <Segment
             key={sec}
@@ -341,8 +344,9 @@ export function SettingsPage() {
         ))}
       </div>
 
-      <Overline className="mb-[10px]">Your data</Overline>
-      <div className="overflow-hidden rounded-[18px] border border-white/[0.07] bg-surface">
+      <Divider className="mb-6" />
+      <Overline className="mb-3">Your data</Overline>
+      <div className="flex flex-col">
         <DataRow
           Icon={Download}
           label="Back up now"
@@ -366,13 +370,14 @@ export function SettingsPage() {
           last
         />
       </div>
-      <p className="mt-[10px] px-1 text-[12px] leading-relaxed text-faint">
+      <p className="mt-[10px] text-[12px] leading-relaxed text-faint">
         A backup is a single file with all your exercises, workouts and photos. Keep it somewhere
         safe — it's the only copy off this device.
       </p>
 
-      <Overline className="mb-[10px] mt-[22px]">Library cleanup</Overline>
-      <div className="overflow-hidden rounded-[18px] border border-white/[0.07] bg-surface">
+      <Divider className="mb-6 mt-6" />
+      <Overline className="mb-3">Library cleanup</Overline>
+      <div className="flex flex-col">
         <DataRow
           Icon={Eraser}
           label={
@@ -386,7 +391,7 @@ export function SettingsPage() {
           last
         />
       </div>
-      <p className="mt-[10px] px-1 text-[12px] leading-relaxed text-faint">
+      <p className="mt-[10px] text-[12px] leading-relaxed text-faint">
         Older exercises with no demo image show a purple muscle-map placeholder instead of an
         animation. This removes them so only the animated, GIF-style exercises remain — your logged
         workouts are kept, and you can re-add any from the starter library.
@@ -418,11 +423,11 @@ export function SettingsPage() {
 function SyncStatusCard({ online }: { online: boolean }) {
   const Icon = online ? Cloud : CloudOff
   return (
-    <div className="mb-[18px] flex items-center gap-[13px] rounded-[18px] border border-white/[0.07] bg-surface p-4">
+    <div className="mb-6 flex items-center gap-[13px]">
       <div
         className={[
-          'flex h-11 w-11 flex-none items-center justify-center rounded-[14px]',
-          online ? 'bg-neon/[0.14] text-neon' : 'bg-white/[0.06] text-muted',
+          'flex h-[42px] w-[42px] flex-none items-center justify-center rounded-[14px] border border-white/[0.08]',
+          online ? 'bg-surface text-[#8b90f7]' : 'bg-surface text-muted',
         ].join(' ')}
       >
         <Icon size={22} strokeWidth={1.75} />
@@ -461,8 +466,8 @@ function Segment({
       onClick={onClick}
       aria-pressed={active}
       className={[
-        'flex-1 rounded-[11px] p-3 text-[14.5px] font-semibold transition-colors',
-        active ? 'bg-neon text-ink' : 'bg-transparent text-muted',
+        'flex-1 rounded-full py-[11px] text-[14.5px] font-semibold transition-colors',
+        active ? 'bg-neon text-white' : 'bg-transparent text-muted',
       ].join(' ')}
     >
       {label}
@@ -491,14 +496,14 @@ function DataRow({
       onClick={onClick}
       disabled={disabled}
       className={[
-        'flex w-full items-center gap-[13px] px-4 py-[15px] text-left transition-opacity disabled:opacity-50',
-        last ? '' : 'border-b border-white/[0.06]',
+        'flex min-h-[44px] w-full items-center gap-[13px] py-[13px] text-left transition-opacity disabled:opacity-50',
+        last ? '' : 'border-b border-divider',
       ].join(' ')}
     >
       <Icon size={20} strokeWidth={1.75} className="text-muted" />
       <span className="flex-1 text-[14.5px] font-medium text-white">{label}</span>
       {loading ? (
-        <Loader2 size={18} strokeWidth={2} className="animate-spin text-neon" />
+        <Loader2 size={18} strokeWidth={2} className="animate-spin text-[#8b90f7]" />
       ) : (
         <ChevronRight size={17} strokeWidth={1.75} className="text-faint" />
       )}

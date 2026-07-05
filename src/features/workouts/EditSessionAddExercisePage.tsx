@@ -48,14 +48,17 @@ function EditSessionAddExerciseInner({ sessionId }: { sessionId: WorkoutSessionI
   if (!session || session.status !== 'finished') return <Navigate to="/history" replace />
 
   return (
-    <div className="px-5 pb-[130px] pt-[6px]">
-      <header className="mb-[18px] flex items-center gap-3">
+    <div className="px-[22px] pb-[40px] pt-[14px]">
+      <header className="mb-[22px] flex items-center gap-3">
         <CircleButton onClick={() => navigate(backToEdit)} label="Back">
           <ChevronLeft size={18} strokeWidth={1.75} />
         </CircleButton>
-        <h1 className="font-display text-[22px] font-semibold tracking-tight text-white">
-          Add exercise
-        </h1>
+        <div className="min-w-0 flex-1 text-center">
+          <div className="truncate font-display text-[17px] font-semibold tracking-[-0.01em] text-white">
+            Add exercise
+          </div>
+        </div>
+        <span className="w-10 flex-none" aria-hidden="true" />
       </header>
 
       <ExercisePickerList exercises={exercises} onPick={add} subtitleFor={subtitleFor} />
