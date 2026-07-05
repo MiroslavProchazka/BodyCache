@@ -11,6 +11,8 @@ import { Overline } from '@/shared/components/Overline'
 import { SupersetGroup } from '@/features/workouts/SupersetGroup'
 import { groupExercises, newSupersetKey, supersetLabel } from '@/features/workouts/supersets'
 import { PlanExerciseEditor } from './PlanExerciseEditor'
+import { ClipboardList } from 'lucide-react'
+import { PLAN_ICON_PRESETS } from './planIcon'
 
 /** Build / edit a plan: name, notes, ordered exercises and their target sets. */
 export function PlanEditorPage() {
@@ -62,6 +64,14 @@ function PlanEditorInner({ planId }: { planId: PlanId }) {
     if (trimmed !== ((plan.notes as string | null) ?? '')) {
       updatePlan(planId, { notes: trimmed || null })
     }
+  }
+
+  // Icon is a discrete choice, committed immediately (the reactive plan query
+  // reflects it). `null` clears back to the clipboard fallback.
+  const currentIcon = (plan.icon as string | null) ?? null
+  const chooseIcon = (next: string | null) => {
+    if (next === currentIcon) return
+    updatePlan(planId, { icon: next })
   }
 
   const blocks = groupExercises(exercises)
@@ -119,6 +129,29 @@ function PlanEditorInner({ planId }: { planId: PlanId }) {
           placeholder="Focus, cues, anything to remember"
           className="mb-6 w-full resize-none rounded-[14px] bg-inset px-4 py-[12px] text-[14px] leading-relaxed text-soft placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-neon"
         />
+
+        <Overline className="mb-[10px]">Icon</Overline>
+        <div className="mb-6 flex flex-wrap gap-2">
+          <IconChoice selected={currentIcon == null} onClick={() => chooseIcon(null)}>
+            <ClipboardList size={20} strokeWidth={1.75} className="text-[#8b90f7]" />
+          </IconChoice>
+          {PLAN_ICON_PRESETS.map((emoji) => (
+            <IconChoice
+              key={emoji}
+              selected={currentIcon === emoji}
+              onClick={() => chooseIcon(emoji)}
+            >
+              <span className="text-[20px] leading-none" aria-hidden="true">
+                {emoji}
+              </span>
+            </IconChoice>
+          ))}
+          <EmojiInputChoice
+            selected={currentIcon != null && !(PLAN_ICON_PRESETS as readonly string[]).includes(currentIcon)}
+            value={currentIcon}
+            onPick={chooseIcon}
+          />
+        </div>
 
         <Overline className="mb-3">Exercises</Overline>
         {exercises.length === 0 ? (
@@ -183,5 +216,78 @@ function PlanEditorInner({ planId }: { planId: PlanId }) {
         />
       </FloatingAction>
     </>
+  )
+}
+
+/** A 46px icon quick-pick tile; selected gets an accent tint + neon border. */
+function IconChoice({
+  selected,
+  onClick,
+  children,
+}: {
+  selected: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={[
+        'flex h-[46px] w-[46px] flex-none items-center justify-center rounded-[14px] transition-colors active:scale-[0.96]',
+        selected ? 'border-[1.5px] border-neon bg-neon/[0.16]' : 'border border-white/[0.08] bg-surface',
+      ].join(' ')}
+    >
+      {children}
+    </button>
+  )
+}
+
+/**
+ * A dashed "any emoji" tile: tapping focuses a 1-char input so the native emoji
+ * keyboard opens; the typed glyph becomes the plan icon.
+ */
+function EmojiInputChoice({
+  selected,
+  value,
+  onPick,
+}: {
+  selected: boolean
+  value: string | null
+  onPick: (emoji: string | null) => void
+}) {
+  return (
+    <label
+      className={[
+        'flex h-[46px] w-[46px] flex-none cursor-text items-center justify-center rounded-[14px] transition-colors active:scale-[0.96]',
+        selected
+          ? 'border-[1.5px] border-neon bg-neon/[0.16]'
+          : 'border-[1.5px] border-dashed border-white/[0.22]',
+      ].join(' ')}
+      aria-label="Pick any emoji"
+    >
+      {selected && value ? (
+        <span className="text-[20px] leading-none" aria-hidden="true">
+          {value}
+        </span>
+      ) : (
+        <span className="text-[18px] leading-none text-faint" aria-hidden="true">
+          +
+        </span>
+      )}
+      <input
+        type="text"
+        inputMode="text"
+        value=""
+        onChange={(e) => {
+          const glyphs = Array.from(e.target.value)
+          const last = glyphs[glyphs.length - 1]
+          if (last) onPick(last)
+        }}
+        className="h-0 w-0 opacity-0"
+        aria-hidden="true"
+      />
+    </label>
   )
 }

@@ -24,14 +24,44 @@ import { summaryLabel, summaryTrend, type ExercisePerformanceSummary } from './l
 export const ExerciseCard = memo(function ExerciseCard({
   exercise,
   summary,
+  view = 'grid',
 }: {
   exercise: ExerciseRow
   summary?: ExercisePerformanceSummary
+  /** Media-first grid card (default) or a compact 64px list row (TWEAK T1). */
+  view?: 'grid' | 'list'
 }) {
   const navigate = useNavigate()
   const { unit } = useUnits()
   const type = exercise.type as ExerciseType
   const body = bodyFor(exercise)
+
+  if (view === 'list') {
+    return (
+      <button
+        type="button"
+        onClick={() => navigate(`/library/${exercise.id}`)}
+        className="flex min-h-[44px] w-full items-center gap-[13px] text-left transition-transform active:scale-[0.99]"
+      >
+        <ExerciseTile
+          photoId={exercise.primaryPhotoId as ExercisePhotoId | null}
+          bodyPart={exercise.bodyPart}
+          radius="14px 14px 14px 4px"
+          className="h-[64px] w-[64px] flex-none"
+          glyphSize={26}
+          fit="cover"
+          map={{ muscle: body.muscle, view: body.view, fw: 40 }}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[15px] font-semibold text-white">{exercise.name}</div>
+          <div className="mt-[2px] truncate text-[12.5px] tnum text-muted">
+            {summaryLabel(summary, type, unit)}
+          </div>
+        </div>
+        <TrendBadge trend={summaryTrend(summary, type)} unit={unit} iconOnly size={16} />
+      </button>
+    )
+  }
 
   return (
     <button

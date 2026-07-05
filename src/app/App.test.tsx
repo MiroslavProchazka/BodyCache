@@ -28,6 +28,7 @@ vi.mock('./routes.lazy', () => ({
   PlanAddExercisePage: () => <h1>Plan Add Exercise</h1>,
   SettingsPage: () => <h1>Settings</h1>,
   ProfilePage: () => <h1>Profile</h1>,
+  AvatarPage: () => <h1>Avatar</h1>,
 }))
 
 import { App } from './App'

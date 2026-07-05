@@ -206,6 +206,10 @@ export const Schema = {
     // Stored as NonEmptyString100; constrained to `PlanStatus` in the app layer.
     status: Evolu.NonEmptyString100,
     notes: Evolu.nullOr(Evolu.NonEmptyString1000),
+    // Optional user-chosen emoji shown as the plan's icon (TWEAK T4). A single
+    // glyph; `null` falls back to the clipboard icon. User content — the one
+    // sanctioned exception to the "no emoji in chrome" rule.
+    icon: Evolu.nullOr(Evolu.NonEmptyString100),
   },
 
   /** An exercise within a plan, in order (parent of `planSet`). */

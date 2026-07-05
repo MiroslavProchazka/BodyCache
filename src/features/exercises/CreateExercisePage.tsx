@@ -45,7 +45,7 @@ export function CreateExercisePage() {
   const canSave = name.trim().length > 0 && !saving
   const goBack = () =>
     navigate(
-      planId ? `/plans/${planId}/add-exercise` : sessionId ? '/workout/add-exercise' : '/library',
+      planId ? `/plans/${planId}/add-exercise` : sessionId ? '/workout/add' : '/library',
     )
 
   const onPickPhoto = (file: File | null) => {

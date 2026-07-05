@@ -17,6 +17,7 @@ import {
   PlanEditorPage,
   PlanLibraryPage,
   ProfilePage,
+  AvatarPage,
   SessionDetailPage,
   SettingsPage,
   StarterLibraryPage,
@@ -34,7 +35,11 @@ export function App() {
         <Routes>
           <Route path="/" element={<TodayPage />} />
           <Route path="/workout" element={<ActiveWorkoutPage />} />
-          <Route path="/workout/add-exercise" element={<AddExercisePage />} />
+          <Route path="/workout/add" element={<AddExercisePage />} />
+          {/* Selection-mode exercise detail: same screen, session-aware (TWEAK T3). */}
+          <Route path="/workout/add/:id" element={<ExerciseDetailPage />} />
+          {/* Legacy path kept so in-flight links / history still resolve. */}
+          <Route path="/workout/add-exercise" element={<Navigate to="/workout/add" replace />} />
           <Route path="/workout/log/:exerciseId" element={<LogExercisePage />} />
           <Route path="/workout/finish" element={<FinishPage />} />
           <Route path="/history" element={<HistoryPage />} />
@@ -51,6 +56,7 @@ export function App() {
           <Route path="/plans/:id/add-exercise" element={<PlanAddExercisePage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/profile" element={<ProfilePage />} />
+          <Route path="/settings/avatar" element={<AvatarPage />} />
           {/* Unknown routes fall back to Today rather than a blank shell. */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

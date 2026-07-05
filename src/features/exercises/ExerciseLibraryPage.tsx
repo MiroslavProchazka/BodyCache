@@ -11,12 +11,14 @@ import { FilterChips } from '@/shared/components/FilterChips'
 import { Button } from '@/shared/components/Button'
 import { Overline } from '@/shared/components/Overline'
 import { ActionPill, FloatingAction } from '@/shared/components/FloatingAction'
+import { ViewToggle } from '@/shared/components/ViewToggle'
 import { humanize } from '@/shared/utils/bodyParts'
 import { chunk } from '@/shared/utils/chunk'
 import { useDebouncedValue } from '@/shared/utils/useDebouncedValue'
 import { useScrollParent } from '@/shared/utils/useScrollParent'
 import { useListScrollMargin } from './useListScrollMargin'
 import { ExerciseCard } from './ExerciseCard'
+import { useLibraryView } from './useLibraryView'
 import { useLastPerformanceIndex } from './useLastPerformanceIndex'
 
 const CHIP_OPTIONS = [
@@ -43,6 +45,7 @@ export function ExerciseLibraryPage() {
   const performanceIndex = useLastPerformanceIndex()
   const [search, setSearch] = useState('')
   const [part, setPart] = useState<string | null>(null)
+  const [view, setView] = useLibraryView()
 
   // Debounce so filtering 1,000+ exercises doesn't run on every keystroke.
   const debouncedSearch = useDebouncedValue(search)
@@ -79,7 +82,9 @@ export function ExerciseLibraryPage() {
     [favorites, matchesFilter],
   )
 
-  const rows = useMemo(() => chunk(filtered, COLS), [filtered])
+  const cols = view === 'grid' ? COLS : 1
+  const rows = useMemo(() => chunk(filtered, cols), [filtered, cols])
+  const rowEstimate = view === 'grid' ? ROW_ESTIMATE : 80
 
   // Virtualize the grid so only the cards on screen mount — each card runs its
   // own history query + IndexedDB photo read, so without this a 1,000-exercise
@@ -93,12 +98,13 @@ export function ExerciseLibraryPage() {
     listRef,
     scrollParent,
     filtered.length > 0,
-    favoritesFiltered.length,
+    // Re-measure when Favorites resize OR the view mode flips (row heights change).
+    favoritesFiltered.length + (view === 'list' ? 100000 : 0),
   )
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollParent,
-    estimateSize: () => ROW_ESTIMATE,
+    estimateSize: () => rowEstimate,
     overscan: 4,
     scrollMargin,
   })
@@ -112,14 +118,17 @@ export function ExerciseLibraryPage() {
         <h1 className="font-display text-[24px] font-semibold tracking-[-0.02em] text-white">
           Exercises
         </h1>
-        <button
-          type="button"
-          onClick={() => navigate('/library/starter')}
-          aria-label="Add from starter library"
-          className="flex h-[42px] w-[42px] items-center justify-center rounded-[14px] border border-white/10 bg-surface text-soft"
-        >
-          <ListPlus size={21} strokeWidth={2} />
-        </button>
+        <div className="flex items-center gap-2">
+          {hasAny && <ViewToggle view={view} onChange={setView} />}
+          <button
+            type="button"
+            onClick={() => navigate('/library/starter')}
+            aria-label="Add from starter library"
+            className="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-[14px] border border-white/10 bg-surface text-soft"
+          >
+            <ListPlus size={21} strokeWidth={2} />
+          </button>
+        </div>
       </header>
 
       {hasAny && (
@@ -163,12 +172,19 @@ export function ExerciseLibraryPage() {
           {favoritesFiltered.length > 0 && (
             <section aria-label="Favorites" className="mb-[22px]">
               <Overline className="mb-[14px]">Favorites</Overline>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-[18px]">
+              <div
+                className={
+                  view === 'grid'
+                    ? 'grid grid-cols-2 gap-x-3 gap-y-[18px]'
+                    : 'flex flex-col gap-[16px]'
+                }
+              >
                 {favoritesFiltered.map((exercise) => (
                   <ExerciseCard
                     key={exercise.id}
                     exercise={exercise}
                     summary={performanceIndex.get(exercise.id)}
+                    view={view}
                   />
                 ))}
               </div>
@@ -182,7 +198,9 @@ export function ExerciseLibraryPage() {
                   key={row.key}
                   data-index={row.index}
                   ref={virtualizer.measureElement}
-                  className="grid grid-cols-2 gap-3 pb-3"
+                  className={
+                    view === 'grid' ? 'grid grid-cols-2 gap-3 pb-3' : 'flex flex-col pb-[16px]'
+                  }
                   style={{
                     position: 'absolute',
                     top: 0,
@@ -196,6 +214,7 @@ export function ExerciseLibraryPage() {
                       key={exercise.id}
                       exercise={exercise}
                       summary={performanceIndex.get(exercise.id)}
+                      view={view}
                     />
                   ))}
                 </div>

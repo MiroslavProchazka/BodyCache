@@ -214,6 +214,8 @@ export const useDataTransfer = () => {
           name: r.name as string,
           status: r.status as string,
           notes: (r.notes as string | null) ?? null,
+          // Absent in pre-emoji backups → null → clipboard-icon fallback.
+          icon: (r.icon as string | null) ?? null,
         })
       }
 

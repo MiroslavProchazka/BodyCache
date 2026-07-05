@@ -1,14 +1,14 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { ClipboardList, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { activePlans, planExercises } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { PlanRow } from '@/evolu/rows'
 import type { PlanId } from '@/evolu/schema'
-import { IconTile } from '@/shared/components/IconTile'
 import { ListRow } from '@/shared/components/ListRow'
 import { Overline } from '@/shared/components/Overline'
 import { ActionPill, FloatingAction } from '@/shared/components/FloatingAction'
+import { PlanIconTile } from './planIcon'
 
 /**
  * The plan library: the saved routines the user builds before the gym, as flat
@@ -78,11 +78,7 @@ function PlanRowView({ plan }: { plan: PlanRow }) {
     <ListRow
       onClick={() => navigate(`/plans/${plan.id as PlanId}`)}
       titleClassName="text-[15px]"
-      leading={
-        <IconTile>
-          <ClipboardList size={20} strokeWidth={1.75} />
-        </IconTile>
-      }
+      leading={<PlanIconTile icon={plan.icon as string | null} />}
       title={plan.name}
       meta={`${exercises.length} ${exercises.length === 1 ? 'exercise' : 'exercises'} · ${summary}`}
     />

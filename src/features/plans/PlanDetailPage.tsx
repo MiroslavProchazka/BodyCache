@@ -16,6 +16,7 @@ import { metaLine } from '@/shared/utils/bodyParts'
 import { formatSetSummary } from '@/shared/utils/units'
 import { ExerciseTile } from '@/features/exercises/ExerciseTile'
 import { SetTypeTag } from '@/features/workouts/SetTypeTag'
+import { PlanIconTile } from './planIcon'
 import { useStartWorkoutFromPlan } from './useStartWorkoutFromPlan'
 
 /** A saved plan, read-only: its exercises and target sets, with a start CTA. */
@@ -81,6 +82,9 @@ function PlanDetailInner({ planId }: { planId: PlanId }) {
           </CircleButton>
         </header>
 
+        <div className="mb-4">
+          <PlanIconTile icon={plan.icon as string | null} />
+        </div>
         <Overline className="mb-[10px]">Plan</Overline>
         <h1 className="mb-4 font-display text-[26px] font-bold leading-[1.1] tracking-[-0.02em] text-white">
           {plan.name}
