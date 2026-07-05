@@ -78,3 +78,4 @@ export const SettingsPage = lazyNamed(
   'SettingsPage',
 )
 export const ProfilePage = lazyNamed(() => import('@/features/profile/ProfilePage'), 'ProfilePage')
+export const AvatarPage = lazyNamed(() => import('@/features/profile/AvatarPage'), 'AvatarPage')

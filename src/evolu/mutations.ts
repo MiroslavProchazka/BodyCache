@@ -114,12 +114,14 @@ export interface UpdateProfilePatch {
 export interface CreatePlanInput {
   readonly name: string
   readonly notes?: string | null
+  readonly icon?: string | null
 }
 
 /** Patch for updating a plan (all fields optional). */
 export interface UpdatePlanPatch {
   readonly name?: string
   readonly notes?: string | null
+  readonly icon?: string | null
 }
 
 /** Target metric/text fields for a single plan set. */
@@ -315,6 +317,7 @@ export const useBodyCacheMutations = () => {
       name: input.name,
       status: 'active',
       notes: input.notes ?? null,
+      icon: input.icon ?? null,
     })
 
   const updatePlan = (id: PlanId, patch: UpdatePlanPatch) => update('plan', { id, ...patch })

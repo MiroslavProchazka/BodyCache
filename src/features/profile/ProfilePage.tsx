@@ -35,9 +35,16 @@ export function ProfilePage() {
         <CircleButton onClick={() => navigate('/settings')} label="Back">
           <ChevronLeft size={18} strokeWidth={1.75} />
         </CircleButton>
-        <h1 className="font-display text-[22px] font-semibold tracking-[-0.02em] text-white">
+        <h1 className="min-w-0 flex-1 truncate font-display text-[22px] font-semibold tracking-[-0.02em] text-white">
           Edit profile
         </h1>
+        <button
+          type="button"
+          onClick={() => navigate('/settings/avatar')}
+          className="flex-none text-[13px] font-semibold text-[#8b90f7]"
+        >
+          Avatar
+        </button>
       </header>
       <ProfileForm
         submitLabel="Save profile"

@@ -215,7 +215,7 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
 
         <button
           type="button"
-          onClick={() => navigate('/workout/add-exercise')}
+          onClick={() => navigate('/workout/add')}
           className="mt-[18px] flex min-h-[44px] w-full items-center gap-[13px] text-left transition-transform active:scale-[0.99]"
         >
           <span className="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-[14px] border border-dashed border-white/[0.22] text-[#8b90f7]">

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { ChevronLeft, Plus } from 'lucide-react'
+import type { WorkoutSessionRow } from '@/evolu/rows'
+import { SessionChip } from '@/features/workouts/AddExercisePage'
 import { evolu } from '@/evolu/evolu'
 import { exerciseById, completedSetsForExercise, activeWorkoutSession } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
@@ -43,10 +45,14 @@ import { toHistorySets } from './history'
 export function ExerciseDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const { unit } = useUnits()
   const { softDeleteExercise, startWorkoutSession } = useBodyCacheMutations()
   const exercise = useQuery(exerciseById((id ?? '') as ExerciseId))[0]
   const history = toHistorySets(useQuery(completedSetsForExercise((id ?? '') as ExerciseId)))
+  // Reached via /workout/add/:id — the in-workout selection mode (TWEAK T3).
+  const selectionMode = location.pathname.startsWith('/workout/add/')
+  const activeSession = useQuery(activeWorkoutSession)[0] as WorkoutSessionRow | undefined
 
   // Progress | How to. Reset to Progress whenever a different exercise opens.
   const [tab, setTab] = useState<'progress' | 'howto'>('progress')
@@ -119,10 +125,14 @@ export function ExerciseDetailPage() {
   return (
     <>
       <div className="px-[22px] pb-[150px] pt-[14px]">
-        <header className="mb-5 flex items-center justify-between">
-          <CircleButton onClick={() => navigate('/library')} label="Back">
+        <header className="mb-5 flex items-center justify-between gap-3">
+          <CircleButton
+            onClick={() => navigate(selectionMode ? '/workout/add' : '/library')}
+            label="Back"
+          >
             <ChevronLeft size={18} strokeWidth={1.75} />
           </CircleButton>
+          {selectionMode && activeSession && <SessionChip session={activeSession} />}
         </header>
 
         {photoId ? (
@@ -312,7 +322,7 @@ export function ExerciseDetailPage() {
 
       <FloatingAction>
         <ActionPill
-          label="Log today"
+          label={selectionMode ? 'Add to workout' : 'Log today'}
           icon={<Plus size={19} strokeWidth={2} />}
           onClick={handleLogToday}
         />
