@@ -16,6 +16,10 @@ const trim = (n: number): string => Number(n.toFixed(2)).toString()
 export const toDisplayWeight = (kg: number, unit: Unit): number =>
   unit === 'lb' ? Math.round(kg * LB_PER_KG) : Math.round(kg * 10) / 10
 
+/** A number typed in the active unit → canonical kg (inverse of `toDisplayWeight`). */
+export const fromDisplayWeight = (value: number, unit: Unit): number =>
+  unit === 'lb' ? value / LB_PER_KG : value
+
 /** "80 kg" / "176 lb". */
 export const formatWeight = (kg: number, unit: Unit): string =>
   `${trim(toDisplayWeight(kg, unit))} ${unit}`

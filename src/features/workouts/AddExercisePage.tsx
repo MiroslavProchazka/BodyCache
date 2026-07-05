@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { ChevronLeft, Plus } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { activeWorkoutSession, allExercises, performedExercises } from '@/evolu/queries'
 import type { ExerciseRow } from '@/evolu/rows'
 import type { ExerciseId, ExerciseType } from '@/evolu/schema'
@@ -52,14 +52,23 @@ function AddExerciseInner() {
   )
 
   return (
-    <div className="px-5 pb-[130px] pt-[6px]">
-      <header className="mb-[18px] flex items-center gap-3">
+    <div className="px-[22px] pb-[40px] pt-[14px]">
+      <header className="mb-[22px] flex items-center gap-3">
         <CircleButton onClick={() => navigate('/workout')} label="Back">
           <ChevronLeft size={18} strokeWidth={1.75} />
         </CircleButton>
-        <h1 className="font-display text-[22px] font-semibold tracking-tight text-white">
-          Add exercise
-        </h1>
+        <div className="min-w-0 flex-1 text-center">
+          <div className="truncate font-display text-[17px] font-semibold tracking-[-0.01em] text-white">
+            Add exercise
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate(`/library/new?session=${active.id}`)}
+          className="flex-none text-[13px] font-semibold text-[#8b90f7]"
+        >
+          New
+        </button>
       </header>
 
       <ExercisePickerList
@@ -67,24 +76,6 @@ function AddExerciseInner() {
         favorites={favorites}
         onPick={pick}
         subtitleFor={subtitleFor}
-        header={
-          <button
-            type="button"
-            onClick={() => navigate(`/library/new?session=${active.id}`)}
-            className="mb-[18px] flex w-full items-center gap-[13px] rounded-2xl border border-neon/30 bg-gradient-to-br from-neon/[0.16] to-neon/[0.05] p-[15px] text-left"
-          >
-            <div
-              className="flex h-[42px] w-[42px] flex-none items-center justify-center bg-neon text-white"
-              style={{ borderRadius: '14px' }}
-            >
-              <Plus size={22} strokeWidth={2} />
-            </div>
-            <div>
-              <div className="text-[15px] font-semibold text-white">Create new exercise</div>
-              <div className="mt-[2px] text-[12.5px] text-muted">Snap a photo of the machine</div>
-            </div>
-          </button>
-        }
       />
     </div>
   )

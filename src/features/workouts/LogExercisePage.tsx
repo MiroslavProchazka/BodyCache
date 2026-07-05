@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { ChevronLeft, Copy, Plus, Minus, X, Check, Timer } from 'lucide-react'
@@ -12,21 +12,25 @@ import {
 import { useBodyCacheMutations } from '@/evolu/mutations'
 import type {
   ExerciseId,
-  ExercisePhotoId,
   ExerciseType,
   SetType,
   WorkoutExerciseId,
   WorkoutSessionId,
 } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
-import { StickyAction } from '@/shared/components/StickyAction'
+import { Button } from '@/shared/components/Button'
+import { Divider } from '@/shared/components/Divider'
 import { Overline } from '@/shared/components/Overline'
 import { useToast } from '@/shared/components/Toast'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { useRestTimer } from '@/shared/rest/RestTimerContext'
-import { metaLine } from '@/shared/utils/bodyParts'
 import { formatRelativeDay } from '@/shared/utils/dates'
-import { toDisplayWeight, formatSetSummary } from '@/shared/utils/units'
+import {
+  toDisplayWeight,
+  fromDisplayWeight,
+  formatSetSummary,
+  type Unit,
+} from '@/shared/utils/units'
 import {
   previousSession,
   sessionTrend,
@@ -35,18 +39,11 @@ import {
   workingSets,
   type MetricSet,
 } from '@/shared/utils/exerciseStats'
-import { ExerciseTile } from '@/features/exercises/ExerciseTile'
 import { TrendBadge } from '@/features/exercises/TrendBadge'
 import { PrBadge } from '@/features/exercises/PrBadge'
 import { toHistorySets } from '@/features/exercises/history'
 import { nextOrderIndex } from '@/features/plans/planToSession'
-import {
-  SET_FIELDS,
-  DEFAULT_VALUES,
-  displaySetFieldValue,
-  type SetFieldDef,
-  type SetFieldKey,
-} from './setFields'
+import { SET_FIELDS, DEFAULT_VALUES, type SetFieldDef, type SetFieldKey } from './setFields'
 import { SetTypeTag } from './SetTypeTag'
 import { narrowSetType, nextSetType, setTypeLabel } from './setTypes'
 import { RPE_VALUES, clampRpe, formatRpe } from './rpe'
@@ -71,6 +68,10 @@ const metricOf = (d: DraftSet): MetricSet => ({
   distanceMeters: d.distanceMeters ?? null,
   elevationMeters: d.elevationMeters ?? null,
 })
+
+/** Clamp a canonical field value: ≥0, whole numbers for integer fields, else 0.1. */
+const clampFieldValue = (value: number, f: SetFieldDef): number =>
+  Math.max(0, f.integer ? Math.round(value) : Math.round(value * 10) / 10)
 
 export function LogExercisePage() {
   const active = useQuery(activeWorkoutSession)[0]
@@ -103,7 +104,6 @@ function LogInner({
 
   const type = (exercise?.type as ExerciseType) ?? 'strength'
   const fields = SET_FIELDS[type]
-  const stackedFields = fields.length > 2
   const prev = previousSession(history, sessionId)
   const trend = sessionTrend(history, type, sessionId)
   // The "stored best" to beat: every working (non-warm-up) completed set from
@@ -137,9 +137,6 @@ function LogInner({
   // Which row's RPE picker is expanded (only one open at a time), or null.
   const [rpePickerRow, setRpePickerRow] = useState<number | null>(null)
 
-  const clampValue = (value: number, f: SetFieldDef) =>
-    Math.max(0, f.integer ? Math.round(value) : Math.round(value * 10) / 10)
-
   const step = (index: number, f: SetFieldDef, dir: 1 | -1) =>
     setDraft((ds) =>
       ds.map((row, j) =>
@@ -148,10 +145,18 @@ function LogInner({
               ...row,
               fields: {
                 ...row.fields,
-                [f.key]: clampValue((row.fields[f.key] ?? 0) + dir * f.step, f),
+                [f.key]: clampFieldValue((row.fields[f.key] ?? 0) + dir * f.step, f),
               },
             }
           : row,
+      ),
+    )
+
+  /** Commit a typed value (already parsed to canonical units) for a field. */
+  const setValue = (index: number, f: SetFieldDef, value: number) =>
+    setDraft((ds) =>
+      ds.map((row, j) =>
+        j === index ? { ...row, fields: { ...row.fields, [f.key]: value } } : row,
       ),
     )
 
@@ -237,12 +242,12 @@ function LogInner({
 
   if (!exercise) {
     return (
-      <div className="px-5 py-16 text-center text-muted">
+      <div className="px-[22px] py-16 text-center text-muted">
         <p>Exercise not found.</p>
         <button
           type="button"
           onClick={() => navigate('/workout')}
-          className="mt-3 font-semibold text-neon"
+          className="mt-3 font-semibold text-[#8b90f7]"
         >
           Back to workout
         </button>
@@ -251,243 +256,290 @@ function LogInner({
   }
 
   return (
-    <>
-      <div className="px-5 pb-[160px] pt-[6px]">
-        <header className="mb-[18px] flex items-center gap-3">
-          <CircleButton onClick={() => navigate('/workout')} label="Back">
-            <ChevronLeft size={18} strokeWidth={1.75} />
-          </CircleButton>
-          <div className="min-w-0 flex-1">
-            <div className="truncate font-display text-[20px] font-semibold leading-[1.1] tracking-tight text-white">
-              {exercise.name}
-            </div>
-            <div className="mt-[2px] truncate text-[12.5px] text-muted">
-              {metaLine(exercise.bodyPart, exercise.equipment) || humanizeType(type)}
-            </div>
+    <div className="px-[22px] pb-[40px] pt-[14px]">
+      <header className="mb-[22px] flex items-center gap-3">
+        <CircleButton onClick={() => navigate('/workout')} label="Back">
+          <ChevronLeft size={18} strokeWidth={1.75} />
+        </CircleButton>
+        <div className="min-w-0 flex-1 text-center">
+          <div className="truncate font-display text-[17px] font-semibold tracking-[-0.01em] text-white">
+            {exercise.name}
           </div>
-          <ExerciseTile
-            photoId={exercise.primaryPhotoId as ExercisePhotoId | null}
-            bodyPart={exercise.bodyPart}
-            radius="14px"
-            className="h-[44px] w-[44px] flex-none"
-          />
-        </header>
-
-        {/* Previous performance */}
-        <div className="mb-[18px] rounded-[18px] border border-white/[0.07] bg-surface p-[15px]">
-          <div className="mb-3 flex items-center justify-between">
-            <Overline className="whitespace-nowrap">
-              Last time · {prev ? formatRelativeDay(prev.startedAt) : '—'}
-            </Overline>
-            {(trend.dir === 'up' || trend.dir === 'down') && (
-              <TrendBadge trend={trend} unit={unit} size={15} />
-            )}
-          </div>
-          {prev ? (
-            <div className="flex flex-col gap-2">
-              {prev.sets.map((s, i) => (
-                <div key={s.id} className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2">
-                    <span className="whitespace-nowrap font-medium text-muted">Set {i + 1}</span>
-                    <SetTypeTag value={s.setType} />
-                  </span>
-                  <span className="flex items-center gap-2 whitespace-nowrap">
-                    {s.rpe != null && (
-                      <span className="text-[12px] font-medium tnum text-faint">@{s.rpe}</span>
-                    )}
-                    <span className="font-semibold tnum text-white">
-                      {formatSetSummary(s, type, unit)}
-                    </span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm leading-[1.45] text-muted">
-              First time logging this — no previous data yet. Lift away.
-            </p>
-          )}
         </div>
-
         <button
           type="button"
-          onClick={copyPrevious}
-          disabled={!prev}
-          className="mb-[18px] flex w-full items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-inset p-[13px] text-sm font-semibold text-soft disabled:opacity-40"
+          onClick={() => navigate(`/library/${exerciseId}`)}
+          className="flex-none text-[13px] font-semibold text-[#8b90f7]"
         >
-          <Copy size={17} strokeWidth={1.75} />
-          Copy last workout
+          History
         </button>
+      </header>
 
-        <Overline className="mb-3">Today's sets</Overline>
-        <div className="mb-[14px] flex flex-col gap-3">
-          {draft.map((row, i) => (
-            <div
-              key={i}
-              className="rounded-[20px] border border-white/[0.07] bg-surface px-[14px] pb-4 pt-[14px]"
+      {/* Draft sets — each a flat editor block. */}
+      {draft.map((row, i) => (
+        <div key={i}>
+          {i > 0 && <Divider className="my-5" />}
+          <div className="mb-[14px] flex items-center gap-2">
+            <span className="whitespace-nowrap rounded-lg bg-neon/[0.16] px-[10px] py-1 text-[12.5px] font-semibold text-[#8b90f7]">
+              Set {i + 1}
+            </span>
+            {/* Tap to cycle the set type (Normal → Warm-up → Drop → Failure). */}
+            <button
+              type="button"
+              onClick={() => cycleType(i)}
+              aria-label={`Set ${i + 1} type: ${setTypeLabel(row.setType)}`}
+              className="whitespace-nowrap rounded-lg border border-white/10 px-[10px] py-1 text-[12px] font-semibold text-muted active:scale-[0.97]"
             >
-              <div className="mb-[14px] flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="whitespace-nowrap rounded-lg bg-neon/[0.12] px-[10px] py-1 text-[12.5px] font-semibold text-neon">
-                    Set {i + 1}
-                  </span>
-                  {/* Tap to cycle the set type (Normal → Warm-up → Drop → Failure). */}
-                  <button
-                    type="button"
-                    onClick={() => cycleType(i)}
-                    aria-label={`Set ${i + 1} type: ${setTypeLabel(row.setType)}`}
-                    className="whitespace-nowrap rounded-lg border border-white/10 px-[10px] py-1 text-[12px] font-semibold text-muted active:scale-[0.97]"
-                  >
-                    {setTypeLabel(row.setType)}
-                  </button>
-                  {/* Optional perceived exertion: tap to open a 1–10 picker. */}
-                  <button
-                    type="button"
-                    onClick={() => setRpePickerRow((r) => (r === i ? null : i))}
-                    aria-label={`Set ${i + 1} RPE: ${row.rpe ?? 'not set'}`}
-                    aria-expanded={rpePickerRow === i}
-                    className={`whitespace-nowrap rounded-lg border px-[10px] py-1 text-[12px] font-semibold active:scale-[0.97] ${
-                      row.rpe != null
-                        ? 'border-neon/40 bg-neon/[0.12] text-neon'
-                        : 'border-white/10 text-muted'
-                    }`}
-                  >
-                    {formatRpe(row.rpe)}
-                  </button>
-                  {row.setType !== 'warmup' &&
-                    isPersonalRecord(metricOf(row.fields), priorSets, type) && <PrBadge />}
-                </div>
-                {draft.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeDraftSet(i)}
-                    aria-label={`Remove set ${i + 1}`}
-                    className="flex h-[30px] w-[30px] items-center justify-center rounded-full text-faint"
-                  >
-                    <X size={17} strokeWidth={1.9} />
-                  </button>
-                )}
-              </div>
-              {rpePickerRow === i && (
-                <div
-                  role="group"
-                  aria-label={`Set ${i + 1} RPE`}
-                  className="mb-[14px] flex flex-wrap gap-2"
+              {setTypeLabel(row.setType)}
+            </button>
+            {/* Optional perceived exertion: tap to open a 1–10 picker. */}
+            <button
+              type="button"
+              onClick={() => setRpePickerRow((r) => (r === i ? null : i))}
+              aria-label={`Set ${i + 1} RPE: ${row.rpe ?? 'not set'}`}
+              aria-expanded={rpePickerRow === i}
+              className={`whitespace-nowrap rounded-lg border px-[10px] py-1 text-[12px] font-semibold active:scale-[0.97] ${
+                row.rpe != null
+                  ? 'border-neon/40 bg-neon/[0.16] text-[#8b90f7]'
+                  : 'border-white/10 text-muted'
+              }`}
+            >
+              {formatRpe(row.rpe)}
+            </button>
+            {row.setType !== 'warmup' &&
+              isPersonalRecord(metricOf(row.fields), priorSets, type) && <PrBadge />}
+            <span className="flex-1" />
+            {draft.length > 1 && (
+              <button
+                type="button"
+                onClick={() => removeDraftSet(i)}
+                aria-label={`Remove set ${i + 1}`}
+                className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full text-faint active:scale-[0.94]"
+              >
+                <X size={17} strokeWidth={1.9} />
+              </button>
+            )}
+          </div>
+          {rpePickerRow === i && (
+            <div
+              role="group"
+              aria-label={`Set ${i + 1} RPE`}
+              className="mb-[18px] flex flex-wrap gap-2"
+            >
+              {RPE_VALUES.map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setRpe(i, v)}
+                  aria-pressed={row.rpe === v}
+                  className={`h-9 min-w-9 flex-1 rounded-lg border text-[14px] font-semibold tnum active:scale-[0.95] ${
+                    row.rpe === v
+                      ? 'border-neon/50 bg-neon/[0.16] text-[#8b90f7]'
+                      : 'border-white/10 bg-inset text-soft'
+                  }`}
                 >
-                  {RPE_VALUES.map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => setRpe(i, v)}
-                      aria-pressed={row.rpe === v}
-                      className={`h-9 min-w-9 flex-1 rounded-lg border text-[14px] font-semibold tnum active:scale-[0.95] ${
-                        row.rpe === v
-                          ? 'border-neon/50 bg-neon/[0.16] text-neon'
-                          : 'border-white/10 bg-inset text-soft'
-                      }`}
-                    >
-                      {v}
-                    </button>
-                  ))}
-                </div>
+                  {v}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="mb-2 flex flex-col gap-[14px]">
+            {fields.map((f, idx) => (
+              <StepperField
+                key={f.key}
+                field={f}
+                value={row.fields[f.key] ?? 0}
+                unit={unit}
+                large={idx === 0}
+                onStep={(dir) => step(i, f, dir)}
+                onCommit={(v) => setValue(i, f, v)}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+
+      <div className="mb-[22px] mt-[18px] flex gap-2">
+        <button
+          type="button"
+          onClick={addDraftSet}
+          className="flex flex-1 items-center justify-center gap-2 rounded-full border-[1.5px] border-dashed border-white/[0.16] py-[13px] text-[14.5px] font-semibold text-muted active:scale-[0.99]"
+        >
+          <Plus size={18} strokeWidth={2} />
+          Add set
+        </button>
+        <button
+          type="button"
+          onClick={() => rest.start()}
+          aria-label="Start rest timer"
+          className="flex items-center justify-center gap-2 rounded-full border border-white/[0.08] bg-inset px-[18px] text-[14.5px] font-semibold text-soft active:scale-[0.98]"
+        >
+          <Timer size={18} strokeWidth={2} />
+          Rest
+        </button>
+      </div>
+
+      <Button
+        variant="primary"
+        fullWidth
+        onClick={copyPrevious}
+        disabled={!prev}
+        className="mb-[18px] !border !border-white/[0.08] !bg-inset !bg-none !py-[13px] !text-[14px] !text-soft !shadow-none"
+      >
+        <Copy size={17} strokeWidth={1.75} />
+        Copy last workout
+      </Button>
+
+      <Button variant="primary" fullWidth onClick={handleSave}>
+        <Check size={19} strokeWidth={2} />
+        Save {validCount} {validCount === 1 ? 'set' : 'sets'}
+      </Button>
+
+      {/* Previous performance — the memory aid, recalled below the entry area. */}
+      <Divider className="my-6" />
+      <div className="mb-3 flex items-center justify-between">
+        <Overline className="whitespace-nowrap">
+          Last time · {prev ? formatRelativeDay(prev.startedAt) : '—'}
+        </Overline>
+        {(trend.dir === 'up' || trend.dir === 'down') && (
+          <TrendBadge trend={trend} unit={unit} size={15} />
+        )}
+      </div>
+      {prev ? (
+        <div className="flex flex-col gap-[10px]">
+          {prev.sets.map((s, i) => (
+            <div key={s.id} className="flex items-center gap-[13px]">
+              <span className="w-[44px] flex-none text-[11px] font-semibold uppercase tracking-[0.06em] text-faint">
+                Set {i + 1}
+              </span>
+              <SetTypeTag value={s.setType} />
+              <span className="flex-1 text-right text-[15px] font-semibold tnum text-white">
+                {formatSetSummary(s, type, unit)}
+              </span>
+              {s.rpe != null && (
+                <span className="w-[32px] flex-none text-right text-[12px] font-medium tnum text-faint">
+                  @{s.rpe}
+                </span>
               )}
-              <div className={stackedFields ? 'grid gap-2' : 'flex gap-2'}>
-                {fields.map((f, idx) => (
-                  <Fragment key={f.key}>
-                    {!stackedFields && idx > 0 && (
-                      <div className="w-px self-stretch bg-white/[0.08]" />
-                    )}
-                    <div
-                      className={
-                        stackedFields
-                          ? 'flex min-w-0 items-center justify-between gap-3 rounded-[14px] bg-inset px-3 py-2'
-                          : 'min-w-0 flex-1 text-center'
-                      }
-                    >
-                      <div
-                        className={
-                          stackedFields
-                            ? 'text-[10.5px] font-semibold uppercase tracking-[0.08em] text-faint'
-                            : 'mb-[9px] text-[10.5px] font-semibold uppercase tracking-[0.08em] text-faint'
-                        }
-                      >
-                        {f.isWeight ? `${f.label} (${unit})` : f.label}
-                      </div>
-                      <div
-                        className={
-                          stackedFields
-                            ? 'flex flex-none items-center gap-2'
-                            : 'flex items-center justify-between gap-1'
-                        }
-                      >
-                        <StepButton onClick={() => step(i, f, -1)} label={`Decrease ${f.label}`}>
-                          <Minus size={20} strokeWidth={2} />
-                        </StepButton>
-                        <span
-                          className={`font-display font-semibold tnum text-white ${
-                            stackedFields ? 'text-right text-[26px]' : 'text-[28px]'
-                          }`}
-                          style={{ minWidth: f.displayAsMinutes ? 58 : f.isWeight ? 44 : 42 }}
-                        >
-                          {f.isWeight
-                            ? toDisplayWeight(row.fields[f.key] ?? 0, unit)
-                            : displaySetFieldValue(row.fields[f.key] ?? 0, f)}
-                        </span>
-                        <StepButton onClick={() => step(i, f, 1)} label={`Increase ${f.label}`}>
-                          <Plus size={20} strokeWidth={2} />
-                        </StepButton>
-                      </div>
-                    </div>
-                  </Fragment>
-                ))}
-              </div>
             </div>
           ))}
         </div>
-
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={addDraftSet}
-            className="flex flex-1 items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-white/[0.16] p-[14px] text-[14.5px] font-semibold text-muted"
-          >
-            <Plus size={18} strokeWidth={2} />
-            Add set
-          </button>
-          <button
-            type="button"
-            onClick={() => rest.start()}
-            aria-label="Start rest timer"
-            className="flex items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-inset px-[18px] text-[14.5px] font-semibold text-soft active:scale-[0.98]"
-          >
-            <Timer size={18} strokeWidth={2} />
-            Rest
-          </button>
-        </div>
-      </div>
-
-      <StickyAction>
-        <button
-          type="button"
-          onClick={handleSave}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-[17px] text-base font-bold text-ink transition-transform active:scale-[0.99]"
-        >
-          <Check size={20} strokeWidth={2} />
-          Save {validCount} {validCount === 1 ? 'set' : 'sets'}
-        </button>
-      </StickyAction>
-    </>
+      ) : (
+        <p className="text-[13.5px] leading-[1.5] text-muted">
+          First time logging this — no previous data yet. Lift away.
+        </p>
+      )}
+    </div>
   )
 }
 
-/** 44px circular stepper button (− / +). */
+/**
+ * A single set-field control (SPEC steppers + TWEAK T6 typed entry): a −/+
+ * stepper on either side of a big, editable value. The value is a real input
+ * (`inputmode` decimal/numeric) that selects on focus, shows a neon-outlined
+ * inset box while focused, and commits on blur — clamped to ≥0, floored for
+ * integer fields, reverting to the previous value when left empty. Weight is
+ * typed in the active unit and stored back in kg; minutes are typed as minutes.
+ */
+function StepperField({
+  field,
+  value,
+  unit,
+  large,
+  onStep,
+  onCommit,
+}: {
+  field: SetFieldDef
+  /** Canonical stored value (kg for weight, seconds for minute fields). */
+  value: number
+  unit: Unit
+  large: boolean
+  onStep: (dir: 1 | -1) => void
+  onCommit: (canonical: number) => void
+}) {
+  /** Canonical value → the string shown in the active unit. */
+  const toDisplay = (v: number): string => {
+    if (field.isWeight) return String(toDisplayWeight(v, unit))
+    if (field.displayAsMinutes) return String(Number((v / 60).toFixed(2)))
+    return String(v)
+  }
+
+  const [text, setText] = useState(() => toDisplay(value))
+  const [focused, setFocused] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Keep the field in sync with stepper changes while the user isn't typing.
+  useEffect(() => {
+    if (!focused) setText(toDisplay(value))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, unit, focused])
+
+  const commit = () => {
+    setFocused(false)
+    const t = text.trim()
+    const n = Number(t)
+    if (t === '' || !Number.isFinite(n)) {
+      setText(toDisplay(value)) // empty / invalid → revert to previous value
+      return
+    }
+    const canonical = field.isWeight
+      ? fromDisplayWeight(n, unit)
+      : field.displayAsMinutes
+        ? n * 60
+        : n
+    onCommit(clampFieldValue(canonical, field))
+  }
+
+  const label = field.isWeight ? `${field.label} (${unit})` : field.label
+  const stepPx = large ? 48 : 40
+  const iconPx = large ? 20 : 17
+
+  return (
+    <div className="flex items-center gap-3">
+      <StepButton onClick={() => onStep(-1)} label={`Decrease ${field.label}`} size={stepPx}>
+        <Minus size={iconPx} strokeWidth={2} />
+      </StepButton>
+      <div className="flex min-w-0 flex-1 flex-col items-center">
+        <input
+          ref={inputRef}
+          type="text"
+          inputMode={field.integer && !field.displayAsMinutes ? 'numeric' : 'decimal'}
+          value={text}
+          aria-label={label}
+          onFocus={(e) => {
+            setFocused(true)
+            e.currentTarget.select()
+          }}
+          onChange={(e) => setText(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') inputRef.current?.blur()
+          }}
+          className={`w-full max-w-[160px] rounded-[14px] bg-transparent text-center font-display font-extrabold tracking-[-0.03em] tnum text-white outline-none transition-colors focus:bg-inset focus:ring-2 focus:ring-neon ${
+            large ? 'text-[44px] leading-[1.1]' : 'text-[30px] leading-none'
+          }`}
+        />
+        <div className="mt-1 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-faint">
+          {label}
+        </div>
+      </div>
+      <StepButton onClick={() => onStep(1)} label={`Increase ${field.label}`} size={stepPx}>
+        <Plus size={iconPx} strokeWidth={2} />
+      </StepButton>
+    </div>
+  )
+}
+
+/** Round inset stepper button (− / +), sized to its field's prominence. */
 function StepButton({
   onClick,
   label,
+  size,
   children,
 }: {
   onClick: () => void
   label: string
+  size: number
   children: React.ReactNode
 }) {
   return (
@@ -495,12 +547,10 @@ function StepButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="flex h-11 w-11 flex-none items-center justify-center rounded-full border border-white/10 bg-inset text-neon transition-transform active:scale-[0.94]"
+      style={{ width: size, height: size }}
+      className="flex flex-none items-center justify-center rounded-full bg-inset text-white transition-transform active:scale-[0.94]"
     >
       {children}
     </button>
   )
 }
-
-const humanizeType = (type: ExerciseType): string =>
-  type.charAt(0).toUpperCase() + type.slice(1)
