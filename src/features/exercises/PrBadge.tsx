@@ -7,7 +7,7 @@ import { Trophy } from 'lucide-react'
  */
 export function PrBadge({ size = 13 }: { size?: number }) {
   return (
-    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-neon/[0.12] px-[9px] py-1 text-[11.5px] font-bold uppercase tracking-[0.06em] text-neon">
+    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-[rgba(234,164,74,0.14)] px-[10px] py-1 text-[12px] font-bold text-pr">
       <Trophy size={size} strokeWidth={2} />
       PR
     </span>

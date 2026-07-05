@@ -62,13 +62,12 @@ export const weekOverWeek = (sets: readonly WeekStatSet[], now: Date = new Date(
 }
 
 /**
- * How many exercises set a (weighted) personal record this week: an exercise's
- * best working set from a session that started this week strictly beats its
+ * How many exercises set a (weighted) personal record on or after `sinceMs`: an
+ * exercise's best working set from a session in the window strictly beats its
  * best from every earlier session. Mirrors `sessionPersonalRecords`, scoped to
- * the current week rather than a single session.
+ * a time window rather than a single session.
  */
-export const prsThisWeek = (sets: readonly WeekStatSet[], now: Date = new Date()): number => {
-  const weekStart = startOfWeek(now).getTime()
+const prsSince = (sets: readonly WeekStatSet[], sinceMs: number): number => {
   const byExercise = new Map<string, WeekStatSet[]>()
   for (const s of sets) {
     if (!s.exerciseId) continue
@@ -82,8 +81,8 @@ export const prsThisWeek = (sets: readonly WeekStatSet[], now: Date = new Date()
     const type = (group.find((s) => s.exerciseType)?.exerciseType ?? 'strength') as ExerciseType
     const working = workingSets(group)
     const startedAt = (s: WeekStatSet) => (s.sessionStartedAt ? new Date(s.sessionStartedAt).getTime() : 0)
-    const current = working.filter((s) => s.sessionStartedAt && startedAt(s) >= weekStart)
-    const prior = working.filter((s) => s.sessionStartedAt && startedAt(s) < weekStart)
+    const current = working.filter((s) => s.sessionStartedAt && startedAt(s) >= sinceMs)
+    const prior = working.filter((s) => s.sessionStartedAt && startedAt(s) < sinceMs)
     if (current.length === 0 || prior.length === 0) continue
 
     const currentBest = bestSet(current, type)
@@ -92,6 +91,14 @@ export const prsThisWeek = (sets: readonly WeekStatSet[], now: Date = new Date()
   }
   return count
 }
+
+/** Weighted PRs set this week (see `prsSince`). */
+export const prsThisWeek = (sets: readonly WeekStatSet[], now: Date = new Date()): number =>
+  prsSince(sets, startOfWeek(now).getTime())
+
+/** Weighted PRs set this calendar month (see `prsSince`). */
+export const prsThisMonth = (sets: readonly WeekStatSet[], now: Date = new Date()): number =>
+  prsSince(sets, new Date(now.getFullYear(), now.getMonth(), 1).getTime())
 
 export interface MuscleSplitItem {
   /** Body-part key (schema `BODY_PARTS` value). */

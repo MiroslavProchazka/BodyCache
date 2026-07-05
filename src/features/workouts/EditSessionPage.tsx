@@ -6,7 +6,7 @@ import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { SessionExerciseRow, WorkoutSessionRow } from '@/evolu/rows'
 import type { WorkoutExerciseId, WorkoutSessionId } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
-import { StickyAction } from '@/shared/components/StickyAction'
+import { ActionPill, FloatingAction } from '@/shared/components/FloatingAction'
 import { Overline } from '@/shared/components/Overline'
 import { dayKey } from '@/shared/utils/dates'
 import { SupersetGroup } from './SupersetGroup'
@@ -28,7 +28,7 @@ export function EditSessionPage() {
         <button
           type="button"
           onClick={() => navigate('/history')}
-          className="mt-3 font-semibold text-neon"
+          className="mt-3 font-semibold text-[#8b90f7]"
         >
           Back to history
         </button>
@@ -107,12 +107,12 @@ function EditSessionInner({ session }: { session: WorkoutSessionRow }) {
 
   return (
     <>
-      <div className="px-5 pb-[150px] pt-[6px]">
-        <header className="mb-4 flex items-center gap-3">
+      <div className="px-[22px] pb-[150px] pt-[14px]">
+        <header className="mb-[22px] flex items-center gap-3">
           <CircleButton onClick={() => navigate(`/history/${sessionId}`)} label="Back">
             <ChevronLeft size={18} strokeWidth={1.75} />
           </CircleButton>
-          <h1 className="font-display text-[22px] font-semibold tracking-tight text-white">
+          <h1 className="font-display text-[22px] font-semibold tracking-[-0.02em] text-white">
             Edit workout
           </h1>
         </header>
@@ -172,23 +172,22 @@ function EditSessionInner({ session }: { session: WorkoutSessionRow }) {
         <button
           type="button"
           onClick={() => navigate(`/history/${sessionId}/add-exercise`)}
-          className="flex w-full items-center justify-center gap-2 rounded-[18px] border-[1.5px] border-neon/35 bg-neon/10 p-4 text-[15.5px] font-semibold text-neon"
+          className="mt-[18px] flex min-h-[44px] w-full items-center gap-[13px] text-left transition-transform active:scale-[0.99]"
         >
-          <Plus size={20} strokeWidth={2} />
-          Add exercise
+          <span className="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-[14px] border border-dashed border-white/[0.22] text-[#8b90f7]">
+            <Plus size={20} strokeWidth={2} />
+          </span>
+          <span className="text-[14.5px] font-semibold text-[#8b90f7]">Add exercise</span>
         </button>
       </div>
 
-      <StickyAction>
-        <button
-          type="button"
+      <FloatingAction>
+        <ActionPill
+          label="Done"
+          icon={<Check size={19} strokeWidth={2} />}
           onClick={() => navigate(`/history/${sessionId}`)}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-[17px] text-base font-bold text-ink transition-transform active:scale-[0.99]"
-        >
-          <Check size={20} strokeWidth={2} />
-          Done
-        </button>
-      </StickyAction>
+        />
+      </FloatingAction>
     </>
   )
 }

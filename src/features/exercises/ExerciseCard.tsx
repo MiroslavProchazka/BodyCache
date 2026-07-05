@@ -37,18 +37,18 @@ export const ExerciseCard = memo(function ExerciseCard({
     <button
       type="button"
       onClick={() => navigate(`/library/${exercise.id}`)}
-      className="overflow-hidden rounded-[18px] border border-white/[0.07] bg-surface text-left"
+      className="text-left transition-transform active:scale-[0.99]"
     >
       <ExerciseTile
         photoId={exercise.primaryPhotoId as ExercisePhotoId | null}
         bodyPart={exercise.bodyPart}
-        radius="20px"
-        className="h-[124px] w-full"
+        radius="16px 16px 16px 5px"
+        className="h-[150px] w-full"
         glyphSize={34}
-        fit="contain"
+        fit="cover"
         map={{ muscle: body.muscle, view: body.view, fw: 50 }}
       />
-      <div className="p-3">
+      <div className="mt-[10px]">
         <div className="truncate text-[14.5px] font-semibold leading-tight tracking-tight text-white">
           {exercise.name}
         </div>

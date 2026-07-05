@@ -32,10 +32,10 @@ interface TrendBadgeProps {
  */
 export function TrendBadge({ trend, unit, iconOnly = false, size = 14 }: TrendBadgeProps) {
   const color =
-    trend.dir === 'up' ? 'text-neon' : trend.dir === 'down' ? 'text-down' : 'text-faint'
+    trend.dir === 'up' ? 'text-[#8b90f7]' : trend.dir === 'down' ? 'text-down' : 'text-faint'
 
   if (iconOnly) {
-    if (trend.dir === 'up') return <TrendingUp size={size} className="text-neon" />
+    if (trend.dir === 'up') return <TrendingUp size={size} className="text-[#8b90f7]" />
     if (trend.dir === 'down') return <TrendingDown size={size} className="text-down" />
     return null
   }

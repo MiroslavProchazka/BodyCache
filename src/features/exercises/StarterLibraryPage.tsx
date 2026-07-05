@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ChevronLeft, Search } from 'lucide-react'
+import { Check, ChevronLeft } from 'lucide-react'
 import { allExercises } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
 import { CircleButton } from '@/shared/components/CircleButton'
 import { Overline } from '@/shared/components/Overline'
-import { StickyAction } from '@/shared/components/StickyAction'
+import { SearchField } from '@/shared/components/SearchField'
+import { ActionPill, FloatingAction } from '@/shared/components/FloatingAction'
 import { useToast } from '@/shared/components/Toast'
 import { humanize } from '@/shared/utils/bodyParts'
 import { useDebouncedValue } from '@/shared/utils/useDebouncedValue'
@@ -189,42 +190,30 @@ export function StarterLibraryPage() {
 
   return (
     <>
-      <div className="px-5 pb-[150px] pt-[6px]">
-        <header className="mb-3 flex items-center gap-3">
+      <div className="px-[22px] pb-[150px] pt-[14px]">
+        <header className="mb-4 flex items-center gap-3">
           <CircleButton onClick={() => navigate('/library')} label="Back">
             <ChevronLeft size={18} strokeWidth={1.75} />
           </CircleButton>
-          <h1 className="font-display text-[22px] font-semibold tracking-tight text-white">
+          <h1 className="font-display text-[22px] font-semibold tracking-[-0.02em] text-white">
             Starter library
           </h1>
         </header>
 
-        <p className="mb-4 text-sm text-muted">
+        <p className="mb-4 text-[13.5px] leading-[1.5] text-muted">
           The full gym exercise library — each comes with a demo animation and form cues. Search for
           what you do, tap to pick, then add. Swap in your own machine photo any time.
         </p>
 
-        <div className="relative mb-4">
-          <Search
-            size={17}
-            strokeWidth={1.75}
-            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-faint"
-          />
-          <input
-            type="search"
-            inputMode="search"
-            value={query}
-            onChange={(ev) => setQuery(ev.target.value)}
-            placeholder="Search exercises"
-            className="w-full rounded-2xl border border-white/10 bg-surface py-3 pl-10 pr-3 text-[15px] text-white placeholder:text-faint focus:border-neon/40 focus:outline-none"
-          />
+        <div className="mb-4">
+          <SearchField value={query} onChange={setQuery} />
         </div>
 
         {visibleAddable.length > 0 && (
           <button
             type="button"
             onClick={toggleAll}
-            className="mb-4 text-[13px] font-semibold text-neon"
+            className="mb-4 text-[13px] font-semibold text-[#8b90f7]"
           >
             {allVisibleSelected
               ? 'Deselect all'
@@ -282,20 +271,20 @@ export function StarterLibraryPage() {
         </div>
       </div>
 
-      <StickyAction>
-        <button
-          type="button"
+      <FloatingAction>
+        <ActionPill
+          label={
+            saving
+              ? 'Adding…'
+              : count === 0
+                ? 'Select exercises to add'
+                : `Add ${count} exercise${count === 1 ? '' : 's'}`
+          }
+          icon={<Check size={19} strokeWidth={2} />}
           onClick={handleAdd}
-          disabled={count === 0 || saving}
-          className="w-full rounded-2xl bg-white py-[17px] text-base font-bold text-ink transition-transform active:scale-[0.99] disabled:bg-surface disabled:text-faint disabled:opacity-60"
-        >
-          {saving
-            ? 'Adding…'
-            : count === 0
-              ? 'Select exercises to add'
-              : `Add ${count} exercise${count === 1 ? '' : 's'}`}
-        </button>
-      </StickyAction>
+          className={count === 0 || saving ? 'pointer-events-none opacity-60 grayscale' : ''}
+        />
+      </FloatingAction>
     </>
   )
 }

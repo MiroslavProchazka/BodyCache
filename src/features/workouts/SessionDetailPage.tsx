@@ -1,26 +1,28 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { ChevronLeft, ChevronRight, Pencil, RotateCcw, Trash2 } from 'lucide-react'
-import { sessionById, sessionSetsDetailed } from '@/evolu/queries'
+import { ChevronLeft, Clock, Layers, RotateCcw } from 'lucide-react'
+import { sessionById, sessionSetsDetailed, finishedSessionSets } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
-import type { WorkoutSessionRow, SessionDetailSetRow } from '@/evolu/rows'
-import type { ExerciseId, ExercisePhotoId, WorkoutSessionId } from '@/evolu/schema'
+import type { WorkoutSessionRow, SessionDetailSetRow, FinishedSessionSetRow } from '@/evolu/rows'
+import type { ExerciseId, WorkoutSessionId } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
-import { StickyAction } from '@/shared/components/StickyAction'
+import { Divider } from '@/shared/components/Divider'
+import { HeroStat } from '@/shared/components/HeroStat'
 import { Overline } from '@/shared/components/Overline'
-import { StatTile } from '@/shared/components/StatTile'
+import { MetaChip, PrChip } from '@/shared/components/Chips'
+import { ActionPill, FloatingAction } from '@/shared/components/FloatingAction'
 import { useRepeatWorkout } from './useRepeatWorkout'
-import { ExerciseTile } from '@/features/exercises/ExerciseTile'
-import { humanize } from '@/shared/utils/bodyParts'
 import { formatRelativeDay } from '@/shared/utils/dates'
 import { finishedDurationSec, formatDurationSec } from '@/shared/utils/workoutStats'
 import { formatVolume, formatSetSummary } from '@/shared/utils/units'
+import { bestSet, workingSets } from '@/shared/utils/exerciseStats'
 import { useUnits } from '@/shared/units/UnitsContext'
 import { summarizeSession } from './sessionSummary'
 import { groupExerciseSets, type SessionExerciseGroup } from './historyStats'
+import { sessionPersonalRecords } from './sessionPrs'
 import { SetTypeTag } from './SetTypeTag'
 
-/** A finished workout's full recap: stats plus the per-exercise set breakdown. */
+/** A finished workout's full recap: hero stats plus the per-exercise breakdown. */
 export function SessionDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -30,12 +32,12 @@ export function SessionDetailPage() {
 
   if (!session || session.status !== 'finished') {
     return (
-      <div className="px-5 py-16 text-center text-muted">
+      <div className="px-[22px] py-16 text-center text-muted">
         <p>Workout not found.</p>
         <button
           type="button"
           onClick={() => navigate('/history')}
-          className="mt-3 font-semibold text-neon"
+          className="mt-3 font-semibold text-[#8b90f7]"
         >
           Back to history
         </button>
@@ -50,15 +52,36 @@ function SessionDetailInner({ session }: { session: WorkoutSessionRow }) {
   const { unit } = useUnits()
   const { deleteWorkoutSession } = useBodyCacheMutations()
   const repeatWorkout = useRepeatWorkout()
-  const rows = useQuery(sessionSetsDetailed(session.id as WorkoutSessionId)) as readonly SessionDetailSetRow[]
+  const rows = useQuery(
+    sessionSetsDetailed(session.id as WorkoutSessionId),
+  ) as readonly SessionDetailSetRow[]
+  const allSets = useQuery(finishedSessionSets) as readonly FinishedSessionSetRow[]
 
   const summary = summarizeSession(rows)
   const groups = groupExerciseSets(rows)
   const durationSec = finishedDurationSec(session)
-  const duration = durationSec != null ? formatDurationSec(durationSec) : '—'
+  const duration = durationSec != null ? formatDurationSec(durationSec) : null
+
+  // Which exercises PR'd this session, and the single record set to badge in each.
+  const prs = sessionPersonalRecords(String(session.id as WorkoutSessionId), allSets)
+  const prExercises = new Set(prs.map((p) => p.exerciseId))
+  const prSetIds = new Set<string>()
+  for (const g of groups) {
+    if (g.exerciseId && prExercises.has(g.exerciseId)) {
+      const top = bestSet(workingSets(g.sets), g.type)
+      if (top) prSetIds.add(String(top.id))
+    }
+  }
+
+  const time = session.startedAt
+    ? new Date(session.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : null
+  const stamp = [session.startedAt ? formatRelativeDay(session.startedAt) : null, time]
+    .filter(Boolean)
+    .join(' · ')
 
   const handleDelete = () => {
-    if (!window.confirm('Delete this workout from history? This can\'t be undone.')) return
+    if (!window.confirm('Delete this workout from history? This can’t be undone.')) return
     deleteWorkoutSession(session.id as WorkoutSessionId)
     navigate('/history', { replace: true })
   }
@@ -70,127 +93,121 @@ function SessionDetailInner({ session }: { session: WorkoutSessionRow }) {
 
   return (
     <>
-    <div className="px-5 pb-[150px] pt-[6px]">
-      <header className="mb-4 flex items-center gap-3">
-        <CircleButton onClick={() => navigate('/history')} label="Back">
-          <ChevronLeft size={18} strokeWidth={1.75} />
-        </CircleButton>
-        <div className="min-w-0 flex-1">
-          <div className="truncate font-display text-[20px] font-semibold leading-[1.1] tracking-tight text-white">
-            {summary.name}
-          </div>
-          <div className="mt-[2px] truncate text-[12.5px] text-muted">
-            {session.startedAt ? formatRelativeDay(session.startedAt) : '—'}
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => navigate(`/history/${session.id as WorkoutSessionId}/edit`)}
-          aria-label="Edit workout"
-          className="flex h-10 w-10 flex-none items-center justify-center rounded-full border border-white/10 bg-surface text-faint"
-        >
-          <Pencil size={17} strokeWidth={1.75} />
-        </button>
+      <div className="px-[22px] pb-[150px] pt-[14px]">
+        <header className="mb-[22px] flex items-center justify-between">
+          <CircleButton onClick={() => navigate('/history')} label="Back">
+            <ChevronLeft size={18} strokeWidth={1.75} />
+          </CircleButton>
+          <button
+            type="button"
+            onClick={() => navigate(`/history/${session.id as WorkoutSessionId}/edit`)}
+            className="text-[13px] font-semibold text-[#8b90f7]"
+          >
+            Edit
+          </button>
+        </header>
+
+        <Overline className="mb-[10px]">{stamp || '—'}</Overline>
+        <h1 className="mb-4 font-display text-[26px] font-bold tracking-[-0.02em] text-white">
+          {summary.name}
+        </h1>
+        <HeroStat
+          value={formatVolume(summary.volumeKg, unit)}
+          unit={unit}
+          size={44}
+          chips={
+            <>
+              {duration && <MetaChip icon={<Clock size={13} strokeWidth={2} />}>{duration}</MetaChip>}
+              <MetaChip icon={<Layers size={13} strokeWidth={2} />}>
+                {summary.setCount} {summary.setCount === 1 ? 'set' : 'sets'}
+              </MetaChip>
+              {prs.length > 0 && <PrChip>{`${prs.length} PR${prs.length === 1 ? '' : 's'}`}</PrChip>}
+            </>
+          }
+        />
+
+        {groups.length > 0 ? (
+          groups.map((group) => (
+            <ExerciseBreakdown
+              key={group.workoutExerciseId}
+              group={group}
+              prSetIds={prSetIds}
+              onOpen={() =>
+                group.exerciseId && navigate(`/library/${group.exerciseId as ExerciseId}`)
+              }
+            />
+          ))
+        ) : (
+          <>
+            <Divider className="my-6" />
+            <p className="text-[13.5px] text-muted">
+              No completed sets were logged in this workout.
+            </p>
+          </>
+        )}
+
+        <Divider className="my-6" />
         <button
           type="button"
           onClick={handleDelete}
-          aria-label="Delete workout"
-          className="flex h-10 w-10 flex-none items-center justify-center rounded-full border border-white/10 bg-surface text-faint"
+          className="text-[13.5px] font-semibold text-[#fa757e] active:scale-[0.99]"
         >
-          <Trash2 size={18} strokeWidth={1.75} />
+          Delete workout
         </button>
-      </header>
-
-      <div className="mb-[26px] flex gap-[10px]">
-        <StatTile value={duration} label="duration" />
-        <StatTile value={summary.setCount} label="sets" />
-        <StatTile value={formatVolume(summary.volumeKg, unit)} label={`${unit} lifted`} />
       </div>
 
-      {groups.length > 0 ? (
-        <>
-          <Overline className="mb-3">Exercises</Overline>
-          <div className="flex flex-col gap-3">
-            {groups.map((group) => (
-              <ExerciseBreakdown
-                key={group.workoutExerciseId}
-                group={group}
-                onClick={() =>
-                  group.exerciseId &&
-                  navigate(`/library/${group.exerciseId as ExerciseId}`)
-                }
-              />
-            ))}
-          </div>
-        </>
-      ) : (
-        <p className="rounded-[18px] border border-white/[0.07] bg-surface px-4 py-6 text-center text-sm text-muted">
-          No completed sets were logged in this workout.
-        </p>
-      )}
-    </div>
-
       {groups.length > 0 && (
-        <StickyAction>
-          <button
-            type="button"
+        <FloatingAction>
+          <ActionPill
+            label="Repeat workout"
+            icon={<RotateCcw size={18} strokeWidth={2.2} />}
             onClick={handleRepeat}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-[17px] text-base font-bold text-ink"
-          >
-            <RotateCcw size={18} strokeWidth={2.2} />
-            Repeat workout
-          </button>
-        </StickyAction>
+          />
+        </FloatingAction>
       )}
     </>
   )
 }
 
-/** One exercise's photo, name, set count and set chips. Taps to its detail. */
+/**
+ * One exercise's contribution: a tappable name overline (→ exercise detail) and
+ * its sets as flat `SET n` tabular rows, with a PR chip on the record set.
+ */
 function ExerciseBreakdown({
   group,
-  onClick,
+  prSetIds,
+  onOpen,
 }: {
   group: SessionExerciseGroup
-  onClick: () => void
+  prSetIds: Set<string>
+  onOpen: () => void
 }) {
   const { unit } = useUnits()
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-full rounded-[20px] border border-white/[0.07] bg-surface p-4 text-left"
-    >
-      <div className="mb-[13px] flex items-center gap-[13px]">
-        <ExerciseTile
-          photoId={group.primaryPhotoId as ExercisePhotoId | null}
-          bodyPart={group.bodyPart}
-          radius="14px"
-          className="h-[46px] w-[46px] flex-none"
-          glyphSize={23}
-        />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-base font-semibold tracking-tight text-white">
-            {group.name}
-          </div>
-          <div className="mt-[2px] truncate text-[12.5px] text-muted">
-            {group.sets.length} {group.sets.length === 1 ? 'set' : 'sets'}
-            {group.bodyPart ? ` · ${humanize(group.bodyPart)}` : ''}
-          </div>
-        </div>
-        <ChevronRight size={18} strokeWidth={1.75} className="flex-none text-faint" />
-      </div>
-      <div className="flex flex-wrap gap-[7px]">
-        {group.sets.map((s) => (
-          <span
-            key={s.id}
-            className="inline-flex items-center gap-[6px] whitespace-nowrap rounded-[9px] bg-inset px-[10px] py-[6px] text-[12.5px] font-semibold tnum text-soft"
-          >
-            {formatSetSummary(s, group.type, unit, true)}
+    <div>
+      <Divider className="my-6" />
+      <button
+        type="button"
+        onClick={onOpen}
+        disabled={!group.exerciseId}
+        className="mb-3 block text-left"
+      >
+        <Overline>{group.name}</Overline>
+      </button>
+      <div className="flex flex-col gap-3">
+        {group.sets.map((s, i) => (
+          <div key={s.id} className="flex items-center gap-[13px]">
+            <span className="w-[44px] flex-none text-[11px] font-semibold uppercase tracking-[0.06em] text-faint">
+              Set {i + 1}
+            </span>
             <SetTypeTag value={s.setType} />
-          </span>
+            <span className="flex-1 text-[14.5px] font-semibold tnum text-white">
+              {formatSetSummary(s, group.type, unit)}
+            </span>
+            {prSetIds.has(String(s.id)) && <PrChip>PR</PrChip>}
+          </div>
         ))}
       </div>
-    </button>
+    </div>
   )
 }
