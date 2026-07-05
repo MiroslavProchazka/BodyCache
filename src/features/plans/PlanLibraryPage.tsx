@@ -1,17 +1,20 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
-import { ClipboardList, Plus, Play, ChevronRight } from 'lucide-react'
+import { ClipboardList, Plus } from 'lucide-react'
 import { activePlans, planExercises } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { PlanRow } from '@/evolu/rows'
 import type { PlanId } from '@/evolu/schema'
-import { useToast } from '@/shared/components/Toast'
-import { useStartWorkoutFromPlan } from './useStartWorkoutFromPlan'
+import { IconTile } from '@/shared/components/IconTile'
+import { ListRow } from '@/shared/components/ListRow'
+import { Overline } from '@/shared/components/Overline'
+import { ActionPill, FloatingAction } from '@/shared/components/FloatingAction'
 
 /**
- * The plan library: the saved routines the user builds before the gym. Each
- * card starts a workout in one tap or opens the plan to edit. Creating a plan
- * makes the row immediately and drops into the editor (Hevy-style build flow).
+ * The plan library: the saved routines the user builds before the gym, as flat
+ * rows that open to the plan. Creating a plan makes the row immediately and
+ * drops into the editor (Hevy-style build flow); the primary action is a
+ * floating "New plan" pill.
  */
 export function PlanLibraryPage() {
   const navigate = useNavigate()
@@ -24,65 +27,44 @@ export function PlanLibraryPage() {
   }
 
   return (
-    <div className="px-5 pb-[130px] pt-[6px]">
-      <div className="mb-5 flex items-center justify-between">
-        <h1 className="font-display text-[26px] font-semibold tracking-tight text-white">Plans</h1>
-        <button
-          type="button"
-          onClick={handleCreate}
-          className="flex items-center gap-[6px] rounded-full bg-white px-[14px] py-[9px] text-[13.5px] font-bold text-ink active:scale-[0.97]"
-        >
-          <Plus size={17} strokeWidth={2.2} />
-          New
-        </button>
+    <>
+      <div className="px-[22px] pb-[130px] pt-[14px]">
+        <h1 className="mb-5 font-display text-[24px] font-semibold tracking-[-0.02em] text-white">
+          Plans
+        </h1>
+
+        {plans.length === 0 ? (
+          <div className="mt-2">
+            <Overline className="mb-[10px]">No plans yet</Overline>
+            <p className="text-[13.5px] leading-[1.5] text-muted">
+              Build a routine — Leg Day, Push, Full Body — so it’s ready before you walk in. Tap New
+              plan to start.
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-[18px]">
+            {plans.map((plan) => (
+              <PlanRowView key={plan.id} plan={plan as PlanRow} />
+            ))}
+          </div>
+        )}
       </div>
 
-      {plans.length === 0 ? (
-        <div className="mt-2 rounded-[22px] border-[1.5px] border-dashed border-white/[0.14] px-6 py-[40px] text-center">
-          <div
-            className="mx-auto mb-4 flex h-14 w-14 items-center justify-center bg-inset text-neon"
-            style={{ borderRadius: '20px' }}
-          >
-            <ClipboardList size={26} strokeWidth={1.75} />
-          </div>
-          <div className="mb-[6px] font-display text-lg font-semibold text-white">No plans yet</div>
-          <div className="mb-5 text-sm leading-[1.45] text-muted">
-            Build a routine — Leg Day, Push, Full Body — so it's ready before you walk in.
-          </div>
-          <button
-            type="button"
-            onClick={handleCreate}
-            className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-[13px] text-[14.5px] font-bold text-ink"
-          >
-            <Plus size={18} strokeWidth={2.2} />
-            Create a plan
-          </button>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {plans.map((plan) => (
-            <PlanCard key={plan.id} plan={plan as PlanRow} />
-          ))}
-        </div>
-      )}
-    </div>
+      <FloatingAction raised>
+        <ActionPill
+          label="New plan"
+          icon={<Plus size={19} strokeWidth={2} />}
+          onClick={handleCreate}
+        />
+      </FloatingAction>
+    </>
   )
 }
 
-function PlanCard({ plan }: { plan: PlanRow }) {
+/** One saved plan as a flat row: clipboard tile, name, exercise recall, chevron. */
+function PlanRowView({ plan }: { plan: PlanRow }) {
   const navigate = useNavigate()
-  const { showToast } = useToast()
-  const startFromPlan = useStartWorkoutFromPlan()
   const exercises = useQuery(planExercises(plan.id as PlanId))
-
-  const handleStart = async () => {
-    if (exercises.length === 0) {
-      showToast('Add an exercise first')
-      return
-    }
-    const sessionId = await startFromPlan(plan.id as PlanId)
-    if (sessionId) navigate('/workout')
-  }
 
   const summary =
     exercises.length === 0
@@ -93,36 +75,16 @@ function PlanCard({ plan }: { plan: PlanRow }) {
           .join(' · ') + (exercises.length > 3 ? ` +${exercises.length - 3}` : '')
 
   return (
-    <div className="overflow-hidden rounded-[20px] border border-white/[0.07] bg-surface">
-      <button
-        type="button"
-        onClick={() => navigate(`/plans/${plan.id as PlanId}`)}
-        className="flex w-full items-center gap-[13px] p-4 text-left active:bg-white/[0.02]"
-      >
-        <div
-          className="flex h-[46px] w-[46px] flex-none items-center justify-center bg-inset text-neon"
-          style={{ borderRadius: '14px' }}
-        >
-          <ClipboardList size={23} strokeWidth={1.75} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-base font-semibold tracking-tight text-white">
-            {plan.name}
-          </div>
-          <div className="mt-[2px] truncate text-[12.5px] text-muted">
-            {exercises.length} {exercises.length === 1 ? 'exercise' : 'exercises'} · {summary}
-          </div>
-        </div>
-        <ChevronRight size={18} strokeWidth={1.75} className="flex-none text-faint" />
-      </button>
-      <button
-        type="button"
-        onClick={handleStart}
-        className="flex w-full items-center justify-center gap-2 border-t border-white/[0.06] bg-neon/[0.08] py-[12px] text-[14px] font-bold text-neon active:bg-neon/[0.14]"
-      >
-        <Play size={16} strokeWidth={2} fill="currentColor" stroke="none" />
-        Start workout
-      </button>
-    </div>
+    <ListRow
+      onClick={() => navigate(`/plans/${plan.id as PlanId}`)}
+      titleClassName="text-[15px]"
+      leading={
+        <IconTile>
+          <ClipboardList size={20} strokeWidth={1.75} />
+        </IconTile>
+      }
+      title={plan.name}
+      meta={`${exercises.length} ${exercises.length === 1 ? 'exercise' : 'exercises'} · ${summary}`}
+    />
   )
 }

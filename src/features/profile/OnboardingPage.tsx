@@ -16,11 +16,11 @@ export function OnboardingPage() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-ink text-white">
-      <div className="mx-auto w-full max-w-md px-5 pb-10 pt-12">
-        <h1 className="font-display text-[28px] font-semibold leading-tight tracking-tight text-white">
+      <div className="mx-auto w-full max-w-md px-[22px] pb-10 pt-12">
+        <h1 className="font-display text-[32px] font-extrabold leading-[1.08] tracking-[-0.02em] text-white">
           Welcome to BodyCache
         </h1>
-        <p className="mb-8 mt-2 text-[14px] leading-relaxed text-muted">
+        <p className="mb-8 mt-3 text-[14px] leading-relaxed text-muted">
           Your workout memory. Set up your profile to get started — you can change
           any of this later in Settings.
         </p>

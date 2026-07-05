@@ -67,7 +67,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps
         onChange={(e) => setName(e.target.value)}
         placeholder="What should we call you?"
         autoComplete="name"
-        className="mb-[18px] w-full rounded-2xl border border-white/10 bg-surface p-[14px] text-[15px] text-white placeholder:text-faint focus:outline-none"
+        className="mb-[18px] w-full rounded-2xl bg-inset p-[14px] text-[15px] text-white placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-neon"
       />
 
       <Overline className="mb-2">Gender</Overline>
@@ -83,8 +83,8 @@ export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps
               className={[
                 'flex-1 rounded-full border py-[10px] text-center text-[13.5px] font-semibold transition-colors',
                 active
-                  ? 'border-neon bg-neon text-ink'
-                  : 'border-white/10 bg-surface text-muted',
+                  ? 'border-neon bg-neon text-white'
+                  : 'border-transparent bg-inset text-soft',
               ].join(' ')}
             >
               {genderLabel(g)}
@@ -113,7 +113,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit }: ProfileFormProps
         type="button"
         onClick={submit}
         disabled={!canSave}
-        className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-[17px] text-base font-bold text-ink transition-transform active:scale-[0.99] disabled:bg-surface disabled:text-faint disabled:opacity-60"
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-br from-neon to-brand py-[17px] text-base font-bold text-white shadow-pill transition-transform active:scale-[0.99] disabled:bg-none disabled:bg-surface disabled:text-faint disabled:opacity-60 disabled:shadow-none"
       >
         {submitLabel}
       </button>
@@ -132,7 +132,7 @@ function Stepper({
   onStep: (dir: 1 | -1) => void
 }) {
   return (
-    <div className="mb-[14px] flex items-center justify-between rounded-2xl border border-white/[0.07] bg-surface px-[15px] py-[13px]">
+    <div className="mb-[14px] flex items-center justify-between rounded-2xl bg-inset px-[15px] py-[13px]">
       <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-faint">
         {label}
       </span>
@@ -165,7 +165,7 @@ function StepButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="flex h-10 w-10 flex-none items-center justify-center rounded-full border border-white/10 bg-inset text-neon transition-transform active:scale-[0.94]"
+      className="flex h-10 w-10 flex-none items-center justify-center rounded-full border border-white/10 bg-surface text-white transition-transform active:scale-[0.94]"
     >
       {children}
     </button>

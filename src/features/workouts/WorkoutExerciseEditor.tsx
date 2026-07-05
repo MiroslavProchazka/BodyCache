@@ -135,7 +135,7 @@ export function WorkoutExerciseEditor({
           <div key={s.id} className="rounded-[16px] border border-white/[0.06] bg-inset px-3 pb-3 pt-[11px]">
             <div className="mb-[10px] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="rounded-lg bg-neon/[0.12] px-[9px] py-[3px] text-[12px] font-semibold text-neon">
+                <span className="rounded-lg bg-neon/[0.16] px-[9px] py-[3px] text-[12px] font-semibold text-[#8b90f7]">
                   Set {i + 1}
                 </span>
                 <button
@@ -265,7 +265,7 @@ function StepButton({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-white/10 bg-surface text-neon transition-transform active:scale-[0.94]"
+      className="flex h-9 w-9 flex-none items-center justify-center rounded-full border border-white/10 bg-surface text-[#8b90f7] transition-transform active:scale-[0.94]"
     >
       {children}
     </button>

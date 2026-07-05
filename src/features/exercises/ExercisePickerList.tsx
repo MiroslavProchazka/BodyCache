@@ -221,7 +221,7 @@ const PickerRow = memo(function PickerRow({
         </div>
         <div className="mt-[2px] truncate text-[12.5px] text-muted">{subtitle}</div>
       </div>
-      <div className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-full bg-neon/[0.12] text-neon">
+      <div className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-full bg-neon/[0.16] text-[#8b90f7]">
         <Plus size={18} strokeWidth={2} />
       </div>
     </button>

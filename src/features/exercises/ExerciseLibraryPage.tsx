@@ -141,7 +141,7 @@ export function ExerciseLibraryPage() {
 
       {!hasAny ? (
         <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-inset text-neon">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-inset text-[#8b90f7]">
             <Dumbbell size={28} strokeWidth={1.75} />
           </div>
           <h2 className="font-display text-lg font-semibold text-white">No exercises yet</h2>
