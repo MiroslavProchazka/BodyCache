@@ -20,7 +20,10 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    exclude: ['@evolu/sqlite-wasm'],
+    // Evolu's web package creates the DB worker with `new Worker(new URL(...))`.
+    // If Vite pre-bundles it into node_modules/.vite/deps, the generated worker
+    // URL points at a non-existent optimized file and startup suspends forever.
+    exclude: ['@evolu/web', '@evolu/sqlite-wasm'],
   },
   build: {
     // Emit `.vite/manifest.json` so the CI chunk guard (scripts/check-chunks.mjs)
