@@ -8,6 +8,7 @@ import type { SessionExerciseRow, WorkoutSessionRow } from '@/evolu/rows'
 import type { WorkoutExerciseId, WorkoutSessionId } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
 import { Button } from '@/shared/components/Button'
+import { ConfirmSheet } from '@/shared/components/ConfirmSheet'
 import { Divider } from '@/shared/components/Divider'
 import { HeroStat } from '@/shared/components/HeroStat'
 import { SectionHeader } from '@/shared/components/SectionHeader'
@@ -56,6 +57,9 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
   const completedSets = useQuery(completedSetsForSession(session.id as WorkoutSessionId))
 
   const [now, setNow] = useState(() => new Date().toISOString())
+  const [confirm, setConfirm] = useState<
+    null | { kind: 'discard' } | { kind: 'remove'; entry: SessionExerciseRow }
+  >(null)
   useEffect(() => {
     const t = setInterval(() => setNow(new Date().toISOString()), 1000)
     return () => clearInterval(t)
@@ -110,8 +114,7 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
   // any sets logged under it are filtered out by the session's queries since
   // they join on a live `workoutExercise`.
   const handleRemove = (entry: SessionExerciseRow) => {
-    if (!window.confirm(`Remove ${entry.exerciseName} from this workout?`)) return
-    removeExerciseFromWorkout(entry.id as WorkoutExerciseId)
+    setConfirm({ kind: 'remove', entry })
   }
 
   const handleFinish = () => {
@@ -126,11 +129,29 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
   }
 
   const handleDiscard = () => {
-    const message = empty
-      ? 'Discard this empty workout?'
-      : 'Discard this workout? Everything you logged will be lost. This can’t be undone.'
-    if (!window.confirm(message)) return
+    setConfirm({ kind: 'discard' })
+  }
+
+  const confirmTitle =
+    confirm?.kind === 'remove'
+      ? `Remove ${confirm.entry.exerciseName} from this workout?`
+      : empty
+        ? 'Discard this empty workout?'
+        : 'Discard this workout?'
+  const confirmBody =
+    confirm?.kind === 'discard' && !empty
+      ? 'Everything you logged will be lost. This can’t be undone.'
+      : undefined
+
+  const runConfirmedAction = () => {
+    if (!confirm) return
+    if (confirm.kind === 'remove') {
+      removeExerciseFromWorkout(confirm.entry.id as WorkoutExerciseId)
+      setConfirm(null)
+      return
+    }
     discardWorkoutSession(session.id)
+    setConfirm(null)
     navigate('/', { replace: true })
   }
 
@@ -175,7 +196,11 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
               <MetaChip icon={<Layers size={13} strokeWidth={2} />}>
                 {completedSets.length} {completedSets.length === 1 ? 'set' : 'sets'}
               </MetaChip>
-              {volumeKg > 0 && <MetaChip>{formatVolume(volumeKg, unit)} {unit}</MetaChip>}
+              {volumeKg > 0 && (
+                <MetaChip>
+                  {formatVolume(volumeKg, unit)} {unit}
+                </MetaChip>
+              )}
             </>
           }
         />
@@ -249,6 +274,15 @@ function ActiveWorkoutInner({ session }: { session: WorkoutSessionRow }) {
           <Check size={17} strokeWidth={2} />
         </Button>
       </FloatingAction>
+      <ConfirmSheet
+        open={confirm !== null}
+        title={confirmTitle}
+        body={confirmBody}
+        confirmLabel={confirm?.kind === 'remove' ? 'Remove' : 'Discard'}
+        confirmVariant="destructive"
+        onConfirm={runConfirmedAction}
+        onClose={() => setConfirm(null)}
+      />
     </>
   )
 }
