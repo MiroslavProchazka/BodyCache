@@ -27,6 +27,7 @@ import { useOnlineStatus } from '@/shared/utils/useOnlineStatus'
 import { Avatar } from '@/features/profile/Avatar'
 import { formatProfileMeta, narrowGender } from '@/features/profile/profile'
 import { parseRestoreMnemonic } from './mnemonic'
+import { clearRestoreFlag, markJustRestored } from './restoreState'
 import { useDataTransfer } from './useDataTransfer'
 
 /** Settings — storage status, display units, and data management. */
@@ -154,9 +155,14 @@ export function SettingsPage() {
     }
 
     setMnemonicBusy('restore')
+    // Stamp before restore: `restoreAppOwner` reloads the app, and the boot
+    // after reload reads this to show the "still syncing" banner.
+    markJustRestored()
     try {
       await evolu.restoreAppOwner(parsed.value)
     } catch {
+      // Restore didn't start — don't show the post-reload "syncing" banner.
+      clearRestoreFlag()
       setMnemonicBusy(null)
       setMnemonicError('Restore failed. Check the phrase and try again.')
     }
@@ -313,6 +319,13 @@ export function SettingsPage() {
           >
             {mnemonicBusy === 'restore' ? 'Restoring...' : 'Restore phrase'}
           </button>
+
+          <p className="mt-3 text-[12px] leading-relaxed text-faint">
+            Moving devices? On the old device, keep BodyCache open and online for a moment first so
+            every change reaches the relay. After restoring here, your data downloads in the
+            background — give it a minute while online. For a guaranteed, complete copy (including
+            photos), use Back up now → Restore from backup below instead.
+          </p>
         </div>
 
         <button
@@ -434,11 +447,11 @@ function SyncStatusCard({ online }: { online: boolean }) {
       </div>
       <div className="flex-1">
         <div className="text-[15px] font-semibold text-white">
-          {online ? 'Syncing your workouts' : 'Saved on this device'}
+          {online ? 'Backing up to the relay' : 'Saved on this device'}
         </div>
         <div className="mt-[2px] text-[12.5px] text-muted">
           {online
-            ? 'Encrypted · across your devices · photos stay here'
+            ? 'Encrypted · syncs in the background · photos stay here'
             : "Offline — changes sync once you're back online"}
         </div>
       </div>
