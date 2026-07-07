@@ -4,6 +4,22 @@ import './index.css'
 import { Providers } from './app/providers'
 
 if (typeof window !== 'undefined') {
+  if ('serviceWorker' in navigator) {
+    let reloadedForFreshServiceWorker = false
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (reloadedForFreshServiceWorker) return
+      reloadedForFreshServiceWorker = true
+      window.location.reload()
+    })
+
+    window.addEventListener('load', () => {
+      navigator.serviceWorker
+        .getRegistration()
+        .then((registration) => registration?.update())
+        .catch(() => undefined)
+    })
+  }
+
   // After a new deploy, a tab with an older app shell can reference removed
   // lazy chunks. Reload once to fetch the fresh index + chunk map. Skip the
   // reload when offline: the chunk isn't coming back over the network, so
