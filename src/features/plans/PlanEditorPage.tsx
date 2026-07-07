@@ -7,6 +7,7 @@ import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { PlanExerciseRow } from '@/evolu/rows'
 import type { PlanExerciseId, PlanId } from '@/evolu/schema'
 import { ActionPill, FloatingAction } from '@/shared/components/FloatingAction'
+import { ConfirmSheet } from '@/shared/components/ConfirmSheet'
 import { Overline } from '@/shared/components/Overline'
 import { SupersetGroup } from '@/features/workouts/SupersetGroup'
 import { groupExercises, newSupersetKey, supersetLabel } from '@/features/workouts/supersets'
@@ -28,6 +29,7 @@ function PlanEditorInner({ planId }: { planId: PlanId }) {
   const plan = useQuery(planById(planId))[0]
   // Ordered by `orderIndex` (the query sorts), so grouping folds live.
   const exercises = useQuery(planExercises(planId)) as PlanExerciseRow[]
+  const [removeTarget, setRemoveTarget] = useState<PlanExerciseRow | null>(null)
 
   // Name/notes are edited locally and committed on blur (avoids a write per
   // keystroke). Seeded once the plan row resolves.
@@ -46,7 +48,11 @@ function PlanEditorInner({ planId }: { planId: PlanId }) {
     return (
       <div className="px-5 py-16 text-center text-muted">
         <p>Plan not found.</p>
-        <button type="button" onClick={() => navigate('/plans')} className="mt-3 font-semibold text-[#8b90f7]">
+        <button
+          type="button"
+          onClick={() => navigate('/plans')}
+          className="mt-3 font-semibold text-[#8b90f7]"
+        >
           Back to plans
         </button>
       </div>
@@ -100,8 +106,13 @@ function PlanEditorInner({ planId }: { planId: PlanId }) {
     items.forEach((it) => setPlanExerciseSuperset(it.id as PlanExerciseId, null))
 
   const handleRemove = (entry: PlanExerciseRow) => {
-    if (!window.confirm(`Remove ${entry.exerciseName} from this plan?`)) return
-    removeExerciseFromPlan(entry.id as PlanExerciseId)
+    setRemoveTarget(entry)
+  }
+
+  const confirmRemove = () => {
+    if (!removeTarget) return
+    removeExerciseFromPlan(removeTarget.id as PlanExerciseId)
+    setRemoveTarget(null)
   }
 
   return (
@@ -147,7 +158,9 @@ function PlanEditorInner({ planId }: { planId: PlanId }) {
             </IconChoice>
           ))}
           <EmojiInputChoice
-            selected={currentIcon != null && !(PLAN_ICON_PRESETS as readonly string[]).includes(currentIcon)}
+            selected={
+              currentIcon != null && !(PLAN_ICON_PRESETS as readonly string[]).includes(currentIcon)
+            }
             value={currentIcon}
             onPick={chooseIcon}
           />
@@ -163,7 +176,11 @@ function PlanEditorInner({ planId }: { planId: PlanId }) {
             {(() => {
               let supersetIndex = 0
               return blocks.map((block) => {
-                const editor = (entry: PlanExerciseRow, badge: string | null, linkable: boolean) => (
+                const editor = (
+                  entry: PlanExerciseRow,
+                  badge: string | null,
+                  linkable: boolean,
+                ) => (
                   <PlanExerciseEditor
                     key={entry.id}
                     entry={entry}
@@ -215,6 +232,14 @@ function PlanEditorInner({ planId }: { planId: PlanId }) {
           onClick={() => navigate(`/plans/${planId}`)}
         />
       </FloatingAction>
+      <ConfirmSheet
+        open={removeTarget !== null}
+        title={removeTarget ? `Remove ${removeTarget.exerciseName} from this plan?` : ''}
+        confirmLabel="Remove"
+        confirmVariant="destructive"
+        onConfirm={confirmRemove}
+        onClose={() => setRemoveTarget(null)}
+      />
     </>
   )
 }
@@ -236,7 +261,9 @@ function IconChoice({
       aria-pressed={selected}
       className={[
         'flex h-[46px] w-[46px] flex-none items-center justify-center rounded-[14px] transition-colors active:scale-[0.96]',
-        selected ? 'border-[1.5px] border-neon bg-neon/[0.16]' : 'border border-white/[0.08] bg-surface',
+        selected
+          ? 'border-[1.5px] border-neon bg-neon/[0.16]'
+          : 'border border-white/[0.08] bg-surface',
       ].join(' ')}
     >
       {children}

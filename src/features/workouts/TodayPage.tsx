@@ -21,6 +21,7 @@ import {
 } from '@/shared/utils/workoutStats'
 import { formatRelativeDay } from '@/shared/utils/dates'
 import { Button } from '@/shared/components/Button'
+import { ConfirmSheet } from '@/shared/components/ConfirmSheet'
 import { Divider } from '@/shared/components/Divider'
 import { Overline } from '@/shared/components/Overline'
 import { SectionHeader } from '@/shared/components/SectionHeader'
@@ -88,7 +89,11 @@ export function TodayPage() {
             className="flex h-[30px] w-[30px] flex-none items-center justify-center overflow-hidden rounded-full border border-white/10 bg-surface text-soft"
           >
             {profile?.avatarSeed ? (
-              <Avatar seed={String(profile.avatarSeed)} gender={narrowGender(profile.gender)} size={30} />
+              <Avatar
+                seed={String(profile.avatarSeed)}
+                gender={narrowGender(profile.gender)}
+                size={30}
+              />
             ) : (
               <User size={15} strokeWidth={1.75} />
             )}
@@ -104,7 +109,8 @@ export function TodayPage() {
           <>
             <Divider className="mb-5" />
             <SectionHeader>
-              Last workout · {lastSession.startedAt ? formatRelativeDay(lastSession.startedAt) : '—'}
+              Last workout ·{' '}
+              {lastSession.startedAt ? formatRelativeDay(lastSession.startedAt) : '—'}
             </SectionHeader>
             <LastWorkoutCard session={lastSession} />
           </>
@@ -187,6 +193,7 @@ function ActiveSession({ session }: { session: WorkoutSessionRow }) {
   const exercises = useQuery(sessionExercises(session.id))
   const completedSets = useQuery(completedSetsForSession(session.id as WorkoutSessionId))
   const [now, setNow] = useState(() => new Date().toISOString())
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
   useEffect(() => {
     const t = setInterval(() => setNow(new Date().toISOString()), 1000)
     return () => clearInterval(t)
@@ -197,13 +204,15 @@ function ActiveSession({ session }: { session: WorkoutSessionRow }) {
   const stale = isStaleAbandonedSession(elapsedSec, completedSets.length)
 
   const handleDiscard = () => {
-    const message =
-      completedSets.length > 0
-        ? 'Discard this workout? Everything you logged will be lost. This can’t be undone.'
-        : 'Discard this empty workout?'
-    if (!window.confirm(message)) return
-    discardWorkoutSession(session.id as WorkoutSessionId)
+    setConfirmDiscard(true)
   }
+
+  const confirmTitle =
+    completedSets.length > 0 ? 'Discard this workout?' : 'Discard this empty workout?'
+  const confirmBody =
+    completedSets.length > 0
+      ? 'Everything you logged will be lost. This can’t be undone.'
+      : undefined
 
   if (stale) {
     return (
@@ -219,7 +228,11 @@ function ActiveSession({ session }: { session: WorkoutSessionRow }) {
             Nothing was logged. Discard it, or jump back in.
           </p>
           <div className="flex gap-[10px]">
-            <Button variant="secondary" className="flex-1 !py-[14px] text-[14.5px]" onClick={handleDiscard}>
+            <Button
+              variant="secondary"
+              className="flex-1 !py-[14px] text-[14.5px]"
+              onClick={handleDiscard}
+            >
               <Trash2 size={16} strokeWidth={1.85} />
               Discard
             </Button>
@@ -234,6 +247,18 @@ function ActiveSession({ session }: { session: WorkoutSessionRow }) {
           </div>
         </div>
         <Divider className="mb-5" />
+        <ConfirmSheet
+          open={confirmDiscard}
+          title={confirmTitle}
+          body={confirmBody}
+          confirmLabel="Discard"
+          confirmVariant="destructive"
+          onConfirm={() => {
+            discardWorkoutSession(session.id as WorkoutSessionId)
+            setConfirmDiscard(false)
+          }}
+          onClose={() => setConfirmDiscard(false)}
+        />
       </>
     )
   }

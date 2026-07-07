@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { ChevronLeft, Clock, Layers, RotateCcw } from 'lucide-react'
@@ -6,6 +7,7 @@ import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { WorkoutSessionRow, SessionDetailSetRow, FinishedSessionSetRow } from '@/evolu/rows'
 import type { ExerciseId, WorkoutSessionId } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
+import { ConfirmSheet } from '@/shared/components/ConfirmSheet'
 import { Divider } from '@/shared/components/Divider'
 import { HeroStat } from '@/shared/components/HeroStat'
 import { Overline } from '@/shared/components/Overline'
@@ -52,6 +54,7 @@ function SessionDetailInner({ session }: { session: WorkoutSessionRow }) {
   const { unit } = useUnits()
   const { deleteWorkoutSession } = useBodyCacheMutations()
   const repeatWorkout = useRepeatWorkout()
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const rows = useQuery(
     sessionSetsDetailed(session.id as WorkoutSessionId),
   ) as readonly SessionDetailSetRow[]
@@ -81,9 +84,7 @@ function SessionDetailInner({ session }: { session: WorkoutSessionRow }) {
     .join(' · ')
 
   const handleDelete = () => {
-    if (!window.confirm('Delete this workout from history? This can’t be undone.')) return
-    deleteWorkoutSession(session.id as WorkoutSessionId)
-    navigate('/history', { replace: true })
+    setConfirmDelete(true)
   }
 
   const handleRepeat = async () => {
@@ -117,11 +118,15 @@ function SessionDetailInner({ session }: { session: WorkoutSessionRow }) {
           size={44}
           chips={
             <>
-              {duration && <MetaChip icon={<Clock size={13} strokeWidth={2} />}>{duration}</MetaChip>}
+              {duration && (
+                <MetaChip icon={<Clock size={13} strokeWidth={2} />}>{duration}</MetaChip>
+              )}
               <MetaChip icon={<Layers size={13} strokeWidth={2} />}>
                 {summary.setCount} {summary.setCount === 1 ? 'set' : 'sets'}
               </MetaChip>
-              {prs.length > 0 && <PrChip>{`${prs.length} PR${prs.length === 1 ? '' : 's'}`}</PrChip>}
+              {prs.length > 0 && (
+                <PrChip>{`${prs.length} PR${prs.length === 1 ? '' : 's'}`}</PrChip>
+              )}
             </>
           }
         />
@@ -165,6 +170,19 @@ function SessionDetailInner({ session }: { session: WorkoutSessionRow }) {
           />
         </FloatingAction>
       )}
+      <ConfirmSheet
+        open={confirmDelete}
+        title="Delete this workout from history?"
+        body="This can’t be undone."
+        confirmLabel="Delete workout"
+        confirmVariant="destructive"
+        onConfirm={() => {
+          deleteWorkoutSession(session.id as WorkoutSessionId)
+          setConfirmDelete(false)
+          navigate('/history', { replace: true })
+        }}
+        onClose={() => setConfirmDelete(false)}
+      />
     </>
   )
 }

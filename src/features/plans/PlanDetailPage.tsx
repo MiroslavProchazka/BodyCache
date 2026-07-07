@@ -1,11 +1,19 @@
+import { useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { ChevronLeft, Pencil, Play } from 'lucide-react'
 import { planById, planExercises, planSetsForPlanExercise } from '@/evolu/queries'
 import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { PlanExerciseRow } from '@/evolu/rows'
-import type { ExerciseId, ExerciseType, ExercisePhotoId, PlanExerciseId, PlanId } from '@/evolu/schema'
+import type {
+  ExerciseId,
+  ExerciseType,
+  ExercisePhotoId,
+  PlanExerciseId,
+  PlanId,
+} from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
+import { ConfirmSheet } from '@/shared/components/ConfirmSheet'
 import { Divider } from '@/shared/components/Divider'
 import { HeroStat } from '@/shared/components/HeroStat'
 import { Overline } from '@/shared/components/Overline'
@@ -31,6 +39,7 @@ function PlanDetailInner({ planId }: { planId: PlanId }) {
   const { showToast } = useToast()
   const startFromPlan = useStartWorkoutFromPlan()
   const { archivePlan, softDeletePlan } = useBodyCacheMutations()
+  const [confirm, setConfirm] = useState<null | 'archive' | 'delete'>(null)
   const plan = useQuery(planById(planId))[0]
   const exercises = useQuery(planExercises(planId))
 
@@ -59,15 +68,25 @@ function PlanDetailInner({ planId }: { planId: PlanId }) {
   }
 
   const handleArchive = () => {
-    if (!window.confirm('Archive this plan? It will be hidden from your library.')) return
-    archivePlan(planId)
-    navigate('/plans')
+    setConfirm('archive')
   }
 
   const handleDelete = () => {
-    if (!window.confirm('Delete this plan? This can’t be undone.')) return
-    softDeletePlan(planId)
-    navigate('/plans')
+    setConfirm('delete')
+  }
+
+  const confirmPlanAction = () => {
+    if (confirm === 'archive') {
+      archivePlan(planId)
+      setConfirm(null)
+      navigate('/plans')
+      return
+    }
+    if (confirm === 'delete') {
+      softDeletePlan(planId)
+      setConfirm(null)
+      navigate('/plans')
+    }
   }
 
   return (
@@ -89,16 +108,20 @@ function PlanDetailInner({ planId }: { planId: PlanId }) {
         <h1 className="mb-4 font-display text-[26px] font-bold leading-[1.1] tracking-[-0.02em] text-white">
           {plan.name}
         </h1>
-        <HeroStat value={exercises.length} unit={exercises.length === 1 ? 'exercise' : 'exercises'} size={44} />
+        <HeroStat
+          value={exercises.length}
+          unit={exercises.length === 1 ? 'exercise' : 'exercises'}
+          size={44}
+        />
 
-        {plan.notes && (
-          <p className="mt-4 text-[13.5px] leading-[1.5] text-muted">{plan.notes}</p>
-        )}
+        {plan.notes && <p className="mt-4 text-[13.5px] leading-[1.5] text-muted">{plan.notes}</p>}
 
         {exercises.length === 0 ? (
           <>
             <Divider className="my-6" />
-            <p className="text-[13.5px] text-muted">This plan is empty. Edit it to add exercises.</p>
+            <p className="text-[13.5px] text-muted">
+              This plan is empty. Edit it to add exercises.
+            </p>
           </>
         ) : (
           exercises.map((entry) => (
@@ -134,11 +157,30 @@ function PlanDetailInner({ planId }: { planId: PlanId }) {
       <FloatingAction>
         <ActionPill
           label="Start this workout"
-          icon={<Play size={18} strokeWidth={2} fill="currentColor" stroke="none" className="ml-[2px]" />}
+          icon={
+            <Play
+              size={18}
+              strokeWidth={2}
+              fill="currentColor"
+              stroke="none"
+              className="ml-[2px]"
+            />
+          }
           onClick={handleStart}
           className={exercises.length === 0 ? 'opacity-60 grayscale' : ''}
         />
       </FloatingAction>
+      <ConfirmSheet
+        open={confirm !== null}
+        title={confirm === 'archive' ? 'Archive this plan?' : 'Delete this plan?'}
+        body={
+          confirm === 'archive' ? 'It will be hidden from your library.' : 'This can’t be undone.'
+        }
+        confirmLabel={confirm === 'archive' ? 'Archive plan' : 'Delete plan'}
+        confirmVariant={confirm === 'delete' ? 'destructive' : 'primary'}
+        onConfirm={confirmPlanAction}
+        onClose={() => setConfirm(null)}
+      />
     </>
   )
 }
@@ -152,7 +194,11 @@ function PlanExerciseRowView({ entry, onOpen }: { entry: PlanExerciseRow; onOpen
   return (
     <div>
       <Divider className="my-6" />
-      <button type="button" onClick={onOpen} className="mb-3 flex w-full items-center gap-[13px] text-left">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="mb-3 flex w-full items-center gap-[13px] text-left"
+      >
         <ExerciseTile
           photoId={entry.primaryPhotoId as ExercisePhotoId | null}
           bodyPart={entry.bodyPart as string | null}
