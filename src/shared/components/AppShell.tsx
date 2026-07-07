@@ -2,6 +2,7 @@ import { Suspense, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import { BottomNav } from './BottomNav'
 import { ResumeBar } from './ResumeBar'
+import { RestoreSyncBanner } from './RestoreSyncBanner'
 import { RestTimerBar } from '@/shared/rest/RestTimerBar'
 
 /** Routes that show the bottom tab bar (the tab roots). */
@@ -24,6 +25,8 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <div className="flex h-dvh flex-col bg-ink text-white">
       <main className="no-scrollbar relative flex-1 overflow-y-auto overflow-x-hidden">
+        {/* Post-restore hint: self-hides unless a phrase restore just happened. */}
+        <RestoreSyncBanner />
         <div className="mx-auto w-full max-w-md">{children}</div>
       </main>
       {/* Floating rest countdown — available on every in-app screen. */}

@@ -71,6 +71,26 @@ Dev server runs on http://localhost:5173 by default.
 - End-to-end tests intentionally run with sync disabled to keep test data local and deterministic.
 - PWA assets and manifest are configured through Vite PWA plugin.
 
+## Cross-device sync notes (relay hardening)
+
+- **Cross-origin isolation must match everywhere.** Evolu's SQLite worker wants
+  `Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Embedder-Policy: require-corp`.
+  These are set for the Vite dev/preview servers (`vite.config.ts`) **and** for the
+  production deploy (`vercel.json`). If you host elsewhere, send the same two headers on
+  the app's HTML responses — otherwise the deployed app runs un-isolated and can behave
+  differently from local.
+- **The default relay is the shared free one.** `wss://free.evoluhq.com` is Evolu's public
+  best-effort relay with no delivery/retention guarantees. For reliable multi-device sync,
+  point `VITE_EVOLU_RELAY_URL` at a **dedicated relay** you control (a bare `wss://…` base
+  URL, no query string) — see the Evolu relay docs for self-hosting.
+- **Sync is background and currently unobservable.** Evolu 7.x exposes no live `SyncState`
+  (the React `useSyncState` hook throws a TODO), so the app cannot confirm when a device has
+  finished uploading or downloading. Settings shows connectivity as an honest proxy, not a
+  "synced" guarantee.
+- **Photos never sync over the relay** (they live in IndexedDB, device-local by design). A
+  device restored from a recovery phrase gets structured data only. For a complete copy
+  including photos, use **Back up now → Restore from backup** in Settings.
+
 ## Current Status
 
 - Data layer is defined and typed (schema, queries, mutations).

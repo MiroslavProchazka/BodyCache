@@ -52,7 +52,22 @@ auto-generates a program — it just remembers the one *you* set up.
   local-only). Evolu is end-to-end encrypted — the relay sees only ciphertext.
   Writes commit locally first and sync in the background, so saving never blocks
   on the network. Sync status is shown in the Settings card via connectivity
-  (`useOnlineStatus`), since Evolu doesn't yet expose a live `SyncState`.
+  (`useOnlineStatus`), since Evolu doesn't yet expose a live `SyncState` (the
+  React `useSyncState` hook throws a TODO in 7.x) — so treat the card as an
+  honest connectivity proxy, never a "synced" guarantee, and keep its copy
+  accordingly.
+- **Relay hardening (learned).** Cross-origin isolation headers (`COOP:
+  same-origin` + `COEP: require-corp`) must be set in *all* environments — the
+  Vite dev/preview servers (`vite.config.ts`) **and** production (`vercel.json`);
+  a deploy without them runs un-isolated and can behave differently from local.
+  The default `wss://free.evoluhq.com` is Evolu's shared best-effort relay (no
+  delivery/retention guarantees) — for reliable multi-device sync point
+  `VITE_EVOLU_RELAY_URL` at a dedicated relay. Photos never sync over the relay
+  (device-local IndexedDB); the complete cross-device copy path is the JSON
+  backup/restore. A recovery-phrase restore reloads the app and pulls from the
+  relay in the background, so a `restoreState` flag drives a post-restore
+  "still syncing" banner (`RestoreSyncBanner`) — the freshly restored device is
+  empty until the pull lands.
 
 ## Data & image rules
 
