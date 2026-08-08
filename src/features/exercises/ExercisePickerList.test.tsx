@@ -149,6 +149,32 @@ describe('ExercisePickerList', () => {
     expect(screen.getByRole('region', { name: 'Favorites' }).textContent).toContain('Squat')
   })
 
+  it('groups all favorites by body part without a maximum', () => {
+    const favorites = Array.from({ length: 14 }, (_, index) =>
+      makeExercise({
+        id: String(index),
+        name: `Exercise ${index + 1}`,
+        bodyPart: index === 13 ? 'legs' : 'chest',
+      }),
+    )
+
+    render(
+      <ExercisePickerList
+        exercises={favorites}
+        favorites={favorites}
+        onPick={vi.fn()}
+        subtitleFor={subtitleFor}
+      />,
+    )
+
+    const section = screen.getByRole('region', { name: 'Favorites' })
+    expect(Array.from(section.querySelectorAll('h3')).map((el) => el.textContent)).toEqual([
+      'Chest',
+      'Legs',
+    ])
+    expect(section.textContent).toContain('Exercise 14')
+  })
+
   it('filters favorites with the same search and chips', async () => {
     render(
       <ExercisePickerList
@@ -175,8 +201,6 @@ describe('ExercisePickerList', () => {
     fireEvent.change(screen.getByPlaceholderText('Search exercises'), {
       target: { value: 'bench' },
     })
-    await waitFor(() =>
-      expect(screen.queryByRole('heading', { name: 'Favorites' })).toBeNull(),
-    )
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Favorites' })).toBeNull())
   })
 })
