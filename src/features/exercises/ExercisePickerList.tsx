@@ -23,7 +23,6 @@ const CHIP_OPTIONS = [
 
 const ROW_ESTIMATE = 72
 const GRID_ROW_ESTIMATE = 236
-const MAX_FAVORITES = 12
 
 interface ExercisePickerListProps {
   /** The full candidate list (already query-filtered, e.g. non-deleted). */
@@ -70,12 +69,24 @@ export function ExercisePickerList({
     [exercises, debouncedSearch, part],
   )
   const visibleFavorites = useMemo(
-    () =>
-      favorites
-        .filter((e) => matchesExerciseFilter(e, debouncedSearch, part))
-        .slice(0, MAX_FAVORITES),
+    () => favorites.filter((e) => matchesExerciseFilter(e, debouncedSearch, part)),
     [favorites, debouncedSearch, part],
   )
+  const favoriteGroups = useMemo(() => {
+    const byPart = new Map<string, ExerciseRow[]>()
+    for (const exercise of visibleFavorites) {
+      const part = BODY_PARTS.includes(exercise.bodyPart as (typeof BODY_PARTS)[number])
+        ? exercise.bodyPart!
+        : 'other'
+      const group = byPart.get(part)
+      if (group) group.push(exercise)
+      else byPart.set(part, [exercise])
+    }
+    return BODY_PARTS.flatMap((part) => {
+      const exercises = byPart.get(part)
+      return exercises ? [{ part, exercises }] : []
+    })
+  }, [visibleFavorites])
 
   const changePart = (next: string | null) => startTransition(() => setPart(next))
 
@@ -105,16 +116,31 @@ export function ExercisePickerList({
           <h2 className="mb-[10px] font-display text-[17px] font-semibold tracking-tight text-white">
             Favorites
           </h2>
-          <div className={view === 'grid' ? 'grid grid-cols-2 gap-x-3 gap-y-[18px]' : 'flex flex-col gap-[10px]'}>
-            {visibleFavorites.map((exercise) => (
-              <PickerItem
-                key={exercise.id}
-                exercise={exercise}
-                subtitle={subtitleFor(exercise)}
-                view={view}
-                onPick={onPick}
-                onOpen={onOpen}
-              />
+          <div className="flex flex-col gap-[18px]">
+            {favoriteGroups.map((group) => (
+              <div key={group.part}>
+                <h3 className="mb-[8px] font-display text-[14px] font-semibold text-soft">
+                  {humanize(group.part)}
+                </h3>
+                <div
+                  className={
+                    view === 'grid'
+                      ? 'grid grid-cols-2 gap-x-3 gap-y-[18px]'
+                      : 'flex flex-col gap-[10px]'
+                  }
+                >
+                  {group.exercises.map((exercise) => (
+                    <PickerItem
+                      key={exercise.id}
+                      exercise={exercise}
+                      subtitle={subtitleFor(exercise)}
+                      view={view}
+                      onPick={onPick}
+                      onOpen={onOpen}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </section>
@@ -191,7 +217,11 @@ const VirtualizedPickerRows = memo(function VirtualizedPickerRows({
               transform: `translateY(${v.start - virtualizer.options.scrollMargin}px)`,
             }}
           >
-            <div className={view === 'grid' ? 'grid grid-cols-2 gap-x-3 gap-y-[18px] pb-[18px]' : 'pb-[10px]'}>
+            <div
+              className={
+                view === 'grid' ? 'grid grid-cols-2 gap-x-3 gap-y-[18px] pb-[18px]' : 'pb-[10px]'
+              }
+            >
               {rows[v.index].map((exercise) => (
                 <PickerItem
                   key={exercise.id}
@@ -244,9 +274,7 @@ const PickerItem = memo(function PickerItem({
       <Plus size={18} strokeWidth={2} />
     </span>
   )
-  const name = (
-    <div className="truncate text-[15px] font-semibold text-white">{exercise.name}</div>
-  )
+  const name = <div className="truncate text-[15px] font-semibold text-white">{exercise.name}</div>
   const meta = <div className="mt-[2px] truncate text-[12.5px] text-muted">{subtitle}</div>
 
   if (view === 'grid') {

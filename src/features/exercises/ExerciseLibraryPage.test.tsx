@@ -195,12 +195,31 @@ describe('ExerciseLibraryPage', () => {
     expect(screen.getByText('All exercises')).toBeTruthy()
 
     const favorites = screen.getByRole('region', { name: 'Favorites' })
-    const names = Array.from(favorites.querySelectorAll('div div')).map((el) => el.textContent)
-    expect(names).toEqual(['Leg Press', 'Bench Press'])
+    expect(Array.from(favorites.querySelectorAll('h3')).map((el) => el.textContent)).toEqual([
+      'Chest',
+      'Legs',
+    ])
+    expect(favorites.textContent).toContain('Leg Press')
+    expect(favorites.textContent).toContain('Bench Press')
 
     // Never-logged exercise stays out of Favorites but remains in the grid.
     expect(favorites.textContent).not.toContain('Squat')
     expect(screen.getByText('Squat')).toBeTruthy()
+  })
+
+  it('shows every logged exercise instead of capping Favorites', () => {
+    const exercises = Array.from({ length: 14 }, (_, index) =>
+      makeExercise({ id: String(index), name: `Exercise ${index + 1}` }),
+    )
+    setQueries({
+      exercises,
+      performed: exercises.map((exercise) => performedRow(exercise.id)),
+    })
+
+    render(<ExerciseLibraryPage />)
+
+    const favorites = screen.getByRole('region', { name: 'Favorites' })
+    expect(favorites.textContent).toContain('Exercise 14')
   })
 
   it('applies search and body-part filters to Favorites too', async () => {
@@ -225,9 +244,7 @@ describe('ExerciseLibraryPage', () => {
     })
 
     // Chest exercise doesn't match the Legs chip — the whole section hides.
-    await waitFor(() =>
-      expect(screen.queryByRole('heading', { name: 'Favorites' })).toBeNull(),
-    )
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Favorites' })).toBeNull())
   })
 
   it('does not use completed-set index rows as the Favorites source', () => {
