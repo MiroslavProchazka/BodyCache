@@ -29,7 +29,6 @@ const CHIP_OPTIONS = [
 /** Two cards per grid row; each row slot reserves card height + the 12px gap. */
 const COLS = 2
 const ROW_ESTIMATE = 236
-const MAX_FAVORITES = 12
 
 /**
  * Browse / search all exercises; entry to detail and create. Exercises the
@@ -78,9 +77,24 @@ export function ExerciseLibraryPage() {
 
   const filtered = useMemo(() => exercises.filter(matchesFilter), [exercises, matchesFilter])
   const favoritesFiltered = useMemo(
-    () => favorites.filter(matchesFilter).slice(0, MAX_FAVORITES),
+    () => favorites.filter(matchesFilter),
     [favorites, matchesFilter],
   )
+  const favoriteGroups = useMemo(() => {
+    const byPart = new Map<string, ExerciseRow[]>()
+    for (const exercise of favoritesFiltered) {
+      const part = BODY_PARTS.includes(exercise.bodyPart as (typeof BODY_PARTS)[number])
+        ? exercise.bodyPart!
+        : 'other'
+      const group = byPart.get(part)
+      if (group) group.push(exercise)
+      else byPart.set(part, [exercise])
+    }
+    return BODY_PARTS.flatMap((part) => {
+      const exercises = byPart.get(part)
+      return exercises ? [{ part, exercises }] : []
+    })
+  }, [favoritesFiltered])
 
   const cols = view === 'grid' ? COLS : 1
   const rows = useMemo(() => chunk(filtered, cols), [filtered, cols])
@@ -113,126 +127,137 @@ export function ExerciseLibraryPage() {
 
   return (
     <>
-    <div className="px-[22px] pb-[130px] pt-[14px]">
-      <header className="mb-[18px] flex items-center justify-between">
-        <h1 className="font-display text-[24px] font-semibold tracking-[-0.02em] text-white">
-          Exercises
-        </h1>
-        <div className="flex items-center gap-2">
-          {hasAny && <ViewToggle view={view} onChange={setView} />}
-          <button
-            type="button"
-            onClick={() => navigate('/library/starter')}
-            aria-label="Add from starter library"
-            className="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-[14px] border border-white/10 bg-surface text-soft"
-          >
-            <ListPlus size={21} strokeWidth={2} />
-          </button>
-        </div>
-      </header>
+      <div className="px-[22px] pb-[130px] pt-[14px]">
+        <header className="mb-[18px] flex items-center justify-between">
+          <h1 className="font-display text-[24px] font-semibold tracking-[-0.02em] text-white">
+            Exercises
+          </h1>
+          <div className="flex items-center gap-2">
+            {hasAny && <ViewToggle view={view} onChange={setView} />}
+            <button
+              type="button"
+              onClick={() => navigate('/library/starter')}
+              aria-label="Add from starter library"
+              className="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-[14px] border border-white/10 bg-surface text-soft"
+            >
+              <ListPlus size={21} strokeWidth={2} />
+            </button>
+          </div>
+        </header>
 
-      {hasAny && (
-        <>
-          <div className="mb-[14px]">
-            <SearchField value={search} onChange={setSearch} />
-          </div>
-          <div className="mb-[18px]">
-            <FilterChips
-              options={CHIP_OPTIONS}
-              value={part}
-              onChange={setPart}
-              allValue="all"
-              ariaLabel="Filter by body part"
-            />
-          </div>
-        </>
-      )}
+        {hasAny && (
+          <>
+            <div className="mb-[14px]">
+              <SearchField value={search} onChange={setSearch} />
+            </div>
+            <div className="mb-[18px]">
+              <FilterChips
+                options={CHIP_OPTIONS}
+                value={part}
+                onChange={setPart}
+                allValue="all"
+                ariaLabel="Filter by body part"
+              />
+            </div>
+          </>
+        )}
 
-      {!hasAny ? (
-        <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-inset text-[#8b90f7]">
-            <Dumbbell size={28} strokeWidth={1.75} />
+        {!hasAny ? (
+          <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-inset text-[#8b90f7]">
+              <Dumbbell size={28} strokeWidth={1.75} />
+            </div>
+            <h2 className="font-display text-lg font-semibold text-white">No exercises yet</h2>
+            <p className="max-w-xs text-sm text-muted">
+              Add the basics from the starter library, or create your own — snap a photo of the
+              machine, name it, and you're set.
+            </p>
+            <Button className="mt-2" onClick={() => navigate('/library/starter')}>
+              <ListPlus size={18} strokeWidth={2} /> Add starter exercises
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/library/new')}>
+              <Plus size={18} strokeWidth={2} /> Create exercise
+            </Button>
           </div>
-          <h2 className="font-display text-lg font-semibold text-white">No exercises yet</h2>
-          <p className="max-w-xs text-sm text-muted">
-            Add the basics from the starter library, or create your own — snap a photo of the
-            machine, name it, and you're set.
-          </p>
-          <Button className="mt-2" onClick={() => navigate('/library/starter')}>
-            <ListPlus size={18} strokeWidth={2} /> Add starter exercises
-          </Button>
-          <Button variant="outline" onClick={() => navigate('/library/new')}>
-            <Plus size={18} strokeWidth={2} /> Create exercise
-          </Button>
-        </div>
-      ) : filtered.length === 0 ? (
-        <p className="py-10 text-center text-sm text-faint">No exercises match.</p>
-      ) : (
-        <>
-          {favoritesFiltered.length > 0 && (
-            <section aria-label="Favorites" className="mb-[22px]">
-              <Overline className="mb-[14px]">Favorites</Overline>
-              <div
-                className={
-                  view === 'grid'
-                    ? 'grid grid-cols-2 gap-x-3 gap-y-[18px]'
-                    : 'flex flex-col gap-[16px]'
-                }
-              >
-                {favoritesFiltered.map((exercise) => (
-                  <ExerciseCard
-                    key={exercise.id}
-                    exercise={exercise}
-                    summary={performanceIndex.get(exercise.id)}
-                    view={view}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-          {favoritesFiltered.length > 0 && <Overline className="mb-[14px]">All exercises</Overline>}
-          <div ref={listRef}>
-            <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-              {virtualizer.getVirtualItems().map((row) => (
-                <div
-                  key={row.key}
-                  data-index={row.index}
-                  ref={virtualizer.measureElement}
-                  className={
-                    view === 'grid' ? 'grid grid-cols-2 gap-3 pb-3' : 'flex flex-col pb-[16px]'
-                  }
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${row.start - virtualizer.options.scrollMargin}px)`,
-                  }}
-                >
-                  {rows[row.index].map((exercise) => (
-                    <ExerciseCard
-                      key={exercise.id}
-                      exercise={exercise}
-                      summary={performanceIndex.get(exercise.id)}
-                      view={view}
-                    />
+        ) : filtered.length === 0 ? (
+          <p className="py-10 text-center text-sm text-faint">No exercises match.</p>
+        ) : (
+          <>
+            {favoritesFiltered.length > 0 && (
+              <section aria-label="Favorites" className="mb-[22px]">
+                <Overline className="mb-[14px]">Favorites</Overline>
+                <div className="flex flex-col gap-[22px]">
+                  {favoriteGroups.map((group) => (
+                    <div key={group.part}>
+                      <h3 className="mb-[10px] font-display text-[15px] font-semibold text-soft">
+                        {humanize(group.part)}
+                      </h3>
+                      <div
+                        className={
+                          view === 'grid'
+                            ? 'grid grid-cols-2 gap-x-3 gap-y-[18px]'
+                            : 'flex flex-col gap-[16px]'
+                        }
+                      >
+                        {group.exercises.map((exercise) => (
+                          <ExerciseCard
+                            key={exercise.id}
+                            exercise={exercise}
+                            summary={performanceIndex.get(exercise.id)}
+                            view={view}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
-              ))}
+              </section>
+            )}
+            {favoritesFiltered.length > 0 && (
+              <Overline className="mb-[14px]">All exercises</Overline>
+            )}
+            <div ref={listRef}>
+              <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+                {virtualizer.getVirtualItems().map((row) => (
+                  <div
+                    key={row.key}
+                    data-index={row.index}
+                    ref={virtualizer.measureElement}
+                    className={
+                      view === 'grid' ? 'grid grid-cols-2 gap-3 pb-3' : 'flex flex-col pb-[16px]'
+                    }
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${row.start - virtualizer.options.scrollMargin}px)`,
+                    }}
+                  >
+                    {rows[row.index].map((exercise) => (
+                      <ExerciseCard
+                        key={exercise.id}
+                        exercise={exercise}
+                        summary={performanceIndex.get(exercise.id)}
+                        view={view}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        </>
+          </>
+        )}
+      </div>
+      {hasAny && (
+        <FloatingAction raised>
+          <ActionPill
+            label="New exercise"
+            icon={<Plus size={19} strokeWidth={2} />}
+            onClick={() => navigate('/library/new')}
+          />
+        </FloatingAction>
       )}
-    </div>
-    {hasAny && (
-      <FloatingAction raised>
-        <ActionPill
-          label="New exercise"
-          icon={<Plus size={19} strokeWidth={2} />}
-          onClick={() => navigate('/library/new')}
-        />
-      </FloatingAction>
-    )}
     </>
   )
 }
