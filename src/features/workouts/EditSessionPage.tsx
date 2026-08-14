@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
 import { Check, ChevronLeft, Plus } from 'lucide-react'
@@ -6,6 +7,7 @@ import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { SessionExerciseRow, WorkoutSessionRow } from '@/evolu/rows'
 import type { WorkoutExerciseId, WorkoutSessionId } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
+import { ConfirmSheet } from '@/shared/components/ConfirmSheet'
 import { ActionPill, FloatingAction } from '@/shared/components/FloatingAction'
 import { Overline } from '@/shared/components/Overline'
 import { dayKey } from '@/shared/utils/dates'
@@ -47,7 +49,10 @@ function EditSessionInner({ session }: { session: WorkoutSessionRow }) {
     setWorkoutExerciseSuperset,
   } = useBodyCacheMutations()
   // Ordered by `orderIndex` (the query sorts), so grouping folds live.
-  const exercises = useQuery(sessionExercises(session.id as WorkoutSessionId)) as SessionExerciseRow[]
+  const exercises = useQuery(
+    sessionExercises(session.id as WorkoutSessionId),
+  ) as SessionExerciseRow[]
+  const [removeTarget, setRemoveTarget] = useState<SessionExerciseRow | null>(null)
 
   const startedAt = session.startedAt as unknown as string | Date
   const sessionId = session.id as WorkoutSessionId
@@ -99,8 +104,13 @@ function EditSessionInner({ session }: { session: WorkoutSessionRow }) {
     items.forEach((it) => setWorkoutExerciseSuperset(it.id as WorkoutExerciseId, null))
 
   const handleRemove = (entry: SessionExerciseRow) => {
-    if (!window.confirm(`Remove ${entry.exerciseName} from this workout?`)) return
-    removeExerciseFromWorkout(entry.id as WorkoutExerciseId)
+    setRemoveTarget(entry)
+  }
+
+  const confirmRemove = () => {
+    if (!removeTarget) return
+    removeExerciseFromWorkout(removeTarget.id as WorkoutExerciseId)
+    setRemoveTarget(null)
   }
 
   const completedAt = new Date(startedAt).toISOString()
@@ -135,7 +145,11 @@ function EditSessionInner({ session }: { session: WorkoutSessionRow }) {
             {(() => {
               let supersetIndex = 0
               return blocks.map((block) => {
-                const editor = (entry: SessionExerciseRow, badge: string | null, linkable: boolean) => (
+                const editor = (
+                  entry: SessionExerciseRow,
+                  badge: string | null,
+                  linkable: boolean,
+                ) => (
                   <WorkoutExerciseEditor
                     key={entry.id}
                     entry={entry}
@@ -188,6 +202,14 @@ function EditSessionInner({ session }: { session: WorkoutSessionRow }) {
           onClick={() => navigate(`/history/${sessionId}`)}
         />
       </FloatingAction>
+      <ConfirmSheet
+        open={removeTarget !== null}
+        title={removeTarget ? `Remove ${removeTarget.exerciseName} from this workout?` : ''}
+        confirmLabel="Remove"
+        confirmVariant="destructive"
+        onConfirm={confirmRemove}
+        onClose={() => setRemoveTarget(null)}
+      />
     </>
   )
 }

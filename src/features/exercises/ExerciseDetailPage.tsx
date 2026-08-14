@@ -9,6 +9,7 @@ import { exerciseById, completedSetsForExercise, activeWorkoutSession } from '@/
 import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { ExerciseId, ExercisePhotoId, ExerciseType } from '@/evolu/schema'
 import { CircleButton } from '@/shared/components/CircleButton'
+import { ConfirmSheet } from '@/shared/components/ConfirmSheet'
 import { Divider } from '@/shared/components/Divider'
 import { HeroStat } from '@/shared/components/HeroStat'
 import { Overline } from '@/shared/components/Overline'
@@ -56,6 +57,7 @@ export function ExerciseDetailPage() {
 
   // Progress | How to. Reset to Progress whenever a different exercise opens.
   const [tab, setTab] = useState<'progress' | 'howto'>('progress')
+  const [confirmDelete, setConfirmDelete] = useState(false)
   useEffect(() => setTab('progress'), [id])
 
   if (!exercise) {
@@ -107,9 +109,7 @@ export function ExerciseDetailPage() {
   }
 
   const handleDelete = () => {
-    if (!window.confirm(`Delete "${exercise.name}"? This can't be undone.`)) return
-    softDeleteExercise(exercise.id as ExerciseId)
-    navigate('/library', { replace: true })
+    setConfirmDelete(true)
   }
 
   /** Start (or continue) a workout and open the logger for this exercise. */
@@ -167,7 +167,13 @@ export function ExerciseDetailPage() {
         </h1>
         <HeroStat
           intro={heroWeightKg != null ? heroIntro : 'Best'}
-          value={heroWeightKg != null ? toDisplayWeight(heroWeightKg, unit) : best ? formatSetSummary(best, type, unit) : '—'}
+          value={
+            heroWeightKg != null
+              ? toDisplayWeight(heroWeightKg, unit)
+              : best
+                ? formatSetSummary(best, type, unit)
+                : '—'
+          }
           unit={heroWeightKg != null ? unit : undefined}
           size={heroWeightKg != null ? 44 : 30}
           chips={
@@ -327,6 +333,19 @@ export function ExerciseDetailPage() {
           onClick={handleLogToday}
         />
       </FloatingAction>
+      <ConfirmSheet
+        open={confirmDelete}
+        title={`Delete "${exercise.name}"?`}
+        body="This can't be undone."
+        confirmLabel="Delete"
+        confirmVariant="destructive"
+        onConfirm={() => {
+          softDeleteExercise(exercise.id as ExerciseId)
+          setConfirmDelete(false)
+          navigate('/library', { replace: true })
+        }}
+        onClose={() => setConfirmDelete(false)}
+      />
     </>
   )
 }

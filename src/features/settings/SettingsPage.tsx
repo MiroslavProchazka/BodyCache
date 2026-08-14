@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@evolu/react'
+import type { Mnemonic } from '@evolu/common'
 import {
   Cloud,
   CloudOff,
@@ -18,6 +19,7 @@ import { useBodyCacheMutations } from '@/evolu/mutations'
 import type { ExerciseId } from '@/evolu/schema'
 import { legacyExercises } from '@/features/exercises/legacyExercises'
 import { Overline } from '@/shared/components/Overline'
+import { ConfirmSheet } from '@/shared/components/ConfirmSheet'
 import { Divider } from '@/shared/components/Divider'
 import { useToast } from '@/shared/components/Toast'
 import { useUnits } from '@/shared/units/UnitsContext'
@@ -29,6 +31,12 @@ import { formatProfileMeta, narrowGender } from '@/features/profile/profile'
 import { parseRestoreMnemonic } from './mnemonic'
 import { clearRestoreFlag, markJustRestored } from './restoreState'
 import { useDataTransfer } from './useDataTransfer'
+
+type SettingsConfirm =
+  | { kind: 'backup'; file: File }
+  | { kind: 'restorePhrase'; mnemonic: Mnemonic }
+  | { kind: 'resetPhrase' }
+  | { kind: 'removeLegacy'; count: number }
 
 /** Settings — storage status, display units, and data management. */
 export function SettingsPage() {
@@ -45,6 +53,7 @@ export function SettingsPage() {
   // Which data action is in flight, so we can disable the rows + show a spinner.
   const [busy, setBusy] = useState<null | 'backup' | 'restore' | 'csv'>(null)
   const [cleaning, setCleaning] = useState(false)
+  const [confirm, setConfirm] = useState<SettingsConfirm | null>(null)
 
   // "Legacy" exercises are the old-design ones that render the purple muscle-map
   // placeholder because they have no demo photo/GIF. Removing them leaves only
@@ -99,8 +108,10 @@ export function SettingsPage() {
     // Reset so choosing the same file again re-triggers `change`.
     e.target.value = ''
     if (!file) return
-    if (!window.confirm('Restore from this backup? It merges into your data.')) return
+    setConfirm({ kind: 'backup', file })
+  }
 
+  const restoreBackup = async (file: File) => {
     setBusy('restore')
     try {
       const { rows } = await importBackup(file)
@@ -146,20 +157,16 @@ export function SettingsPage() {
       return
     }
 
-    if (
-      !window.confirm(
-        'Restore this recovery phrase? The app will reload and switch to that synced owner. Photos stay on this device.',
-      )
-    ) {
-      return
-    }
+    setConfirm({ kind: 'restorePhrase', mnemonic: parsed.value })
+  }
 
+  const confirmRestoreMnemonic = async (mnemonic: Mnemonic) => {
     setMnemonicBusy('restore')
     // Stamp before restore: `restoreAppOwner` reloads the app, and the boot
     // after reload reads this to show the "still syncing" banner.
     markJustRestored()
     try {
-      await evolu.restoreAppOwner(parsed.value)
+      await evolu.restoreAppOwner(mnemonic)
     } catch {
       // Restore didn't start — don't show the post-reload "syncing" banner.
       clearRestoreFlag()
@@ -170,14 +177,10 @@ export function SettingsPage() {
 
   const generateNewMnemonic = async () => {
     if (mnemonicBusy) return
-    if (
-      !window.confirm(
-        'Generate a new recovery phrase? This starts a new owner and reloads the app.',
-      )
-    ) {
-      return
-    }
+    setConfirm({ kind: 'resetPhrase' })
+  }
 
+  const confirmGenerateNewMnemonic = async () => {
     setMnemonicBusy('reset')
     try {
       await evolu.resetAppOwner()
@@ -196,16 +199,10 @@ export function SettingsPage() {
   const removeLegacy = () => {
     if (cleaning || legacy.length === 0) return
     const n = legacy.length
-    if (
-      !window.confirm(
-        `Remove ${n} exercise${n === 1 ? '' : 's'} with no demo image? ` +
-          'Your logged workouts stay intact, and you can re-add any of them with their ' +
-          'animation from the starter library.',
-      )
-    ) {
-      return
-    }
+    setConfirm({ kind: 'removeLegacy', count: n })
+  }
 
+  const confirmRemoveLegacy = (n: number) => {
     setCleaning(true)
     try {
       for (const e of legacy) softDeleteExercise(e.id as ExerciseId)
@@ -214,6 +211,57 @@ export function SettingsPage() {
       showToast('Something went wrong')
     } finally {
       setCleaning(false)
+    }
+  }
+
+  const confirmTitle =
+    confirm?.kind === 'backup'
+      ? 'Restore from this backup?'
+      : confirm?.kind === 'restorePhrase'
+        ? 'Restore this recovery phrase?'
+        : confirm?.kind === 'resetPhrase'
+          ? 'Generate a new recovery phrase?'
+          : confirm?.kind === 'removeLegacy'
+            ? `Remove ${confirm.count} exercise${confirm.count === 1 ? '' : 's'} with no demo image?`
+            : ''
+
+  const confirmBody =
+    confirm?.kind === 'backup'
+      ? 'It merges into your data.'
+      : confirm?.kind === 'restorePhrase'
+        ? 'The app will reload and switch to that synced owner. Photos stay on this device.'
+        : confirm?.kind === 'resetPhrase'
+          ? 'This starts a new owner and reloads the app.'
+          : confirm?.kind === 'removeLegacy'
+            ? 'Your logged workouts stay intact, and you can re-add any of them with their animation from the starter library.'
+            : undefined
+
+  const confirmLabel =
+    confirm?.kind === 'backup'
+      ? 'Restore backup'
+      : confirm?.kind === 'restorePhrase'
+        ? 'Restore phrase'
+        : confirm?.kind === 'resetPhrase'
+          ? 'Generate phrase'
+          : 'Remove'
+
+  const confirmSettingsAction = async () => {
+    if (!confirm) return
+    const action = confirm
+    setConfirm(null)
+    switch (action.kind) {
+      case 'backup':
+        await restoreBackup(action.file)
+        break
+      case 'restorePhrase':
+        await confirmRestoreMnemonic(action.mnemonic)
+        break
+      case 'resetPhrase':
+        await confirmGenerateNewMnemonic()
+        break
+      case 'removeLegacy':
+        confirmRemoveLegacy(action.count)
+        break
     }
   }
 
@@ -423,6 +471,15 @@ export function SettingsPage() {
         <br />
         v1.0 — not your coach
       </div>
+      <ConfirmSheet
+        open={confirm !== null}
+        title={confirmTitle}
+        body={confirmBody}
+        confirmLabel={confirmLabel}
+        confirmVariant={confirm?.kind === 'removeLegacy' ? 'destructive' : 'primary'}
+        onConfirm={confirmSettingsAction}
+        onClose={() => setConfirm(null)}
+      />
     </div>
   )
 }
