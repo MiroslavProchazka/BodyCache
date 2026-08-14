@@ -18,6 +18,7 @@ import { useDebouncedValue } from '@/shared/utils/useDebouncedValue'
 import { useScrollParent } from '@/shared/utils/useScrollParent'
 import { useListScrollMargin } from './useListScrollMargin'
 import { ExerciseCard } from './ExerciseCard'
+import { VirtualizedExerciseGroups } from './VirtualizedExerciseGroups'
 import { useLibraryView } from './useLibraryView'
 import { useLastPerformanceIndex } from './useLastPerformanceIndex'
 
@@ -45,6 +46,7 @@ export function ExerciseLibraryPage() {
   const [search, setSearch] = useState('')
   const [part, setPart] = useState<string | null>(null)
   const [view, setView] = useLibraryView()
+  const [favoriteTotalSize, setFavoriteTotalSize] = useState(0)
 
   // Debounce so filtering 1,000+ exercises doesn't run on every keystroke.
   const debouncedSearch = useDebouncedValue(search)
@@ -100,20 +102,20 @@ export function ExerciseLibraryPage() {
   const rows = useMemo(() => chunk(filtered, cols), [filtered, cols])
   const rowEstimate = view === 'grid' ? ROW_ESTIMATE : 80
 
-  // Virtualize the grid so only the cards on screen mount — each card runs its
-  // own history query + IndexedDB photo read, so without this a 1,000-exercise
-  // library would fire thousands of queries at once. The page scrolls in the
-  // AppShell `<main>` column, so the virtualizer watches that ancestor.
+  // Virtualize the grid so only the cards on screen mount. Photo-backed cards
+  // resolve their image data independently, so mounting a 1,000-exercise
+  // library at once would still create a large burst of work. The page scrolls
+  // in the AppShell `<main>` column, so the virtualizer watches that ancestor.
   const listRef = useRef<HTMLDivElement>(null)
   const scrollParent = useScrollParent(listRef)
-  // The Favorites section sits above the virtualized grid and resizes as the
-  // filter changes, so its row count doubles as the re-measure revision.
+  // The Favorites virtualizer reports its measured height. Use that exact
+  // value as the revision because group headings and grid wrapping mean the
+  // section height is not determined by favorite count alone.
   const scrollMargin = useListScrollMargin(
     listRef,
     scrollParent,
     filtered.length > 0,
-    // Re-measure when Favorites resize OR the view mode flips (row heights change).
-    favoritesFiltered.length + (view === 'list' ? 100000 : 0),
+    `${view}:${favoritesFiltered.length > 0 ? favoriteTotalSize : 0}`,
   )
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -186,31 +188,27 @@ export function ExerciseLibraryPage() {
             {favoritesFiltered.length > 0 && (
               <section aria-label="Favorites" className="mb-[22px]">
                 <Overline className="mb-[14px]">Favorites</Overline>
-                <div className="flex flex-col gap-[22px]">
-                  {favoriteGroups.map((group) => (
-                    <div key={group.part}>
-                      <h3 className="mb-[10px] font-display text-[15px] font-semibold text-soft">
-                        {humanize(group.part)}
-                      </h3>
-                      <div
-                        className={
-                          view === 'grid'
-                            ? 'grid grid-cols-2 gap-x-3 gap-y-[18px]'
-                            : 'flex flex-col gap-[16px]'
-                        }
-                      >
-                        {group.exercises.map((exercise) => (
-                          <ExerciseCard
-                            key={exercise.id}
-                            exercise={exercise}
-                            summary={performanceIndex.get(exercise.id)}
-                            view={view}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <VirtualizedExerciseGroups
+                  groups={favoriteGroups}
+                  view={view}
+                  headingClassName="pb-[10px] font-display text-[15px] font-semibold text-soft"
+                  headingGapClassName="pt-[22px]"
+                  itemRowClassName={(currentView) =>
+                    currentView === 'grid'
+                      ? 'grid grid-cols-2 gap-x-3 pb-[18px]'
+                      : 'flex flex-col gap-[16px] pb-[16px]'
+                  }
+                  estimateItemRow={(currentView) => (currentView === 'grid' ? ROW_ESTIMATE : 80)}
+                  renderItem={(exercise) => (
+                    <ExerciseCard
+                      key={exercise.id}
+                      exercise={exercise}
+                      summary={performanceIndex.get(exercise.id)}
+                      view={view}
+                    />
+                  )}
+                  onTotalSizeChange={setFavoriteTotalSize}
+                />
               </section>
             )}
             {favoritesFiltered.length > 0 && (

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ConfirmSheet } from './ConfirmSheet'
 
@@ -64,5 +64,26 @@ describe('ConfirmSheet', () => {
     )
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
     expect(onClose).toHaveBeenCalledTimes(3)
+  })
+
+  it('recovers when the confirmed action fails', async () => {
+    const onClose = vi.fn()
+    render(
+      <ConfirmSheet
+        open
+        title="Restore backup?"
+        confirmLabel="Restore"
+        onConfirm={() => Promise.reject(new Error('restore failed'))}
+        onClose={onClose}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy())
+    expect(screen.getByRole('button', { name: 'Restore' }).hasAttribute('disabled')).toBe(false)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 })

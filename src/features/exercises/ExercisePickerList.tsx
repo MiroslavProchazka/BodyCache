@@ -12,6 +12,7 @@ import { useDebouncedValue } from '@/shared/utils/useDebouncedValue'
 import { useScrollParent } from '@/shared/utils/useScrollParent'
 import { chunk } from '@/shared/utils/chunk'
 import { ExerciseTile } from './ExerciseTile'
+import { VirtualizedExerciseGroups } from './VirtualizedExerciseGroups'
 import { useListScrollMargin } from './useListScrollMargin'
 import { useLibraryView, type LibraryView } from './useLibraryView'
 import { matchesExerciseFilter } from './exerciseFilter'
@@ -60,6 +61,7 @@ export function ExercisePickerList({
   const [search, setSearch] = useState('')
   const [part, setPart] = useState<string | null>(null)
   const [view, setView] = useLibraryView()
+  const [favoriteTotalSize, setFavoriteTotalSize] = useState(0)
   const [, startTransition] = useTransition()
 
   const debouncedSearch = useDebouncedValue(search)
@@ -116,33 +118,33 @@ export function ExercisePickerList({
           <h2 className="mb-[10px] font-display text-[17px] font-semibold tracking-tight text-white">
             Favorites
           </h2>
-          <div className="flex flex-col gap-[18px]">
-            {favoriteGroups.map((group) => (
-              <div key={group.part}>
-                <h3 className="mb-[8px] font-display text-[14px] font-semibold text-soft">
-                  {humanize(group.part)}
-                </h3>
-                <div
-                  className={
-                    view === 'grid'
-                      ? 'grid grid-cols-2 gap-x-3 gap-y-[18px]'
-                      : 'flex flex-col gap-[10px]'
-                  }
-                >
-                  {group.exercises.map((exercise) => (
-                    <PickerItem
-                      key={exercise.id}
-                      exercise={exercise}
-                      subtitle={subtitleFor(exercise)}
-                      view={view}
-                      onPick={onPick}
-                      onOpen={onOpen}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <VirtualizedExerciseGroups
+            groups={favoriteGroups}
+            view={view}
+            headingClassName="pb-[8px] font-display text-[14px] font-semibold text-soft"
+            headingGapClassName="pt-[18px]"
+            itemRowClassName={(currentView) =>
+              currentView === 'grid'
+                ? 'grid grid-cols-2 gap-x-3 pb-[18px]'
+                : 'flex flex-col gap-[10px] pb-[10px]'
+            }
+            estimateItemRow={(currentView) =>
+              currentView === 'grid' ? GRID_ROW_ESTIMATE : ROW_ESTIMATE
+            }
+            estimateHeading={(first) => (first ? 25 : 43)}
+            overscan={6}
+            renderItem={(exercise) => (
+              <PickerItem
+                key={exercise.id}
+                exercise={exercise}
+                subtitle={subtitleFor(exercise)}
+                view={view}
+                onPick={onPick}
+                onOpen={onOpen}
+              />
+            )}
+            onTotalSizeChange={setFavoriteTotalSize}
+          />
         </section>
       )}
 
@@ -165,7 +167,7 @@ export function ExercisePickerList({
             onPick={onPick}
             onOpen={onOpen}
             subtitleFor={subtitleFor}
-            revision={visibleFavorites.length + (view === 'list' ? 100000 : 0)}
+            revision={`${view}:${visibleFavorites.length > 0 ? favoriteTotalSize : 0}`}
           />
         </>
       )}
@@ -186,7 +188,7 @@ const VirtualizedPickerRows = memo(function VirtualizedPickerRows({
   onPick: (id: ExerciseId) => void
   onOpen?: (id: ExerciseId) => void
   subtitleFor: (exercise: ExerciseRow) => string
-  revision: number
+  revision: unknown
 }) {
   const listRef = useRef<HTMLDivElement>(null)
   const scrollParent = useScrollParent(listRef)

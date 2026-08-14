@@ -37,10 +37,12 @@ export function ConfirmSheet({
   const cancelRef = useRef<HTMLButtonElement>(null)
   const triggerRef = useRef<HTMLElement | null>(null)
   const [busy, setBusy] = useState(false)
+  const [actionError, setActionError] = useState(false)
 
   useEffect(() => {
     if (!open) {
       setBusy(false)
+      setActionError(false)
       return
     }
     triggerRef.current =
@@ -66,7 +68,16 @@ export function ConfirmSheet({
   const run = async (fn: () => void | Promise<void>) => {
     if (busy) return
     setBusy(true)
-    await fn()
+    setActionError(false)
+    try {
+      await fn()
+    } catch {
+      // Keep the sheet usable when a mutation rejects so the user can retry
+      // or cancel instead of being trapped behind disabled controls.
+      setActionError(true)
+    } finally {
+      setBusy(false)
+    }
   }
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -127,6 +138,11 @@ export function ConfirmSheet({
           <div className="mt-3 text-[14px] leading-relaxed text-muted">
             {typeof body === 'string' ? <p>{body}</p> : body}
           </div>
+        )}
+        {actionError && (
+          <p role="alert" className="mt-3 text-[13px] font-semibold text-[#fa757e]">
+            Something went wrong. Try again.
+          </p>
         )}
         <div className="mt-6 flex flex-col gap-2">
           <button
