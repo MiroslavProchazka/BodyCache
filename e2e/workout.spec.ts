@@ -38,8 +38,10 @@ test('an empty workout can be discarded', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Start workout' }).click()
 
-  page.on('dialog', (d) => d.accept())
   await page.getByRole('button', { name: 'Discard', exact: true }).click()
+  const confirmation = page.getByRole('dialog', { name: 'Discard this empty workout?' })
+  await expect(confirmation).toBeVisible()
+  await confirmation.getByRole('button', { name: 'Discard', exact: true }).click()
 
   await expect(page).toHaveURL(/\/$/)
   await expect(page.getByRole('button', { name: 'Start workout' })).toBeVisible()
